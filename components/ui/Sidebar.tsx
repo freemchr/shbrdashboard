@@ -1,0 +1,110 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { Logo } from './Logo';
+import {
+  LayoutDashboard,
+  GitBranch,
+  AlertTriangle,
+  Users,
+  Clock,
+  DollarSign,
+  Search,
+  Menu,
+  X,
+} from 'lucide-react';
+import { useState } from 'react';
+
+const navItems = [
+  { href: '/', label: 'Overview', icon: LayoutDashboard },
+  { href: '/pipeline', label: 'Pipeline', icon: GitBranch },
+  { href: '/bottlenecks', label: 'Bottlenecks', icon: AlertTriangle },
+  { href: '/team', label: 'Team', icon: Users },
+  { href: '/aging', label: 'Aging', icon: Clock },
+  { href: '/financial', label: 'Financial', icon: DollarSign },
+  { href: '/search', label: 'Job Search', icon: Search },
+];
+
+function NavItem({ href, label, icon: Icon, active }: {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  active: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all
+        ${active
+          ? 'bg-red-600 text-white'
+          : 'text-gray-400 hover:text-white hover:bg-gray-800'
+        }`}
+    >
+      <Icon size={18} />
+      {label}
+    </Link>
+  );
+}
+
+export function Sidebar() {
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const isActive = (href: string) =>
+    href === '/' ? pathname === '/' : pathname.startsWith(href);
+
+  return (
+    <>
+      {/* Mobile hamburger */}
+      <button
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-gray-900 text-white"
+        onClick={() => setMobileOpen(!mobileOpen)}
+      >
+        {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/60 z-40"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`
+          fixed top-0 left-0 h-full z-40 w-64 flex flex-col
+          bg-[#111111] border-r border-gray-800
+          transition-transform duration-300
+          ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:translate-x-0 lg:static lg:flex
+        `}
+      >
+        <div className="p-5 border-b border-gray-800">
+          <Logo />
+        </div>
+
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+          {navItems.map((item) => (
+            <NavItem
+              key={item.href}
+              href={item.href}
+              label={item.label}
+              icon={item.icon}
+              active={isActive(item.href)}
+            />
+          ))}
+        </nav>
+
+        <div className="p-4 border-t border-gray-800">
+          <p className="text-xs text-gray-600 text-center">
+            SHBR Prime Dashboard
+          </p>
+          <p className="text-xs text-gray-700 text-center">Internal Use Only</p>
+        </div>
+      </aside>
+    </>
+  );
+}
