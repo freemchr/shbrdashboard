@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/';
   const [secret, setSecret] = useState('');
@@ -17,10 +16,9 @@ function LoginForm() {
     setLoading(true);
     setError('');
 
-    // Navigate with secret param — middleware will set cookie and redirect
+    // Full page navigation so middleware runs and can set the cookie
     const url = `${redirect}?secret=${encodeURIComponent(secret)}`;
-    router.push(url);
-    setLoading(false);
+    window.location.href = url;
   };
 
   return (
