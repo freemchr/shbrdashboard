@@ -10,7 +10,7 @@ export async function GET() {
     const cached = getCached<unknown>(cacheKey);
     if (cached) return NextResponse.json(cached);
 
-    const data = await primeGet('/job-statuses?per_page=200');
+    const data = await primeGet('/statuses?per_page=200');
     setCached(cacheKey, data, 24 * 60 * 60 * 1000); // 24h
     return NextResponse.json(data);
   } catch (err: unknown) {
