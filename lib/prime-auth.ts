@@ -29,7 +29,10 @@ export async function getPrimeToken(): Promise<string> {
 
   const res = await fetch(tokenUrl, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Accept': 'application/vnd.api.v2+json',
+    },
     body: params.toString(),
     cache: 'no-store',
   });
