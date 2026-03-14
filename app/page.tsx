@@ -121,7 +121,9 @@ export default function OverviewPage() {
                       <span className="text-xs text-gray-500">{job.attributes?.region || ''}</span>
                     </div>
                     <p className="text-gray-300 truncate mt-0.5 text-xs">
-                      {[job.attributes?.address?.addressLine1, job.attributes?.address?.suburb, job.attributes?.address?.state].filter(Boolean).join(', ') || '—'}
+                      {typeof job.attributes?.address === 'object' && job.attributes.address
+                        ? [job.attributes.address.addressLine1, job.attributes.address.suburb, job.attributes.address.state].filter(Boolean).join(', ')
+                        : String(job.attributes?.address || '—')}
                     </p>
                     <p className="text-gray-600 text-xs mt-0.5">
                       Updated {formatDate(job.attributes?.updatedAt)} by {job.attributes?.updatedBy || '—'}

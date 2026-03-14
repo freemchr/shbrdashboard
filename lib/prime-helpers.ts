@@ -3,7 +3,7 @@ export interface PrimeJob {
   type: string;
   attributes: {
     jobNumber?: string;
-    address?: string;
+    address?: { addressLine1?: string; suburb?: string; state?: string; postcode?: string } | string;
     clientReference?: string;
     description?: string;
     jobType?: string;
