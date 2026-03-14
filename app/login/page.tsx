@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Logo } from '@/components/ui/Logo';
+import Image from 'next/image';
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -16,9 +16,24 @@ function LoginForm() {
     setLoading(true);
     setError('');
 
-    // Full page navigation so middleware runs and can set the cookie
-    const url = `${redirect}?secret=${encodeURIComponent(secret)}`;
-    window.location.href = url;
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret, redirect }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        window.location.href = data.redirect || '/';
+      } else {
+        setError('Invalid access code. Please try again.');
+        setLoading(false);
+      }
+    } catch {
+      setError('Something went wrong. Please try again.');
+      setLoading(false);
+    }
   };
 
   return (
@@ -26,9 +41,16 @@ function LoginForm() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <Logo />
+            <Image
+              src="/shbr-logo.png"
+              alt="SHBR Group"
+              width={200}
+              height={77}
+              priority
+              unoptimized
+            />
           </div>
-          <h1 className="text-xl font-semibold text-white mt-2">Prime Dashboard</h1>
+          <h1 className="text-xl font-semibold text-white mt-4">Prime Dashboard</h1>
           <p className="text-gray-500 text-sm mt-1">Internal access only</p>
         </div>
 
@@ -41,6 +63,7 @@ function LoginForm() {
               onChange={(e) => setSecret(e.target.value)}
               placeholder="Enter access code"
               className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-red-500 transition-colors"
+              autoFocus
               required
             />
           </div>
