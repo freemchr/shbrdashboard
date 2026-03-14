@@ -16,9 +16,7 @@ export async function getPrimeToken(): Promise<string> {
   const clientId = process.env.PRIME_CLIENT_ID!;
   const clientSecret = process.env.PRIME_CLIENT_SECRET!;
 
-  // The OAuth2 token endpoint is typically at /oauth/token relative to the base
-  // For Prime API, token endpoint pattern
-  const tokenUrl = baseUrl.replace('/api.prime/v2', '') + '/oauth/token';
+  const tokenUrl = `${baseUrl}/oauth/token`;
 
   const params = new URLSearchParams({
     grant_type: 'password',
@@ -59,7 +57,7 @@ export async function primeGet(path: string, retries = 3): Promise<unknown> {
     const res = await fetch(url, {
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
+        Accept: 'application/vnd.api.v2+json',
       },
       cache: 'no-store',
     });
@@ -77,7 +75,7 @@ export async function primeGet(path: string, retries = 3): Promise<unknown> {
       const retryRes = await fetch(url, {
         headers: {
           Authorization: `Bearer ${freshToken}`,
-          Accept: 'application/json',
+          Accept: 'application/vnd.api.v2+json',
         },
         cache: 'no-store',
       });
@@ -114,8 +112,8 @@ export async function primeGetAllPages(
     const items = data?.data || [];
     allData.push(...items);
 
-    const meta = data?.meta;
-    if (!meta || page >= (meta.last_page || 1)) {
+    const pagination = (data?.meta as { pagination?: { total_pages?: number; current_page?: number } })?.pagination;
+    if (!pagination || page >= (pagination.total_pages || 1)) {
       hasMore = false;
     } else {
       page++;
