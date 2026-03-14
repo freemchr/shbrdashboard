@@ -5,188 +5,141 @@ import { KpiCard } from '@/components/ui/KpiCard';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { BarChartComponent } from '@/components/charts/BarChartComponent';
 import { ErrorMessage, LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { formatCurrency, formatDate, daysSince } from '@/lib/prime-helpers';
+import { formatDate } from '@/lib/prime-helpers';
 import type { PrimeJob } from '@/lib/prime-helpers';
-import { ExternalLink, Briefcase, AlertTriangle, DollarSign, Calendar } from 'lucide-react';
+import { ExternalLink, Briefcase, AlertTriangle, Calendar, Hash } from 'lucide-react';
 
-interface OverviewData {
-  openJobs: PrimeJob[];
-  countsByStatus: { status: string; count: number; statusType: string }[];
-  recentJobs: PrimeJob[];
-  kpis: {
-    totalOpen: number;
-    stuckOver7Days: number;
-    pipelineValue: number;
-    createdThisWeek: number;
-    createdThisMonth: number;
-  };
+interface Kpis {
+  totalJobs: number;
+  openStatusCount: number;
+  createdThisWeek: number;
+  createdThisMonth: number;
+  stuckOver7Days: number;
 }
 
+interface StatusCount { status: string; count: number; statusType: string; }
+
 export default function OverviewPage() {
-  const [data, setData] = useState<OverviewData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [recentJobs, setRecentJobs] = useState<PrimeJob[]>([]);
+  const [kpis, setKpis] = useState<Kpis | null>(null);
+  const [openCounts, setOpenCounts] = useState<StatusCount[]>([]);
+  const [loadingRecent, setLoadingRecent] = useState(true);
+  const [loadingKpis, setLoadingKpis] = useState(true);
+  const [loadingCounts, setLoadingCounts] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function load() {
-      try {
-        // Fetch jobs and counts in parallel
-        const [jobsRes, countsRes] = await Promise.all([
-          fetch('/api/prime/jobs?per_page=100&order=updatedAt&sort=desc'),
-          fetch('/api/prime/jobs/counts-by-status'),
-        ]);
+    // Load recent jobs fast (one API call)
+    fetch('/api/prime/jobs?per_page=10&order=updatedAt|DESC')
+      .then(r => r.ok ? r.json() : Promise.reject('Failed to load jobs'))
+      .then(d => setRecentJobs(d.data || []))
+      .catch(e => setError(String(e)))
+      .finally(() => setLoadingRecent(false));
 
-        if (!jobsRes.ok) throw new Error('Failed to load jobs');
-        const jobsData = await jobsRes.json();
-        const countsByStatus = countsRes.ok ? await countsRes.json() : [];
+    // Load KPIs fast (parallel queries)
+    fetch('/api/prime/jobs/kpis')
+      .then(r => r.ok ? r.json() : Promise.reject('Failed to load KPIs'))
+      .then(d => setKpis(d))
+      .catch(() => setKpis(null))
+      .finally(() => setLoadingKpis(false));
 
-        const allJobs: PrimeJob[] = jobsData.data || [];
-
-        const now = new Date();
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const weekStart = new Date(now);
-        weekStart.setDate(now.getDate() - now.getDay());
-
-        const openJobs = allJobs.filter((j) => {
-          const st = (j.attributes?.statusType || '').toLowerCase();
-          return st === 'open' || st === 'active';
-        });
-
-        const stuckOver7Days = openJobs.filter((j) => daysSince(j.attributes?.updatedAt) >= 7).length;
-        const pipelineValue = openJobs.reduce((sum, j) => sum + (j.attributes?.authorisedTotalIncludingTax || 0), 0);
-        const createdThisWeek = allJobs.filter((j) => j.attributes?.createdAt && new Date(j.attributes.createdAt) >= weekStart).length;
-        const createdThisMonth = allJobs.filter((j) => j.attributes?.createdAt && new Date(j.attributes.createdAt) >= monthStart).length;
-
-        const recentJobs = [...allJobs].sort((a, b) => {
-          const aDate = new Date(a.attributes?.updatedAt || 0).getTime();
-          const bDate = new Date(b.attributes?.updatedAt || 0).getTime();
-          return bDate - aDate;
-        }).slice(0, 10);
-
-        setData({
-          openJobs,
-          countsByStatus,
-          recentJobs,
-          kpis: {
-            totalOpen: openJobs.length,
-            stuckOver7Days,
-            pipelineValue,
-            createdThisWeek,
-            createdThisMonth,
-          },
-        });
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    load();
+    // Load status counts (slower, but loads independently)
+    fetch('/api/prime/jobs/counts-by-status')
+      .then(r => r.ok ? r.json() : [])
+      .then(d => setOpenCounts(Array.isArray(d) ? d.filter((s: StatusCount) => s.statusType === 'Open') : []))
+      .catch(() => setOpenCounts([]))
+      .finally(() => setLoadingCounts(false));
   }, []);
 
-  if (loading) return <LoadingSpinner message="Loading overview data..." />;
-  if (error) return <ErrorMessage message={error} />;
-  if (!data) return null;
-
-  const chartData = data.countsByStatus
-    .filter((s) => {
-      const st = s.statusType?.toLowerCase();
-      return st === 'open' || st === 'active';
-    })
-    .slice(0, 10)
-    .map((s) => ({ name: s.status, value: s.count }));
+  const chartData = openCounts.slice(0, 10).map(s => ({ name: s.status, value: s.count }));
+  const totalOpen = openCounts.reduce((sum, s) => sum + s.count, 0);
 
   return (
     <div>
-      <PageHeader
-        title="Overview"
-        subtitle="Real-time snapshot of SHBR operations"
-      />
+      <PageHeader title="Overview" subtitle="Real-time snapshot of SHBR operations" />
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-2 xl:grid-cols-5 gap-4 mb-8">
         <KpiCard
-          title="Total Open Jobs"
-          value={data.kpis.totalOpen}
+          title="Total Jobs"
+          value={loadingKpis ? '…' : (kpis?.totalJobs ?? '—')}
+          icon={<Hash size={18} />}
+        />
+        <KpiCard
+          title="Open Jobs"
+          value={loadingCounts ? '…' : totalOpen}
           icon={<Briefcase size={18} />}
         />
         <KpiCard
           title="Stuck >7 Days"
-          value={data.kpis.stuckOver7Days}
+          value={loadingKpis ? '…' : (kpis?.stuckOver7Days ?? '—')}
           icon={<AlertTriangle size={18} />}
-          accent={data.kpis.stuckOver7Days > 0}
-        />
-        <KpiCard
-          title="Pipeline Value"
-          value={formatCurrency(data.kpis.pipelineValue)}
-          icon={<DollarSign size={18} />}
+          accent={!loadingKpis && (kpis?.stuckOver7Days ?? 0) > 0}
         />
         <KpiCard
           title="Created This Week"
-          value={data.kpis.createdThisWeek}
+          value={loadingKpis ? '…' : (kpis?.createdThisWeek ?? '—')}
           icon={<Calendar size={18} />}
         />
         <KpiCard
           title="Created This Month"
-          value={data.kpis.createdThisMonth}
+          value={loadingKpis ? '…' : (kpis?.createdThisMonth ?? '—')}
           icon={<Calendar size={18} />}
         />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+      {error && <ErrorMessage message={error} />}
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Open Jobs by Status Chart */}
         <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
           <h2 className="text-lg font-semibold text-white mb-4">Open Jobs by Status (Top 10)</h2>
-          {chartData.length > 0 ? (
+          {loadingCounts ? (
+            <LoadingSpinner message="Loading status counts..." />
+          ) : chartData.length > 0 ? (
             <BarChartComponent data={chartData} height={300} />
           ) : (
-            <p className="text-gray-500 text-sm py-8 text-center">No status data available</p>
+            <p className="text-gray-500 text-sm py-8 text-center">No data</p>
           )}
         </div>
 
         {/* Recent Activity */}
         <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
-          <h2 className="text-lg font-semibold text-white mb-4">Recent Activity (Last 10)</h2>
-          <div className="space-y-2">
-            {data.recentJobs.map((job) => (
-              <div
-                key={job.id}
-                className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg text-sm hover:bg-gray-800 transition-colors"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-red-400 text-xs">
-                      {job.attributes?.jobNumber || job.id}
-                    </span>
-                    <span className="text-xs bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">
-                      {job.attributes?.statusName || job.attributes?.status || '—'}
-                    </span>
+          <h2 className="text-lg font-semibold text-white mb-4">Recently Updated Jobs</h2>
+          {loadingRecent ? (
+            <LoadingSpinner message="Loading recent jobs..." />
+          ) : (
+            <div className="space-y-2">
+              {recentJobs.map((job) => (
+                <div key={job.id} className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg text-sm hover:bg-gray-800 transition-colors">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono text-red-400 text-xs">{job.attributes?.jobNumber || job.id}</span>
+                      <span className="text-xs bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">
+                        {job.attributes?.jobType || '—'}
+                      </span>
+                      <span className="text-xs text-gray-500">{job.attributes?.region || ''}</span>
+                    </div>
+                    <p className="text-gray-300 truncate mt-0.5 text-xs">
+                      {[job.attributes?.address?.addressLine1, job.attributes?.address?.suburb, job.attributes?.address?.state].filter(Boolean).join(', ') || '—'}
+                    </p>
+                    <p className="text-gray-600 text-xs mt-0.5">
+                      Updated {formatDate(job.attributes?.updatedAt)} by {job.attributes?.updatedBy || '—'}
+                    </p>
                   </div>
-                  <p className="text-gray-300 truncate mt-0.5">
-                    {job.attributes?.address || job.attributes?.description || '—'}
-                  </p>
-                  <p className="text-gray-600 text-xs mt-0.5">
-                    Updated {formatDate(job.attributes?.updatedAt)} by {job.attributes?.updatedBy || '—'}
-                  </p>
+                  {job.attributes?.primeUrl && (
+                    <a href={String(job.attributes.primeUrl)} target="_blank" rel="noopener noreferrer"
+                      className="ml-3 text-gray-500 hover:text-red-400 flex-shrink-0">
+                      <ExternalLink size={14} />
+                    </a>
+                  )}
                 </div>
-                {job.attributes?.primeUrl && (
-                  <a
-                    href={job.attributes.primeUrl as string}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ml-3 text-gray-500 hover:text-red-400 flex-shrink-0"
-                  >
-                    <ExternalLink size={14} />
-                  </a>
-                )}
-              </div>
-            ))}
-            {data.recentJobs.length === 0 && (
-              <p className="text-gray-500 text-sm py-8 text-center">No recent activity</p>
-            )}
-          </div>
+              ))}
+              {recentJobs.length === 0 && (
+                <p className="text-gray-500 text-sm py-8 text-center">No recent activity</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
