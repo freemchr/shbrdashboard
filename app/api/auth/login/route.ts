@@ -5,7 +5,7 @@ const DASHBOARD_SECRET = process.env.DASHBOARD_SECRET || 'shbr2026';
 export async function POST(req: NextRequest) {
   const { secret, redirect } = await req.json();
 
-  if (secret !== DASHBOARD_SECRET) {
+  if (secret?.trim() !== DASHBOARD_SECRET?.trim()) {
     return NextResponse.json({ error: 'Invalid access code' }, { status: 401 });
   }
 
