@@ -1,48 +1,69 @@
 import { NextResponse } from 'next/server';
-import { primeGetAllPages } from '@/lib/prime-auth';
+import { getAllOpenJobs, getStatusNameMap } from '@/lib/prime-open-jobs';
 import { getCached, setCached } from '@/lib/cache';
-import { isOpenJob, daysSince } from '@/lib/prime-helpers';
-import type { PrimeJob } from '@/lib/prime-helpers';
 
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 export async function GET() {
   try {
-    const cacheKey = 'aging';
+    const cacheKey = 'aging-v3';
     const cached = getCached<unknown>(cacheKey);
     if (cached) return NextResponse.json(cached);
 
-    const jobs = (await primeGetAllPages('/jobs', 100)) as PrimeJob[];
-    const openJobs = jobs.filter(isOpenJob);
+    const [jobs, statusNames] = await Promise.all([
+      getAllOpenJobs(),
+      getStatusNameMap(),
+    ]);
 
-    const over30: PrimeJob[] = [];
-    const over60: PrimeJob[] = [];
-    const over90: PrimeJob[] = [];
+    type Job = {
+      id: string;
+      attributes?: {
+        statusId?: string;
+        createdAt?: string;
+        updatedAt?: string;
+        jobNumber?: string;
+        address?: { addressLine1?: string; suburb?: string; state?: string } | string;
+        jobType?: string;
+        region?: string;
+        authorisedTotalIncludingTax?: number;
+        primeUrl?: string;
+      };
+    };
 
-    for (const job of openJobs) {
-      const age = daysSince(job.attributes?.createdAt);
-      if (age > 90) over90.push(job);
-      else if (age > 60) over60.push(job);
-      else if (age > 30) over30.push(job);
-    }
-
-    const sortOldest = (a: PrimeJob, b: PrimeJob) =>
-      new Date(a.attributes?.createdAt || 0).getTime() -
-      new Date(b.attributes?.createdAt || 0).getTime();
-
-    over30.sort(sortOldest);
-    over60.sort(sortOldest);
-    over90.sort(sortOldest);
+    const now = Date.now();
+    const flat = (jobs as Job[]).map(j => {
+      const addr = j.attributes?.address;
+      const addressStr = typeof addr === 'object' && addr
+        ? [addr.addressLine1, addr.suburb, addr.state].filter(Boolean).join(', ')
+        : String(addr || '—');
+      const daysOpen = j.attributes?.createdAt
+        ? Math.floor((now - new Date(j.attributes.createdAt + ' UTC').getTime()) / 86400000)
+        : 0;
+      return {
+        id: j.id,
+        jobNumber: j.attributes?.jobNumber || j.id,
+        address: addressStr,
+        region: j.attributes?.region || '—',
+        jobType: j.attributes?.jobType || '—',
+        status: statusNames[j.attributes?.statusId || ''] || '—',
+        daysOpen,
+        authorisedTotal: j.attributes?.authorisedTotalIncludingTax || 0,
+        primeUrl: j.attributes?.primeUrl || '',
+        updatedAt: j.attributes?.updatedAt || '',
+      };
+    }).sort((a, b) => b.daysOpen - a.daysOpen);
 
     const result = {
       buckets: {
-        over30: { count: over30.length, jobs: over30 },
-        over60: { count: over60.length, jobs: over60 },
-        over90: { count: over90.length, jobs: over90 },
+        over30: flat.filter(j => j.daysOpen > 30).length,
+        over60: flat.filter(j => j.daysOpen > 60).length,
+        over90: flat.filter(j => j.daysOpen > 90).length,
       },
+      jobs: flat,
     };
 
-    setCached(cacheKey, result, 60 * 60 * 1000); // 1h
+    setCached(cacheKey, result, 30 * 60 * 1000);
     return NextResponse.json(result);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';

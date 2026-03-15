@@ -91,7 +91,7 @@ export default function FinancialPage() {
   const flatZeroDollarJobs: FlatJob[] = zeroDollarJobs.map((j) => ({
     id: j.id,
     jobNumber: j.attributes?.jobNumber || j.id,
-    address: j.attributes?.address || '—',
+    address: typeof j.attributes?.address === 'object' && j.attributes?.address ? [j.attributes.address.addressLine1, j.attributes.address.suburb, j.attributes.address.state].filter(Boolean).join(', ') || '—' : String(j.attributes?.address || '—'),
     status: j.attributes?.statusName || j.attributes?.status || '—',
     region: j.attributes?.region || '—',
     authorisedTotal: 0,
@@ -102,7 +102,7 @@ export default function FinancialPage() {
   const flatInvoicingJobs: FlatJob[] = invoicingJobs.map((j) => ({
     id: j.id,
     jobNumber: j.attributes?.jobNumber || j.id,
-    address: j.attributes?.address || '—',
+    address: typeof j.attributes?.address === 'object' && j.attributes?.address ? [j.attributes.address.addressLine1, j.attributes.address.suburb, j.attributes.address.state].filter(Boolean).join(', ') || '—' : String(j.attributes?.address || '—'),
     status: j.attributes?.statusName || j.attributes?.status || '—',
     region: j.attributes?.region || '—',
     authorisedTotal: j.attributes?.authorisedTotalIncludingTax || 0,

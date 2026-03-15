@@ -72,7 +72,7 @@ export default function PipelinePage() {
           .map((j) => ({
             id: j.id,
             jobNumber: j.attributes?.jobNumber || j.id,
-            address: j.attributes?.address || '—',
+            address: typeof j.attributes?.address === 'object' && j.attributes?.address ? [j.attributes.address.addressLine1, j.attributes.address.suburb, j.attributes.address.state].filter(Boolean).join(', ') || '—' : String(j.attributes?.address || '—'),
             status: j.attributes?.statusName || j.attributes?.status || '—',
             region: j.attributes?.region || '—',
             jobType: j.attributes?.jobType || '—',

@@ -73,7 +73,7 @@ export default function AgingPage() {
   const flatJobs: FlatJob[] = activeJobs.map((j) => ({
     id: j.id,
     jobNumber: j.attributes?.jobNumber || j.id,
-    address: j.attributes?.address || '—',
+    address: typeof j.attributes?.address === 'object' && j.attributes?.address ? [j.attributes.address.addressLine1, j.attributes.address.suburb, j.attributes.address.state].filter(Boolean).join(', ') || '—' : String(j.attributes?.address || '—'),
     region: j.attributes?.region || '—',
     jobType: j.attributes?.jobType || '—',
     status: j.attributes?.statusName || j.attributes?.status || '—',

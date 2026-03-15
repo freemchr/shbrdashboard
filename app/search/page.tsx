@@ -56,7 +56,7 @@ export default function SearchPage() {
         const flat: FlatJob[] = raw.map((j) => ({
           id: j.id,
           jobNumber: j.attributes?.jobNumber || j.id,
-          address: j.attributes?.address || '—',
+          address: typeof j.attributes?.address === 'object' && j.attributes?.address ? [j.attributes.address.addressLine1, j.attributes.address.suburb, j.attributes.address.state].filter(Boolean).join(', ') || '—' : String(j.attributes?.address || '—'),
           clientReference: j.attributes?.clientReference || '',
           description: j.attributes?.description || '',
           status: j.attributes?.statusName || j.attributes?.status || '—',
