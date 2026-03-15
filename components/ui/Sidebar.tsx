@@ -13,6 +13,7 @@ import {
   Search,
   Map,
   FileText,
+  FileEdit,
   Menu,
   X,
 } from 'lucide-react';
@@ -22,6 +23,7 @@ const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/pipeline', label: 'Pipeline', icon: GitBranch },
   { href: '/reports', label: 'Reports', icon: FileText, alert: true },
+  { href: '/report-assist', label: 'Report Assist', icon: FileEdit, alert: true },
   { href: '/bottlenecks', label: 'Bottlenecks', icon: AlertTriangle },
   { href: '/team', label: 'Team', icon: Users },
   { href: '/aging', label: 'Aging', icon: Clock },
