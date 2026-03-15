@@ -144,10 +144,9 @@ export default function MapPage() {
     );
 
   const mapped   = jobs.filter(j => j.lat !== null && j.lng !== null);
-  // "unmapped" = geocoding was attempted but address couldn't be resolved (bad/vague address)
-  const unmapped = jobs.filter(j => j.lat === null && j.failed === true);
-  // "pending" = geocoding not attempted yet (still in queue)
-  const pending  = jobs.filter(j => j.lat === null && !j.failed);
+  // When complete, anything unresolved is a bad address. When still geocoding, it's pending.
+  const unmapped = jobs.filter(j => j.lat === null && (j.failed === true || complete));
+  const pending  = complete ? [] : jobs.filter(j => j.lat === null && !j.failed);
 
   const mapJobs  = applyFilters(mapped);
   const listJobs = applyFilters(listTab === 'mapped' ? mapped : listTab === 'unmapped' ? unmapped : jobs)

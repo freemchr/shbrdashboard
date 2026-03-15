@@ -92,7 +92,7 @@ function flattenJob(j: RawJob, statusNames: Record<string, string>): Omit<Geocod
   };
 }
 
-const CACHE_KEY = 'geocoded-jobs-v5';
+const CACHE_KEY = 'geocoded-jobs-v6';
 
 // Addresses that are definitely not geocodable — skip immediately
 function isSkippableAddress(addr: string): boolean {

@@ -29,7 +29,7 @@ export async function getOpenStatusIds(): Promise<{ id: string; name: string }[]
 
 // Fetch all open jobs efficiently using status ID batches
 export async function getAllOpenJobs(): Promise<unknown[]> {
-  const cacheKey = 'all-open-jobs';
+  const cacheKey = 'all-open-jobs-v2';
   const cached = await getCached<unknown[]>(cacheKey);
   if (cached) return cached;
 
