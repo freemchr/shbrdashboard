@@ -6,7 +6,7 @@
  */
 
 import { primeGet } from './prime-auth';
-import { getCached, setCached } from './cache';
+import { getCached, setCached } from './blob-cache';
 
 interface StatusData {
   data: { id: string; attributes: { name: string; statusType: string } }[];
@@ -15,7 +15,7 @@ interface StatusData {
 // Get open status IDs (cached 24h)
 export async function getOpenStatusIds(): Promise<{ id: string; name: string }[]> {
   const cacheKey = 'open-status-ids';
-  const cached = getCached<{ id: string; name: string }[]>(cacheKey);
+  const cached = await getCached<{ id: string; name: string }[]>(cacheKey);
   if (cached) return cached;
 
   const data = await primeGet('/statuses?per_page=200') as StatusData;
@@ -23,14 +23,14 @@ export async function getOpenStatusIds(): Promise<{ id: string; name: string }[]
     .filter(s => s.attributes?.statusType === 'Open')
     .map(s => ({ id: s.id, name: s.attributes.name }));
 
-  setCached(cacheKey, openStatuses, 24 * 60 * 60 * 1000);
+  await setCached(cacheKey, openStatuses, 24 * 60 * 60 * 1000);
   return openStatuses;
 }
 
 // Fetch all open jobs efficiently using status ID batches
 export async function getAllOpenJobs(): Promise<unknown[]> {
   const cacheKey = 'all-open-jobs';
-  const cached = getCached<unknown[]>(cacheKey);
+  const cached = await getCached<unknown[]>(cacheKey);
   if (cached) return cached;
 
   const openStatuses = await getOpenStatusIds();
@@ -62,7 +62,7 @@ export async function getAllOpenJobs(): Promise<unknown[]> {
     }
   }
 
-  setCached(cacheKey, allJobs, 30 * 60 * 1000); // 30 min
+  await setCached(cacheKey, allJobs, 30 * 60 * 1000); // 30 min
   return allJobs;
 }
 

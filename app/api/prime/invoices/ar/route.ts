@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { primeGetAllPages } from '@/lib/prime-auth';
-import { getCached, setCached } from '@/lib/cache';
+import { getCached, setCached } from '@/lib/blob-cache';
 import type { PrimeInvoice } from '@/lib/prime-helpers';
 
 export const runtime = 'nodejs';
@@ -8,7 +8,7 @@ export const runtime = 'nodejs';
 export async function GET() {
   try {
     const cacheKey = 'invoices-ar';
-    const cached = getCached<unknown>(cacheKey);
+    const cached = await getCached<unknown>(cacheKey);
     if (cached) return NextResponse.json(cached);
 
     const invoices = (await primeGetAllPages('/accounts-receivable-invoices', 100)) as PrimeInvoice[];
@@ -26,7 +26,7 @@ export async function GET() {
     }
 
     const result = { byStatus, grandTotal, count: invoices.length };
-    setCached(cacheKey, result, 60 * 60 * 1000); // 1h
+    await setCached(cacheKey, result, 60 * 60 * 1000); // 1h
     return NextResponse.json(result);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';

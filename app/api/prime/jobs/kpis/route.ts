@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { primeGet } from '@/lib/prime-auth';
-import { getCached, setCached } from '@/lib/cache';
+import { getCached, setCached } from '@/lib/blob-cache';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -8,7 +8,7 @@ export const maxDuration = 60;
 export async function GET() {
   try {
     const cacheKey = 'kpis-v1';
-    const cached = getCached<unknown>(cacheKey);
+    const cached = await getCached<unknown>(cacheKey);
     if (cached) return NextResponse.json(cached);
 
     const now = new Date();
@@ -48,7 +48,7 @@ export async function GET() {
       stuckOver7Days,
     };
 
-    setCached(cacheKey, result, 30 * 60 * 1000); // 30 min
+    await setCached(cacheKey, result, 30 * 60 * 1000); // 30 min
     return NextResponse.json(result);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAllOpenJobs, getStatusNameMap } from '@/lib/prime-open-jobs';
-import { getCached, setCached } from '@/lib/cache';
+import { getCached, setCached } from '@/lib/blob-cache';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -8,7 +8,7 @@ export const maxDuration = 60;
 export async function GET() {
   try {
     const cacheKey = 'aging-v3';
-    const cached = getCached<unknown>(cacheKey);
+    const cached = await getCached<unknown>(cacheKey);
     if (cached) return NextResponse.json(cached);
 
     const [jobs, statusNames] = await Promise.all([
@@ -63,7 +63,7 @@ export async function GET() {
       jobs: flat,
     };
 
-    setCached(cacheKey, result, 30 * 60 * 1000);
+    await setCached(cacheKey, result, 30 * 60 * 1000);
     return NextResponse.json(result);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { primeGet } from '@/lib/prime-auth';
-import { getCached, setCached } from '@/lib/cache';
+import { getCached, setCached } from '@/lib/blob-cache';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -8,7 +8,7 @@ export const maxDuration = 60;
 export async function GET() {
   try {
     const cacheKey = 'pipeline-v2';
-    const cached = getCached<unknown>(cacheKey);
+    const cached = await getCached<unknown>(cacheKey);
     if (cached) return NextResponse.json(cached);
 
     // Build last 12 weeks
@@ -60,7 +60,7 @@ export async function GET() {
     weeks.forEach((w, i) => { w.count = counts[i]; });
 
     const result = weeks.map(({ week, label, count }) => ({ week, label, count }));
-    setCached(cacheKey, result, 2 * 60 * 60 * 1000);
+    await setCached(cacheKey, result, 2 * 60 * 60 * 1000);
     return NextResponse.json(result);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
