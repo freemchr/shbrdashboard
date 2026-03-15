@@ -130,17 +130,20 @@ export default function OverviewPage() {
   // Dynamic chart width: at least 600px, 60px per bar
   const chartWidth = Math.max(600, chartData.length * 60);
 
+  // Prime returns dates as "2026-03-15 09:00:00" — replace space with T so all browsers parse correctly
+  const pd = (s?: string) => s ? new Date(s.replace(' ', 'T')) : null;
+
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const now = new Date();
   const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay()); weekStart.setHours(0,0,0,0);
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const stuckJobs  = openJobs.filter(j => j.updatedAt && new Date(j.updatedAt) <= sevenDaysAgo)
-    .sort((a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime());
-  const weekJobs   = openJobs.filter(j => j.createdAt && new Date(j.createdAt) >= weekStart)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  const monthJobs  = openJobs.filter(j => j.createdAt && new Date(j.createdAt) >= monthStart)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const stuckJobs = openJobs.filter(j => { const d = pd(j.updatedAt); return d && d <= sevenDaysAgo; })
+    .sort((a, b) => (pd(a.updatedAt)?.getTime() ?? 0) - (pd(b.updatedAt)?.getTime() ?? 0));
+  const weekJobs  = openJobs.filter(j => { const d = pd(j.createdAt); return d && d >= weekStart; })
+    .sort((a, b) => (pd(b.createdAt)?.getTime() ?? 0) - (pd(a.createdAt)?.getTime() ?? 0));
+  const monthJobs = openJobs.filter(j => { const d = pd(j.createdAt); return d && d >= monthStart; })
+    .sort((a, b) => (pd(b.createdAt)?.getTime() ?? 0) - (pd(a.createdAt)?.getTime() ?? 0));
 
   const kpiPanelData = {
     open:  { title: 'All Open Jobs',              jobs: [...openJobs].sort((a,b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()) },
