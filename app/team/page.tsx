@@ -4,14 +4,29 @@ import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ErrorMessage, LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { DataTable, Column } from '@/components/ui/DataTable';
-import type { PrimeJob } from '@/lib/prime-helpers';
+import { Users } from 'lucide-react';
+import { KpiCard } from '@/components/ui/KpiCard';
+
+interface FlatOpenJob {
+  id: string;
+  jobNumber: string;
+  address: string;
+  status: string;
+  jobType: string;
+  region: string;
+  primeUrl: string;
+  authorisedTotal: number;
+  createdAt: string;
+  updatedAt: string;
+  updatedBy: string;
+  createdBy: string;
+}
 
 interface TeamMember {
-  id: string;
   name: string;
+  openJobsCount: number;
   updatedThisWeek: number;
   updatedThisMonth: number;
-  openJobsCount: number;
 }
 
 export default function TeamPage() {
@@ -22,59 +37,41 @@ export default function TeamPage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch('/api/prime/jobs?per_page=200');
-        if (!res.ok) throw new Error('Failed to load jobs');
-        const data = await res.json();
-        const jobs: PrimeJob[] = data.data || [];
+        // Use the open-jobs endpoint — has all 217 open jobs with updatedBy populated
+        const res = await fetch('/api/prime/jobs/open');
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
+        const json = await res.json();
+        if (json.error) throw new Error(json.error);
+
+        const jobs: FlatOpenJob[] = Array.isArray(json) ? json : [];
 
         const now = new Date();
         const weekStart = new Date(now);
         weekStart.setDate(now.getDate() - now.getDay());
         weekStart.setHours(0, 0, 0, 0);
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-        // Focus on updatedBy (string name) for activity
         const memberMap: Record<string, TeamMember> = {};
 
-        // Only jobs updated in last 30 days
-        const recentJobs = jobs.filter((j) => {
-          const updatedAt = j.attributes?.updatedAt;
-          return updatedAt && new Date(updatedAt) >= thirtyDaysAgo;
-        });
-
-        for (const job of recentJobs) {
-          const name = job.attributes?.updatedBy || 'Unknown';
+        for (const job of jobs) {
+          const name = job.updatedBy || 'Unknown';
           if (!memberMap[name]) {
-            memberMap[name] = {
-              id: name,
-              name,
-              updatedThisWeek: 0,
-              updatedThisMonth: 0,
-              openJobsCount: 0,
-            };
+            memberMap[name] = { name, openJobsCount: 0, updatedThisWeek: 0, updatedThisMonth: 0 };
           }
 
-          const updatedAt = new Date(job.attributes?.updatedAt || 0);
-          if (updatedAt >= weekStart) memberMap[name].updatedThisWeek++;
-          if (updatedAt >= monthStart) memberMap[name].updatedThisMonth++;
-        }
+          // Every job in this list is open — count it
+          memberMap[name].openJobsCount++;
 
-        // Count open jobs per updatedBy
-        const openJobs = jobs.filter((j) => {
-          const st = (j.attributes?.statusType || '').toLowerCase();
-          return st === 'open' || st === 'active';
-        });
-
-        for (const job of openJobs) {
-          const name = job.attributes?.updatedBy || 'Unknown';
-          if (memberMap[name]) {
-            memberMap[name].openJobsCount++;
+          // Activity from updatedAt
+          if (job.updatedAt) {
+            const updatedAt = new Date(job.updatedAt);
+            if (updatedAt >= weekStart) memberMap[name].updatedThisWeek++;
+            if (updatedAt >= monthStart) memberMap[name].updatedThisMonth++;
           }
         }
 
         const sorted = Object.values(memberMap).sort(
-          (a, b) => b.updatedThisMonth - a.updatedThisMonth
+          (a, b) => b.openJobsCount - a.openJobsCount
         );
 
         setTeam(sorted);
@@ -91,7 +88,22 @@ export default function TeamPage() {
   if (error) return <ErrorMessage message={error} />;
 
   const columns: Column<TeamMember>[] = [
-    { key: 'name', label: 'Team Member', sortable: true },
+    {
+      key: 'name',
+      label: 'Team Member',
+      sortable: true,
+      render: (m) => <span className="font-medium text-white">{m.name}</span>,
+    },
+    {
+      key: 'openJobsCount',
+      label: 'Open Jobs',
+      sortable: true,
+      render: (m) => (
+        <span className={`font-mono font-bold ${m.openJobsCount > 20 ? 'text-yellow-400' : 'text-gray-300'}`}>
+          {m.openJobsCount}
+        </span>
+      ),
+    },
     {
       key: 'updatedThisWeek',
       label: 'Updated This Week',
@@ -110,52 +122,46 @@ export default function TeamPage() {
         <span className="font-mono text-gray-300">{m.updatedThisMonth}</span>
       ),
     },
-    {
-      key: 'openJobsCount',
-      label: 'Open Jobs',
-      sortable: true,
-      render: (m) => (
-        <span className={`font-mono ${m.openJobsCount > 10 ? 'text-yellow-400' : 'text-gray-300'}`}>
-          {m.openJobsCount}
-        </span>
-      ),
-    },
   ];
+
+  const totalUpdatedThisWeek = team.reduce((s, m) => s + m.updatedThisWeek, 0);
+  const totalUpdatedThisMonth = team.reduce((s, m) => s + m.updatedThisMonth, 0);
 
   return (
     <div>
       <PageHeader
         title="Team"
-        subtitle="Activity by team member (last 30 days)"
+        subtitle="Open job ownership & activity from last update (across all open jobs)"
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
-          <p className="text-gray-400 text-sm">Active Members</p>
-          <p className="text-3xl font-bold text-white mt-1">{team.length}</p>
-        </div>
-        <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
-          <p className="text-gray-400 text-sm">Total Updates This Week</p>
-          <p className="text-3xl font-bold text-white mt-1">
-            {team.reduce((sum, m) => sum + m.updatedThisWeek, 0)}
-          </p>
-        </div>
-        <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
-          <p className="text-gray-400 text-sm">Total Updates This Month</p>
-          <p className="text-3xl font-bold text-white mt-1">
-            {team.reduce((sum, m) => sum + m.updatedThisMonth, 0)}
-          </p>
-        </div>
+        <KpiCard
+          title="Active Members"
+          value={team.length}
+          icon={<Users size={18} />}
+        />
+        <KpiCard
+          title="Jobs Updated This Week"
+          value={totalUpdatedThisWeek}
+          icon={<Users size={18} />}
+        />
+        <KpiCard
+          title="Jobs Updated This Month"
+          value={totalUpdatedThisMonth}
+          icon={<Users size={18} />}
+        />
       </div>
 
       <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
-        <h2 className="text-base font-semibold text-white mb-4">Team Activity</h2>
+        <h2 className="text-base font-semibold text-white mb-4">
+          Team Activity (Open Jobs)
+        </h2>
         <DataTable
           columns={columns}
           data={team}
-          keyFn={(item) => item.id}
+          keyFn={(item) => item.name}
           pageSize={50}
-          emptyMessage="No team activity found for the last 30 days."
+          emptyMessage="No team activity found in open jobs."
         />
       </div>
     </div>

@@ -5,21 +5,17 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { ErrorMessage, LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { formatCurrency, formatDate, daysSince } from '@/lib/prime-helpers';
-import type { PrimeJob } from '@/lib/prime-helpers';
+import { formatCurrency, formatDate } from '@/lib/prime-helpers';
 import { ExternalLink, Clock } from 'lucide-react';
 
-interface AgingBucket {
-  count: number;
-  jobs: PrimeJob[];
-}
-
+// Shape returned by /api/prime/jobs/aging
 interface AgingData {
   buckets: {
-    over30: AgingBucket;
-    over60: AgingBucket;
-    over90: AgingBucket;
+    over30: number;
+    over60: number;
+    over90: number;
   };
+  jobs: FlatJob[];
 }
 
 interface FlatJob {
@@ -31,7 +27,7 @@ interface FlatJob {
   status: string;
   daysOpen: number;
   authorisedTotal: number;
-  createdAt: string;
+  updatedAt: string;
   primeUrl: string;
 }
 
@@ -47,8 +43,10 @@ export default function AgingPage() {
     async function load() {
       try {
         const res = await fetch('/api/prime/jobs/aging');
-        if (!res.ok) throw new Error('Failed to load aging data');
-        setData(await res.json());
+        if (!res.ok) throw new Error(`Aging API error: ${res.status}`);
+        const json = await res.json();
+        if (json.error) throw new Error(json.error);
+        setData(json);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load');
       } finally {
@@ -62,43 +60,26 @@ export default function AgingPage() {
   if (error) return <ErrorMessage message={error} />;
   if (!data) return null;
 
-  const getBucketJobs = (): PrimeJob[] => {
-    if (threshold === 90) return data.buckets.over90.jobs;
-    if (threshold === 60) return [...data.buckets.over60.jobs, ...data.buckets.over90.jobs];
-    return [...data.buckets.over30.jobs, ...data.buckets.over60.jobs, ...data.buckets.over90.jobs];
-  };
-
-  const activeJobs = getBucketJobs();
-
-  const flatJobs: FlatJob[] = activeJobs.map((j) => ({
-    id: j.id,
-    jobNumber: j.attributes?.jobNumber || j.id,
-    address: typeof j.attributes?.address === 'object' && j.attributes?.address ? [j.attributes.address.addressLine1, j.attributes.address.suburb, j.attributes.address.state].filter(Boolean).join(', ') || '—' : String(j.attributes?.address || '—'),
-    region: j.attributes?.region || '—',
-    jobType: j.attributes?.jobType || '—',
-    status: j.attributes?.statusName || j.attributes?.status || '—',
-    daysOpen: daysSince(j.attributes?.createdAt),
-    authorisedTotal: j.attributes?.authorisedTotalIncludingTax || 0,
-    createdAt: j.attributes?.createdAt || '',
-    primeUrl: (j.attributes?.primeUrl as string) || '',
-  }));
-
-  flatJobs.sort((a, b) => a.daysOpen - b.daysOpen);
+  const filteredJobs = data.jobs.filter(j => j.daysOpen > threshold);
 
   const columns: Column<FlatJob>[] = [
-    { key: 'jobNumber', label: 'Job #', sortable: true, render: (j) => (
-      <span className="font-mono text-red-400 text-xs">{j.jobNumber}</span>
-    )},
-    { key: 'address', label: 'Address', sortable: true },
-    { key: 'region', label: 'Region', sortable: true },
-    { key: 'jobType', label: 'Type', sortable: true },
-    { key: 'status', label: 'Status', sortable: true },
+    {
+      key: 'jobNumber', label: 'Job #', sortable: true, render: (j) => (
+        j.primeUrl
+          ? <a href={j.primeUrl} target="_blank" rel="noopener noreferrer" className="font-mono text-red-400 text-xs hover:text-red-300 underline underline-offset-2">{j.jobNumber}</a>
+          : <span className="font-mono text-red-400 text-xs">{j.jobNumber}</span>
+      )
+    },
+    { key: 'address', label: 'Address', sortable: true, render: (j) => <span className="text-xs">{j.address}</span> },
+    { key: 'region', label: 'Region', sortable: true, render: (j) => <span className="text-xs text-gray-400">{j.region}</span> },
+    { key: 'jobType', label: 'Type', sortable: true, render: (j) => <span className="text-xs">{j.jobType}</span> },
+    { key: 'status', label: 'Status', sortable: true, render: (j) => <span className="text-xs">{j.status}</span> },
     {
       key: 'daysOpen',
       label: 'Days Open',
       sortable: true,
       render: (j) => (
-        <span className={`font-bold font-mono ${
+        <span className={`font-bold font-mono text-sm ${
           j.daysOpen > 90 ? 'text-red-500' : j.daysOpen > 60 ? 'text-orange-400' : 'text-yellow-400'
         }`}>
           {j.daysOpen}d
@@ -109,13 +90,13 @@ export default function AgingPage() {
       key: 'authorisedTotal',
       label: 'Auth. Total',
       sortable: true,
-      render: (j) => formatCurrency(j.authorisedTotal),
+      render: (j) => <span className="text-xs">{formatCurrency(j.authorisedTotal)}</span>,
     },
     {
-      key: 'createdAt',
-      label: 'Created',
+      key: 'updatedAt',
+      label: 'Last Updated',
       sortable: true,
-      render: (j) => formatDate(j.createdAt),
+      render: (j) => <span className="text-xs text-gray-500">{formatDate(j.updatedAt)}</span>,
     },
     {
       key: 'primeUrl',
@@ -131,27 +112,27 @@ export default function AgingPage() {
 
   return (
     <div>
-      <PageHeader title="Aging Jobs" subtitle="Open jobs by age threshold" />
+      <PageHeader title="Aging Jobs" subtitle="Open jobs by how long they've been open" />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <KpiCard
           title=">30 Days Open"
-          value={data.buckets.over30.count}
+          value={data.buckets.over30}
           icon={<Clock size={18} />}
           subtitle="Needs attention"
         />
         <KpiCard
           title=">60 Days Open"
-          value={data.buckets.over60.count}
+          value={data.buckets.over60}
           icon={<Clock size={18} />}
-          accent={data.buckets.over60.count > 0}
+          accent={data.buckets.over60 > 0}
           subtitle="Overdue"
         />
         <KpiCard
           title=">90 Days Open"
-          value={data.buckets.over90.count}
+          value={data.buckets.over90}
           icon={<Clock size={18} />}
-          accent={data.buckets.over90.count > 0}
+          accent={data.buckets.over90 > 0}
           subtitle="Critical"
         />
       </div>
@@ -159,7 +140,7 @@ export default function AgingPage() {
       <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <h2 className="text-base font-semibold text-white">
-            Jobs Older Than Threshold ({activeJobs.length})
+            Jobs Older Than {threshold} Days ({filteredJobs.length})
           </h2>
           <div className="flex gap-2">
             {THRESHOLD_OPTIONS.map((t) => (
@@ -179,7 +160,7 @@ export default function AgingPage() {
         </div>
         <DataTable
           columns={columns}
-          data={flatJobs}
+          data={filteredJobs}
           keyFn={(item) => item.id}
           pageSize={25}
           emptyMessage={`No open jobs older than ${threshold} days.`}

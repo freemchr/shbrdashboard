@@ -11,6 +11,7 @@ import {
   Clock,
   DollarSign,
   Search,
+  Map,
   Menu,
   X,
 } from 'lucide-react';
@@ -24,6 +25,7 @@ const navItems = [
   { href: '/aging', label: 'Aging', icon: Clock },
   { href: '/financial', label: 'Financial', icon: DollarSign },
   { href: '/search', label: 'Job Search', icon: Search },
+  { href: '/map', label: 'Jobs Map', icon: Map },
 ];
 
 function NavItem({ href, label, icon: Icon, active }: {
