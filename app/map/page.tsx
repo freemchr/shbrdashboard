@@ -3,9 +3,12 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { LoadingSpinner, ErrorMessage } from '@/components/ui/LoadingSpinner';
-import { MapPin, RefreshCw, AlertTriangle, CheckCircle } from 'lucide-react';
+import { MapPin, RefreshCw, AlertTriangle, CheckCircle, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { formatCurrency } from '@/lib/prime-helpers';
+
+type SortKey = 'jobNumber' | 'address' | 'status' | 'region' | 'jobType' | 'authorisedTotal';
+type SortDir = 'asc' | 'desc';
 
 const JobMap = dynamic(
   () => import('@/components/ui/JobMap').then(m => m.JobMap),
@@ -50,6 +53,15 @@ export default function MapPage() {
   const [regionFilter, setRegionFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [listTab, setListTab] = useState<'mapped' | 'unmapped' | 'all'>('mapped');
+
+  // Sorting
+  const [sortKey, setSortKey] = useState<SortKey>('jobNumber');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir('asc'); }
+  };
 
   const geocodingRef = useRef(false);
 
@@ -139,7 +151,15 @@ export default function MapPage() {
 
   const mapJobs  = applyFilters(mapped);
   const listJobs = applyFilters(listTab === 'mapped' ? mapped : listTab === 'unmapped' ? unmapped : jobs)
-    .sort((a, b) => (a.jobNumber > b.jobNumber ? 1 : -1));
+    .slice()
+    .sort((a, b) => {
+      const av = a[sortKey] ?? '';
+      const bv = b[sortKey] ?? '';
+      const cmp = typeof av === 'number' && typeof bv === 'number'
+        ? av - bv
+        : String(av).localeCompare(String(bv), undefined, { numeric: true });
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
 
   const pct = total > 0 ? Math.round((geocoded / total) * 100) : 0;
 
@@ -284,12 +304,29 @@ export default function MapPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-xs text-gray-500 border-b border-gray-800">
-                <th className="text-left py-2 pr-4 font-medium">Job #</th>
-                <th className="text-left py-2 pr-4 font-medium">Address</th>
-                <th className="text-left py-2 pr-4 font-medium">Status</th>
-                <th className="text-left py-2 pr-4 font-medium">Region</th>
-                <th className="text-left py-2 pr-4 font-medium">Type</th>
-                <th className="text-left py-2 pr-4 font-medium">Auth Total</th>
+                {([
+                  { key: 'jobNumber',       label: 'Job #' },
+                  { key: 'address',         label: 'Address' },
+                  { key: 'status',          label: 'Status' },
+                  { key: 'region',          label: 'Region' },
+                  { key: 'jobType',         label: 'Type' },
+                  { key: 'authorisedTotal', label: 'Auth Total' },
+                ] as { key: SortKey; label: string }[]).map(col => (
+                  <th key={col.key}
+                    onClick={() => handleSort(col.key)}
+                    className="text-left py-2 pr-4 font-medium cursor-pointer select-none hover:text-white transition-colors whitespace-nowrap"
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      {col.label}
+                      {sortKey === col.key
+                        ? sortDir === 'asc'
+                          ? <ChevronUp size={12} className="text-red-400" />
+                          : <ChevronDown size={12} className="text-red-400" />
+                        : <ChevronsUpDown size={12} className="text-gray-700" />
+                      }
+                    </span>
+                  </th>
+                ))}
                 <th className="text-left py-2 font-medium">Pin</th>
               </tr>
             </thead>
