@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { BarChartComponent } from '@/components/charts/BarChartComponent';
@@ -20,6 +21,7 @@ interface Kpis {
 interface StatusCount { status: string; count: number; statusType: string; }
 
 export default function OverviewPage() {
+  const router = useRouter();
   const [recentJobs, setRecentJobs] = useState<PrimeJob[]>([]);
   const [kpis, setKpis] = useState<Kpis | null>(null);
   const [openCounts, setOpenCounts] = useState<StatusCount[]>([]);
@@ -93,11 +95,16 @@ export default function OverviewPage() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Open Jobs by Status Chart */}
         <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
-          <h2 className="text-lg font-semibold text-white mb-4">Open Jobs by Status (Top 10)</h2>
+          <h2 className="text-lg font-semibold text-white mb-1">Open Jobs by Status (Top 10)</h2>
+          <p className="text-xs text-gray-500 mb-4">Click a bar to drill into those jobs →</p>
           {loadingCounts ? (
             <LoadingSpinner message="Loading status counts..." />
           ) : chartData.length > 0 ? (
-            <BarChartComponent data={chartData} height={300} />
+            <BarChartComponent
+              data={chartData}
+              height={300}
+              onBarClick={(name) => router.push(`/pipeline?status=${encodeURIComponent(name)}`)}
+            />
           ) : (
             <p className="text-gray-500 text-sm py-8 text-center">No data</p>
           )}
@@ -114,7 +121,14 @@ export default function OverviewPage() {
                 <div key={job.id} className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg text-sm hover:bg-gray-800 transition-colors">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono text-red-400 text-xs">{job.attributes?.jobNumber || job.id}</span>
+                      {job.attributes?.primeUrl ? (
+                        <a href={String(job.attributes.primeUrl)} target="_blank" rel="noopener noreferrer"
+                          className="font-mono text-red-400 text-xs hover:text-red-300 underline underline-offset-2">
+                          {job.attributes?.jobNumber || job.id}
+                        </a>
+                      ) : (
+                        <span className="font-mono text-red-400 text-xs">{job.attributes?.jobNumber || job.id}</span>
+                      )}
                       <span className="text-xs bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">
                         {job.attributes?.jobType || '—'}
                       </span>
