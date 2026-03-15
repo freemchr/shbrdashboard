@@ -6,7 +6,8 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { BarChartComponent } from '@/components/charts/BarChartComponent';
 import { ErrorMessage, LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatCurrency, formatDate } from '@/lib/prime-helpers';
-import { ExternalLink, X } from 'lucide-react';
+import { ExternalLink, X, Download } from 'lucide-react';
+import { downloadCSV } from '@/lib/export-csv';
 
 interface StatusCount { status: string; count: number; statusType: string; }
 interface WeekData { week: string; label: string; count: number; }
@@ -122,10 +123,22 @@ function PipelineContent() {
         )}
       </div>
 
-      {/* Job count */}
-      <div className="text-sm text-gray-500 mb-3">
-        Showing <span className="text-white font-medium">{filtered.length}</span> of {allJobs.length} open jobs
-        {statusFilter && <span className="ml-2 text-red-400 font-medium">— {statusFilter}</span>}
+      {/* Job count + export */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-sm text-gray-500">
+          Showing <span className="text-white font-medium">{filtered.length}</span> of {allJobs.length} open jobs
+          {statusFilter && <span className="ml-2 text-red-400 font-medium">— {statusFilter}</span>}
+        </div>
+        <button
+          onClick={() => downloadCSV(
+            `pipeline-${new Date().toISOString().split('T')[0]}.csv`,
+            ['Job #', 'Address', 'Client Ref', 'Status', 'Type', 'Region', 'Auth Total', 'Updated', 'Updated By', 'Prime URL'],
+            filtered.map(j => [j.jobNumber, j.address, j.clientReference, j.status, j.jobType, j.region, j.authorisedTotal, j.updatedAt, j.updatedBy, j.primeUrl])
+          )}
+          className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-xs px-3 py-1.5 rounded-lg transition-colors"
+        >
+          <Download size={13} /> Export CSV
+        </button>
       </div>
 
       {/* Jobs table */}

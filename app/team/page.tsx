@@ -177,6 +177,7 @@ export default function TeamPage() {
             keyFn={(m) => m.id}
             pageSize={50}
             emptyMessage="No team members found."
+            exportFilename={`team-workload-${new Date().toISOString().split('T')[0]}.csv`}
           />
         )}
       </div>

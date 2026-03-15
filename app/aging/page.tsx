@@ -164,6 +164,7 @@ export default function AgingPage() {
           keyFn={(item) => item.id}
           pageSize={25}
           emptyMessage={`No open jobs older than ${threshold} days.`}
+          exportFilename={`aging-over${threshold}days-${new Date().toISOString().split('T')[0]}.csv`}
         />
       </div>
     </div>

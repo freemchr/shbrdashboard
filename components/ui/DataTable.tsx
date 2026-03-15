@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, Download } from 'lucide-react';
+import { downloadCSV } from '@/lib/export-csv';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface Column<T = any> {
@@ -20,6 +21,7 @@ interface DataTableProps<T = any> {
   loading?: boolean;
   emptyMessage?: string;
   pageSize?: number;
+  exportFilename?: string; // if set, shows Export CSV button
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -30,6 +32,7 @@ export function DataTable<T = any>({
   loading,
   emptyMessage = 'No data found.',
   pageSize = 20,
+  exportFilename,
 }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
@@ -66,8 +69,30 @@ export function DataTable<T = any>({
   const totalPages = Math.ceil(sorted.length / pageSize);
   const pageData = sorted.slice(page * pageSize, (page + 1) * pageSize);
 
+  const handleExport = () => {
+    const headers = columns.filter(c => c.label).map(c => c.label);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows = sorted.map((item: any) =>
+      columns.filter(c => c.label).map(c => {
+        const val = item[c.key];
+        return val == null ? '' : String(val);
+      })
+    );
+    downloadCSV(exportFilename || 'export.csv', headers, rows);
+  };
+
   return (
     <div className="flex flex-col gap-3">
+      {exportFilename && (
+        <div className="flex justify-end">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-xs px-3 py-1.5 rounded-lg transition-colors"
+          >
+            <Download size={13} /> Export CSV
+          </button>
+        </div>
+      )}
       <div className="overflow-x-auto rounded-xl border border-gray-800">
         <table className="w-full text-sm">
           <thead className="bg-gray-900 border-b border-gray-800">
