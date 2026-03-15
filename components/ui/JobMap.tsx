@@ -1,8 +1,16 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+/**
+ * JobMap — renders open jobs as red pins on an OpenStreetMap tile layer.
+ * - Dynamically imports Leaflet (SSR-safe, client-only)
+ * - Leaflet CSS loaded via next/head to avoid raw <link> in JSX
+ * - Re-renders the pin layer when the jobs array changes without destroying the map
+ */
 
-interface GeocodedJob {
+import { useEffect, useRef } from 'react';
+import type { Map as LeafletMap, LayerGroup } from 'leaflet';
+
+export interface GeocodedJob {
   id: string;
   jobNumber: string;
   address: string;
@@ -20,16 +28,43 @@ interface JobMapProps {
   height?: number;
 }
 
-export function JobMap({ jobs, height = 600 }: JobMapProps) {
+const AU_CENTRE: [number, number] = [-33.86, 151.21]; // Sydney default
+const DEFAULT_ZOOM = 9;
+
+function formatAUD(n: number): string {
+  return new Intl.NumberFormat('en-AU', {
+    style: 'currency',
+    currency: 'AUD',
+    maximumFractionDigits: 0,
+  }).format(n);
+}
+
+export function JobMap({ jobs, height = 580 }: JobMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<ReturnType<typeof import('leaflet')['map']> | null>(null);
+  const mapRef = useRef<LeafletMap | null>(null);
+  const layerRef = useRef<LayerGroup | null>(null);
+  const initializedRef = useRef(false);
 
+  // Init map once
   useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
+    if (initializedRef.current || !containerRef.current) return;
+    initializedRef.current = true;
 
-    // Dynamically import leaflet (SSR-safe)
+    // Leaflet CSS — inject once
+    if (!document.getElementById('leaflet-css')) {
+      const link = document.createElement('link');
+      link.id = 'leaflet-css';
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      link.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+      link.crossOrigin = '';
+      document.head.appendChild(link);
+    }
+
     import('leaflet').then((L) => {
-      // Fix default marker icons (webpack/Next.js issue)
+      if (!containerRef.current || mapRef.current) return;
+
+      // Fix default icon paths broken by webpack
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
@@ -38,8 +73,7 @@ export function JobMap({ jobs, height = 600 }: JobMapProps) {
         shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
       });
 
-      // Centre on Australia
-      const map = L.map(containerRef.current!).setView([-33.8, 151.0], 9);
+      const map = L.map(containerRef.current!).setView(AU_CENTRE, DEFAULT_ZOOM);
       mapRef.current = map;
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -47,9 +81,30 @@ export function JobMap({ jobs, height = 600 }: JobMapProps) {
         maxZoom: 19,
       }).addTo(map);
 
-      const plotted = jobs.filter(j => j.lat !== null && j.lng !== null);
+      layerRef.current = L.layerGroup().addTo(map);
+    });
 
-      // Custom red marker icon to match SHBR brand
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        layerRef.current = null;
+        initializedRef.current = false;
+      }
+    };
+  }, []);
+
+  // Re-render pins whenever jobs change
+  useEffect(() => {
+    if (!mapRef.current || !layerRef.current) return;
+
+    import('leaflet').then((L) => {
+      if (!layerRef.current) return;
+      layerRef.current.clearLayers();
+
+      const plotted = jobs.filter(j => j.lat !== null && j.lng !== null);
+      if (plotted.length === 0) return;
+
       const redIcon = new L.Icon({
         iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
         shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
@@ -66,49 +121,49 @@ export function JobMap({ jobs, height = 600 }: JobMapProps) {
         const lng = job.lng as number;
         bounds.push([lat, lng]);
 
-        const totalStr = job.authorisedTotal
-          ? new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 }).format(job.authorisedTotal)
-          : '—';
-
+        const total = job.authorisedTotal ? formatAUD(job.authorisedTotal) : '—';
         const popup = `
-          <div style="min-width:200px; font-family: sans-serif;">
-            <div style="font-weight:700; font-size:13px; margin-bottom:4px; color:#dc2626;">
-              ${job.jobNumber}
-            </div>
-            <div style="font-size:11px; color:#555; margin-bottom:6px;">${job.address}</div>
-            <table style="font-size:11px; width:100%; border-collapse:collapse;">
-              <tr><td style="color:#888; padding:1px 4px 1px 0;">Status</td><td style="font-weight:600;">${job.status}</td></tr>
-              <tr><td style="color:#888; padding:1px 4px 1px 0;">Type</td><td>${job.jobType}</td></tr>
-              <tr><td style="color:#888; padding:1px 4px 1px 0;">Region</td><td>${job.region}</td></tr>
-              <tr><td style="color:#888; padding:1px 4px 1px 0;">Auth Total</td><td>${totalStr}</td></tr>
+          <div style="min-width:210px;font-family:system-ui,sans-serif;font-size:12px;">
+            <div style="font-weight:700;font-size:14px;color:#dc2626;margin-bottom:4px;">${job.jobNumber}</div>
+            <div style="color:#666;margin-bottom:8px;line-height:1.4;">${job.address}</div>
+            <table style="width:100%;border-collapse:collapse;">
+              <tr><td style="color:#888;padding:2px 6px 2px 0;white-space:nowrap;">Status</td><td style="font-weight:600;">${job.status}</td></tr>
+              <tr><td style="color:#888;padding:2px 6px 2px 0;">Type</td><td>${job.jobType}</td></tr>
+              <tr><td style="color:#888;padding:2px 6px 2px 0;">Region</td><td>${job.region}</td></tr>
+              <tr><td style="color:#888;padding:2px 6px 2px 0;">Auth Total</td><td style="font-weight:600;">${total}</td></tr>
             </table>
-            ${job.primeUrl ? `<a href="${job.primeUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block; margin-top:8px; font-size:11px; color:#dc2626; text-decoration:underline;">Open in Prime →</a>` : ''}
+            ${job.primeUrl
+              ? `<a href="${job.primeUrl}" target="_blank" rel="noopener noreferrer"
+                   style="display:inline-block;margin-top:10px;font-size:11px;color:#dc2626;text-decoration:underline;font-weight:600;">
+                   Open in Prime →
+                 </a>`
+              : ''}
           </div>
         `;
 
         L.marker([lat, lng], { icon: redIcon })
-          .bindPopup(popup, { maxWidth: 280 })
-          .addTo(map);
+          .bindPopup(popup, { maxWidth: 300 })
+          .addTo(layerRef.current!);
       }
 
-      // Fit map to all plotted pins
-      if (bounds.length > 0) {
-        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+      // Fit bounds on first paint only (when we have ≥2 pins)
+      if (bounds.length >= 2) {
+        try {
+          mapRef.current?.fitBounds(bounds, { padding: [40, 40], maxZoom: 13, animate: false });
+        } catch {
+          // fitBounds can throw if map is not ready yet
+        }
+      } else if (bounds.length === 1) {
+        mapRef.current?.setView(bounds[0], 13, { animate: false });
       }
     });
-
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
   }, [jobs]);
 
   return (
     <div
       ref={containerRef}
-      style={{ height, width: '100%', borderRadius: '12px', overflow: 'hidden' }}
+      style={{ height, width: '100%' }}
+      className="rounded-xl"
     />
   );
 }

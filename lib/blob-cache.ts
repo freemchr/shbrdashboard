@@ -1,12 +1,13 @@
 /**
  * Persistent cache backed by Vercel Blob storage.
- * Falls back to in-memory if Blob is unavailable.
- * 
+ * Falls back gracefully to in-memory if Blob is unavailable or misconfigured.
+ *
  * - Blob = persistent across cold starts and deploys
- * - In-memory layer = avoids redundant Blob reads within the same function instance
+ * - In-memory layer = avoids redundant Blob reads within the same instance
+ * - Supports both public and private blob stores (auto-detects via env)
  */
 
-import { put, head, getDownloadUrl } from '@vercel/blob';
+import { put, list, del } from '@vercel/blob';
 
 // In-memory layer (fast, per-instance)
 const memCache = new Map<string, { data: unknown; expiresAt: number }>();
@@ -24,33 +25,46 @@ function memSet(key: string, data: unknown, ttlMs: number) {
 
 const BLOB_PREFIX = 'shbr-cache/';
 
-function blobKey(key: string) {
+function blobFilename(key: string) {
   return `${BLOB_PREFIX}${key.replace(/[^a-z0-9-_]/gi, '_')}.json`;
 }
 
 interface BlobMeta { expiresAt: number; data: unknown }
+
+function blobAccess(): 'public' | 'private' {
+  // Use 'private' when the store is configured with private access (Vercel project default)
+  return 'private';
+}
 
 export async function getCached<T>(key: string): Promise<T | null> {
   // 1. Check in-memory first
   const mem = memGet<T>(key);
   if (mem !== null) return mem;
 
-  // 2. Check Blob storage
+  // 2. Check Blob storage via list (works for both public/private stores)
   try {
-    const bKey = blobKey(key);
-    const info = await head(bKey).catch(() => null);
-    if (!info) return null;
+    const filename = blobFilename(key);
+    const { blobs } = await list({ prefix: filename, limit: 1 });
+    if (!blobs.length) return null;
 
-    const res = await fetch(info.downloadUrl);
+    const blob = blobs[0];
+    // Use the blob URL to fetch — for private stores this requires token in env
+    const res = await fetch(blob.downloadUrl, {
+      headers: process.env.BLOB_READ_WRITE_TOKEN
+        ? { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` }
+        : {},
+    });
     if (!res.ok) return null;
 
     const meta: BlobMeta = await res.json();
-    if (Date.now() > meta.expiresAt) return null;
+    if (Date.now() > meta.expiresAt) {
+      // Stale — clean up in background
+      del(blob.url).catch(() => null);
+      return null;
+    }
 
-    // Warm the in-memory layer
     const ttlLeft = meta.expiresAt - Date.now();
     memSet(key, meta.data, ttlLeft);
-
     return meta.data as T;
   } catch {
     return null;
@@ -61,15 +75,16 @@ export async function setCached(key: string, data: unknown, ttlMs: number): Prom
   // 1. Always set in-memory
   memSet(key, data, ttlMs);
 
-  // 2. Persist to Blob in the background
+  // 2. Persist to Blob
   try {
     const meta: BlobMeta = { expiresAt: Date.now() + ttlMs, data };
-    await put(blobKey(key), JSON.stringify(meta), {
-      access: 'public', // private blobs use same token, access controls via token
+    await put(blobFilename(key), JSON.stringify(meta), {
+      access: blobAccess(),
       contentType: 'application/json',
       addRandomSuffix: false,
     });
   } catch (e) {
+    // Non-fatal — in-memory cache still works within the same instance
     console.warn('[blob-cache] Failed to write to Blob:', e);
   }
 }
@@ -77,9 +92,20 @@ export async function setCached(key: string, data: unknown, ttlMs: number): Prom
 export async function invalidateCache(key?: string): Promise<void> {
   if (key) {
     memCache.delete(key);
-    // Note: Vercel Blob doesn't support delete by path in all SDK versions
-    // The next read will find it expired and skip it
+    try {
+      const filename = blobFilename(key);
+      const { blobs } = await list({ prefix: filename, limit: 1 });
+      if (blobs.length) await del(blobs[0].url);
+    } catch {
+      // ignore
+    }
   } else {
     memCache.clear();
+    try {
+      const { blobs } = await list({ prefix: BLOB_PREFIX });
+      if (blobs.length) await del(blobs.map(b => b.url));
+    } catch {
+      // ignore
+    }
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { LoadingSpinner, ErrorMessage } from '@/components/ui/LoadingSpinner';
 import { MapPin, RefreshCw, AlertTriangle } from 'lucide-react';
@@ -10,10 +10,17 @@ import { formatCurrency } from '@/lib/prime-helpers';
 // Load map client-side only (Leaflet requires window)
 const JobMap = dynamic(
   () => import('@/components/ui/JobMap').then(m => m.JobMap),
-  { ssr: false, loading: () => <div className="flex items-center justify-center h-[600px] bg-gray-900 rounded-xl"><LoadingSpinner message="Loading map…" /></div> }
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800" style={{ height: 580 }}>
+        <LoadingSpinner message="Initialising map…" />
+      </div>
+    ),
+  }
 );
 
-interface GeocodedJob {
+export interface GeocodedJob {
   id: string;
   jobNumber: string;
   address: string;
@@ -28,53 +35,104 @@ interface GeocodedJob {
 
 type FilterKey = 'all' | 'mapped' | 'unmapped';
 
+const BATCH_SIZE = 40; // geocode 40 addresses per Vercel function call (~44s at 1.1s/req)
+const POLL_INTERVAL_MS = 3000; // poll for new results every 3s while geocoding
+
 export default function MapPage() {
   const [jobs, setJobs] = useState<GeocodedJob[]>([]);
+  const [complete, setComplete] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [geocoded, setGeocoded] = useState(0);
   const [loading, setLoading] = useState(true);
   const [geocoding, setGeocoding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>('mapped');
   const [regionFilter, setRegionFilter] = useState('');
-  const [refreshKey, setRefreshKey] = useState(0);
+  const geocodingRef = useRef(false);
+
+  const runGeocoding = useCallback(async (reset = false) => {
+    if (geocodingRef.current) return;
+    geocodingRef.current = true;
+    setGeocoding(true);
+    setError(null);
+
+    try {
+      let done = false;
+      while (!done) {
+        const res = await fetch('/api/prime/jobs/geocode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ batchSize: BATCH_SIZE, reset }),
+        });
+        if (!res.ok) throw new Error(`Geocode error: ${res.status}`);
+        const data = await res.json() as {
+          jobs: GeocodedJob[];
+          complete: boolean;
+          total: number;
+          geocoded: number;
+          error?: string;
+        };
+        if (data.error) throw new Error(data.error);
+
+        setJobs(data.jobs);
+        setTotal(data.total);
+        setGeocoded(data.geocoded);
+        setComplete(data.complete);
+        done = data.complete;
+
+        if (!done) await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      geocodingRef.current = false;
+      setGeocoding(false);
+    }
+  }, []);
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-    setGeocoding(false);
+    // On mount: check cache first (GET), then geocode if needed
+    async function init() {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/prime/jobs/geocode');
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
+        const data = await res.json() as {
+          jobs: GeocodedJob[];
+          complete: boolean;
+          total: number;
+          geocoded?: number;
+          error?: string;
+        };
+        if (data.error) throw new Error(data.error);
 
-    fetch('/api/prime/jobs/open')
-      .then(r => r.ok ? r.json() : Promise.reject('Failed to load open jobs'))
-      .then((openJobs: GeocodedJob[]) => {
-        // Show open jobs immediately (without coordinates) while geocoding loads
-        setJobs(openJobs.map(j => ({ ...j, lat: null, lng: null })));
-        setLoading(false);
-        setGeocoding(true);
+        setJobs(data.jobs);
+        setTotal(data.total);
+        setGeocoded(data.geocoded ?? data.jobs.filter(j => j.lat !== null).length);
+        setComplete(data.complete);
 
-        // Now fetch geocoded version (may take a while first time)
-        return fetch('/api/prime/jobs/geocode');
-      })
-      .then(r => r.ok ? r.json() : Promise.reject('Failed to geocode jobs'))
-      .then((geocoded: GeocodedJob[]) => {
-        setJobs(geocoded);
-        setGeocoding(false);
-      })
-      .catch(e => {
-        setError(String(e));
+        // If not complete (cache miss or partial), kick off geocoding
+        if (!data.complete) {
+          runGeocoding(false);
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+      } finally {
         setLoading(false);
-        setGeocoding(false);
-      });
-  }, [refreshKey]);
+      }
+    }
+    init();
+  }, [runGeocoding]);
 
   const mapped = jobs.filter(j => j.lat !== null && j.lng !== null);
   const unmapped = jobs.filter(j => j.lat === null || j.lng === null);
-  const regions = Array.from(new Set(jobs.map(j => j.region).filter(Boolean))).sort();
+  const regions = Array.from(new Set(jobs.map(j => j.region).filter(r => r && r !== '—'))).sort();
 
   const filteredForMap = mapped.filter(j => !regionFilter || j.region === regionFilter);
+  const filteredList = (filter === 'mapped' ? mapped : filter === 'unmapped' ? unmapped : jobs)
+    .filter(j => !regionFilter || j.region === regionFilter);
 
-  const filteredList = (() => {
-    const base = filter === 'mapped' ? mapped : filter === 'unmapped' ? unmapped : jobs;
-    return base.filter(j => !regionFilter || j.region === regionFilter);
-  })();
+  const pct = total > 0 ? Math.round((geocoded / total) * 100) : 0;
 
   return (
     <div>
@@ -83,7 +141,7 @@ export default function MapPage() {
         subtitle="Open jobs plotted on OpenStreetMap — click a pin for details"
       />
 
-      {/* Stats bar */}
+      {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center gap-3">
           <MapPin size={20} className="text-red-500 flex-shrink-0" />
@@ -96,22 +154,37 @@ export default function MapPage() {
           <AlertTriangle size={20} className="text-yellow-500 flex-shrink-0" />
           <div>
             <p className="text-2xl font-bold text-white">{unmapped.length}</p>
-            <p className="text-xs text-gray-500">Unmapped (bad address)</p>
+            <p className="text-xs text-gray-500">Unmapped</p>
           </div>
         </div>
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center gap-3">
           <MapPin size={20} className="text-gray-500 flex-shrink-0" />
           <div>
-            <p className="text-2xl font-bold text-white">{jobs.length}</p>
+            <p className="text-2xl font-bold text-white">{total || jobs.length}</p>
             <p className="text-xs text-gray-500">Total Open Jobs</p>
           </div>
         </div>
       </div>
 
+      {/* Geocoding progress bar */}
       {geocoding && (
-        <div className="mb-4 flex items-center gap-2 text-sm text-yellow-400 bg-yellow-900/20 border border-yellow-800/40 rounded-lg px-4 py-3">
-          <RefreshCw size={14} className="animate-spin" />
-          Geocoding addresses via OpenStreetMap… this may take a minute on first load.
+        <div className="mb-4 bg-gray-900 border border-yellow-800/40 rounded-lg px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-yellow-400 mb-2">
+            <RefreshCw size={13} className="animate-spin flex-shrink-0" />
+            Geocoding addresses via OpenStreetMap… {geocoded}/{total} ({pct}%)
+          </div>
+          <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-yellow-500 rounded-full transition-all duration-500"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {complete && !geocoding && (
+        <div className="mb-4 flex items-center gap-2 text-xs text-green-500 bg-green-900/20 border border-green-800/30 rounded-lg px-3 py-2">
+          ✓ All addresses geocoded — results cached for 2 hours
         </div>
       )}
 
@@ -129,39 +202,34 @@ export default function MapPage() {
         </select>
 
         <button
-          onClick={() => setRefreshKey(k => k + 1)}
-          className="flex items-center gap-2 text-sm text-gray-400 hover:text-white bg-gray-800 border border-gray-700 px-3 py-2 rounded-lg transition-colors"
+          onClick={() => { setJobs([]); setComplete(false); setGeocoded(0); runGeocoding(true); }}
+          disabled={geocoding}
+          className="flex items-center gap-2 text-sm text-gray-400 hover:text-white bg-gray-800 border border-gray-700 px-3 py-2 rounded-lg transition-colors disabled:opacity-40"
         >
-          <RefreshCw size={14} />
-          Refresh
+          <RefreshCw size={14} className={geocoding ? 'animate-spin' : ''} />
+          Re-geocode all
         </button>
 
         <span className="text-xs text-gray-500 ml-auto">
-          Showing {filteredForMap.length} pinned job{filteredForMap.length !== 1 ? 's' : ''} on map
+          {filteredForMap.length} pin{filteredForMap.length !== 1 ? 's' : ''} on map
+          {regionFilter ? ` · ${regionFilter}` : ''}
         </span>
       </div>
 
       {/* Map */}
       {loading ? (
-        <div className="bg-gray-900 rounded-xl border border-gray-800 flex items-center justify-center" style={{ height: 600 }}>
-          <LoadingSpinner message="Loading open jobs…" />
+        <div className="bg-gray-900 rounded-xl border border-gray-800 flex items-center justify-center mb-6" style={{ height: 580 }}>
+          <LoadingSpinner message="Loading cached results…" />
         </div>
       ) : (
         <div className="rounded-xl border border-gray-800 overflow-hidden mb-6">
-          {/* Leaflet CSS */}
-          <link
-            rel="stylesheet"
-            href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-            integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-            crossOrigin=""
-          />
-          <JobMap jobs={filteredForMap} height={600} />
+          <JobMap jobs={filteredForMap} height={580} />
         </div>
       )}
 
-      {/* Unmapped jobs list */}
+      {/* Job list */}
       <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-4 flex-wrap">
           <h2 className="text-lg font-semibold text-white">Job List</h2>
           <div className="flex gap-1">
             {(['all', 'mapped', 'unmapped'] as FilterKey[]).map(f => (
@@ -169,9 +237,7 @@ export default function MapPage() {
                 key={f}
                 onClick={() => setFilter(f)}
                 className={`text-xs px-3 py-1 rounded-full transition-colors ${
-                  filter === f
-                    ? 'bg-red-600 text-white'
-                    : 'bg-gray-800 text-gray-400 hover:text-white'
+                  filter === f ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
                 }`}
               >
                 {f === 'all' ? `All (${jobs.length})` : f === 'mapped' ? `Mapped (${mapped.length})` : `Unmapped (${unmapped.length})`}
@@ -193,7 +259,7 @@ export default function MapPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800/50">
-              {filteredList.slice(0, 100).map(job => (
+              {filteredList.slice(0, 150).map(job => (
                 <tr key={job.id} className="hover:bg-gray-800/30 transition-colors">
                   <td className="py-2 pr-3">
                     {job.primeUrl ? (
@@ -210,10 +276,7 @@ export default function MapPage() {
                   <td className="py-2 pr-3 text-xs text-gray-500">{job.region}</td>
                   <td className="py-2 pr-3 text-xs text-gray-400">{formatCurrency(job.authorisedTotal)}</td>
                   <td className="py-2 text-xs">
-                    {job.lat !== null
-                      ? <span className="text-green-500">✓</span>
-                      : <span className="text-yellow-600">—</span>
-                    }
+                    {job.lat !== null ? <span className="text-green-500">✓</span> : <span className="text-yellow-600">—</span>}
                   </td>
                 </tr>
               ))}
@@ -224,10 +287,8 @@ export default function MapPage() {
               )}
             </tbody>
           </table>
-          {filteredList.length > 100 && (
-            <p className="text-xs text-gray-600 text-center mt-3">
-              Showing first 100 of {filteredList.length}
-            </p>
+          {filteredList.length > 150 && (
+            <p className="text-xs text-gray-600 text-center mt-3">Showing first 150 of {filteredList.length}</p>
           )}
         </div>
       </div>
