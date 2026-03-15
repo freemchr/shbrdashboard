@@ -126,11 +126,11 @@ export default function TeamPage() {
               <tr className="border-b border-gray-800">
                 <SortTh col="name" label="Name" className="pl-5" />
                 <SortTh col="roles" label="Role" />
-                <SortTh col="openJobs" label="Open Jobs" />
+                <SortTh col="openJobs" label="Open" />
                 <SortTh col="totalAuthorisedValue" label="Auth. Value" />
-                <SortTh col="updatedThisWeek" label="This Week" />
-                <SortTh col="updatedThisMonth" label="This Month" />
-                <th className="px-4 py-2.5 text-left text-xs text-gray-500 font-medium whitespace-nowrap">Regions</th>
+                <SortTh col="updatedThisWeek" label="Week" />
+                <SortTh col="updatedThisMonth" label="Month" />
+                <th className="px-4 py-2.5 text-left text-xs text-gray-500 font-medium whitespace-nowrap hidden lg:table-cell">Regions</th>
                 <SortTh col="status" label="Status" />
               </tr>
             </thead>
@@ -139,9 +139,9 @@ export default function TeamPage() {
                 <tr key={m.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
                   <td className="px-4 py-2.5 pl-5 whitespace-nowrap">
                     <div className="font-medium text-white text-sm">{m.name}</div>
-                    {m.email && <div className="text-xs text-gray-500 mt-0.5">{m.email}</div>}
+                    {m.email && <div className="text-xs text-gray-500 mt-0.5 hidden sm:block">{m.email}</div>}
                   </td>
-                  <td className="px-4 py-2.5 text-xs text-gray-400 max-w-[140px]">
+                  <td className="px-4 py-2.5 text-xs text-gray-400 max-w-[120px]">
                     {m.roles.length === 0 ? '—' : (
                       <span title={m.roles.join(', ')} className="cursor-default">
                         {m.roles[0]}
@@ -175,7 +175,7 @@ export default function TeamPage() {
                       {m.updatedThisMonth > 0 ? m.updatedThisMonth : '—'}
                     </span>
                   </td>
-                  <td className="px-4 py-2.5 whitespace-nowrap">
+                  <td className="px-4 py-2.5 whitespace-nowrap hidden lg:table-cell">
                     <span className="text-xs text-gray-500">
                       {m.regions.length > 0 ? `${m.regions.length} region${m.regions.length !== 1 ? 's' : ''}` : '—'}
                     </span>

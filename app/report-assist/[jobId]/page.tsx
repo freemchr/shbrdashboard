@@ -283,7 +283,7 @@ function SelectField({ fieldKey, value, onChange, children }: {
     <select
       value={value}
       onChange={e => onChange(fieldKey, e.target.value)}
-      className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-500"
+      className="w-full bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-500"
     >
       {children}
     </select>
@@ -308,9 +308,9 @@ function InputField({ fieldKey, value, onChange, placeholder, type = 'text', cla
 // ─── 2-col form grid ──────────────────────────────────────────────────────────
 function FormRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[160px_1fr] gap-4 items-start py-2">
-      <label className="text-xs font-semibold text-gray-400 pt-2.5">{label}</label>
-      <div>{children}</div>
+    <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-2 sm:gap-4 items-start py-2">
+      <label className="text-xs font-semibold text-gray-400 sm:pt-2.5">{label}</label>
+      <div className="w-full">{children}</div>
     </div>
   );
 }
@@ -711,7 +711,7 @@ export default function ReportWizardPage() {
 
         {/* ── 1. Claim Details (read-only) ─────────────────────────────────── */}
         <Section title="1. Claim Details" {...sectionProps('claimDetails')}>
-          <div className="grid grid-cols-2 gap-x-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
             {[
               ['Job Number', report.jobNumber],
               ['Claim Number', report.claimNumber],
@@ -728,7 +728,7 @@ export default function ReportWizardPage() {
               </div>
             ))}
           </div>
-          <div className="mt-4 grid grid-cols-3 gap-4">
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="text-xs text-gray-500 font-medium block mb-1.5">Report Ref #</label>
               <InputField fieldKey="reportRef" value={report.reportRef} onChange={handleFieldChange} placeholder="1" className="w-full" />
@@ -832,7 +832,7 @@ export default function ReportWizardPage() {
 
         {/* ── 5. Damage Assessment ─────────────────────────────────────────── */}
         <Section title="5. Damage Assessment" {...sectionProps('damage', 'damageAssessment')}>
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <FormRow label="Damage Consistent">
               <SelectField fieldKey="damageConsistent" value={report.damageConsistent} onChange={handleFieldChange}>{YESNO_OPTS}</SelectField>
             </FormRow>
@@ -851,8 +851,8 @@ export default function ReportWizardPage() {
 
         {/* ── 6. Cause of Damage ───────────────────────────────────────────── */}
         <Section title="6. Cause of Damage" {...sectionProps('cause', 'causeOfDamage')}>
-          <div className="grid grid-cols-2 gap-x-6 mb-4 divide-y divide-gray-800/50 col-span-2">
-            <div className="grid grid-cols-2 gap-4 pb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 mb-4 divide-y divide-gray-800/50">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-3">
               <FormRow label="Cause Stopped">
                 <SelectField fieldKey="causeStoppedY" value={report.causeStoppedY} onChange={handleFieldChange}>{YESNO_OPTS}</SelectField>
               </FormRow>
@@ -860,7 +860,7 @@ export default function ReportWizardPage() {
                 <SelectField fieldKey="specialistRequired" value={report.specialistRequired} onChange={handleFieldChange}>{YESNO_OPTS}</SelectField>
               </FormRow>
             </div>
-            <div className="grid grid-cols-2 gap-4 pt-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3">
               <FormRow label="Specialist Type">
                 <InputField fieldKey="specialistType" value={report.specialistType} onChange={handleFieldChange} placeholder="e.g. Plumber" className="w-full" />
               </FormRow>
@@ -896,7 +896,7 @@ export default function ReportWizardPage() {
 
         {/* ── 8. Conclusion ────────────────────────────────────────────────── */}
         <Section title="8. Conclusion" {...sectionProps('conclusion', 'conclusion')}>
-          <div className="grid grid-cols-2 gap-x-6 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 mb-4">
             <FormRow label="Can Warrant">
               <SelectField fieldKey="canWarrant" value={report.canWarrant} onChange={handleFieldChange}>{YESNO_OPTS}</SelectField>
             </FormRow>

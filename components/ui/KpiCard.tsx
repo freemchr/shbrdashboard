@@ -32,7 +32,7 @@ export function KpiCard({ title, value, subtitle, icon, accent, loading, onClick
       {loading ? (
         <div className="h-8 w-24 bg-gray-800 rounded animate-pulse" />
       ) : (
-        <div className={`text-3xl font-bold ${active ? 'text-red-400' : accent ? 'text-red-500' : 'text-white'}`}>
+        <div className={`text-2xl sm:text-3xl font-bold ${active ? 'text-red-400' : accent ? 'text-red-500' : 'text-white'}`}>
           {value}
         </div>
       )}

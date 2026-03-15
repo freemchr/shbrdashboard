@@ -144,19 +144,19 @@ export default function BottlenecksPage() {
             </div>
 
             <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
-              className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-500">
+              className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-500 w-full sm:w-auto">
               <option value="">All Types</option>
               {types.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
 
             <select value={regionFilter} onChange={e => setRegionFilter(e.target.value)}
-              className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-500">
+              className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-500 w-full sm:w-auto">
               <option value="">All Regions</option>
               {regions.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
 
             <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-              className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-500">
+              className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-500 w-full sm:w-auto">
               <option value="">All Statuses</option>
               {statuses.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
@@ -181,12 +181,12 @@ export default function BottlenecksPage() {
                       <SortTh col="status"         label="Status" />
                       <SortTh col="jobType"        label="Type" />
                       <SortTh col="region"         label="Region" />
-                      <th className="py-2 px-2 text-left text-gray-400 text-xs font-medium">Address</th>
-                      <th className="py-2 px-2 text-left text-gray-400 text-xs font-medium whitespace-nowrap">Client Ref</th>
-                      <SortTh col="authorisedTotal" label="Auth Total" />
+                      <th className="py-2 px-2 text-left text-gray-400 text-xs font-medium hidden md:table-cell">Address</th>
+                      <th className="py-2 px-2 text-left text-gray-400 text-xs font-medium whitespace-nowrap hidden lg:table-cell">Client Ref</th>
+                      <SortTh col="authorisedTotal" label="$" />
                       <SortTh col="createdAt"      label="Created" />
-                      <SortTh col="daysSince"      label="Days Stuck" />
-                      <th className="py-2 px-2 text-left text-gray-400 text-xs font-medium whitespace-nowrap">Updated By</th>
+                      <SortTh col="daysSince"      label="Stuck" />
+                      <th className="py-2 px-2 text-left text-gray-400 text-xs font-medium whitespace-nowrap hidden lg:table-cell">Updated By</th>
                       <th className="py-2 px-2"></th>
                     </tr>
                   </thead>
@@ -201,8 +201,8 @@ export default function BottlenecksPage() {
                         <td className="py-2 px-2 text-gray-300 text-xs max-w-[140px] truncate">{job.status}</td>
                         <td className="py-2 px-2 text-gray-400 text-xs whitespace-nowrap">{job.jobType || '—'}</td>
                         <td className="py-2 px-2 text-gray-400 text-xs whitespace-nowrap">{job.region || '—'}</td>
-                        <td className="py-2 px-2 text-gray-300 text-xs max-w-[160px] truncate">{job.address || '—'}</td>
-                        <td className="py-2 px-2 text-gray-400 text-xs">{job.clientReference || '—'}</td>
+                        <td className="py-2 px-2 text-gray-300 text-xs max-w-[140px] truncate hidden md:table-cell">{job.address || '—'}</td>
+                        <td className="py-2 px-2 text-gray-400 text-xs hidden lg:table-cell">{job.clientReference || '—'}</td>
                         <td className="py-2 px-2 text-gray-300 text-xs whitespace-nowrap font-mono">{formatCurrency(job.authorisedTotal)}</td>
                         <td className="py-2 px-2 text-gray-400 text-xs whitespace-nowrap">{formatDate(job.createdAt)}</td>
                         <td className="py-2 px-2 text-right whitespace-nowrap">
@@ -210,7 +210,7 @@ export default function BottlenecksPage() {
                             {job.daysSince}d
                           </span>
                         </td>
-                        <td className="py-2 px-2 text-gray-400 text-xs whitespace-nowrap">{job.updatedBy || '—'}</td>
+                        <td className="py-2 px-2 text-gray-400 text-xs whitespace-nowrap hidden lg:table-cell">{job.updatedBy || '—'}</td>
                         <td className="py-2 px-2">
                           {job.primeUrl && (
                             <a href={job.primeUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-red-400">

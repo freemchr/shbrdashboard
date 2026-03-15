@@ -114,7 +114,7 @@ export default function ReportAssistPage() {
         <select
           value={typeFilter}
           onChange={e => setTypeFilter(e.target.value)}
-          className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-500"
+          className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-500 w-full sm:w-auto"
         >
           <option value="">All Types</option>
           {types.map(t => <option key={t} value={t}>{t}</option>)}
@@ -122,7 +122,7 @@ export default function ReportAssistPage() {
         <select
           value={regionFilter}
           onChange={e => setRegionFilter(e.target.value)}
-          className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-500"
+          className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-500 w-full sm:w-auto"
         >
           <option value="">All Regions</option>
           {regions.map(r => <option key={r} value={r}>{r}</option>)}
@@ -153,7 +153,7 @@ export default function ReportAssistPage() {
                 <th className="py-3 px-4 text-left text-xs text-gray-500 font-medium">Address</th>
                 <SortTh col="jobType" label="Type" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                 <SortTh col="region" label="Region" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-                <SortTh col="daysSinceCreated" label="Days Since Created" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                <SortTh col="daysSinceCreated" label="Age" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                 <th className="py-3 px-4 text-left text-xs text-gray-500 font-medium">Action</th>
               </tr>
             </thead>
@@ -163,9 +163,9 @@ export default function ReportAssistPage() {
                   <td className="py-3 px-4 font-mono text-xs whitespace-nowrap">
                     <span className="text-red-400">{job.jobNumber}</span>
                   </td>
-                  <td className="py-3 px-4 text-gray-300 text-xs max-w-[200px] truncate">{job.address}</td>
-                  <td className="py-3 px-4 text-xs text-gray-400 whitespace-nowrap">{job.jobType || '—'}</td>
-                  <td className="py-3 px-4 text-xs text-gray-500 whitespace-nowrap">{job.region || '—'}</td>
+                  <td className="py-3 px-4 text-gray-300 text-xs max-w-[150px] truncate">{job.address}</td>
+                  <td className="py-3 px-4 text-xs text-gray-400 whitespace-nowrap hidden sm:table-cell">{job.jobType || '—'}</td>
+                  <td className="py-3 px-4 text-xs text-gray-500 whitespace-nowrap hidden sm:table-cell">{job.region || '—'}</td>
                   <td className="py-3 px-4 text-xs whitespace-nowrap">
                     <span className={`font-mono font-bold ${
                       job.daysSinceCreated > 30 ? 'text-red-400' :

@@ -91,7 +91,7 @@ export function TopBar() {
   });
 
   return (
-    <div className="flex items-center gap-4 text-sm">
+    <div className="flex items-center gap-4 text-sm overflow-hidden">
       {/* Weather */}
       {weather && (
         <div className="flex items-center gap-1.5 text-gray-400">

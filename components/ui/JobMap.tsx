@@ -27,7 +27,7 @@ export interface GeocodedJob {
 
 interface JobMapProps {
   jobs: GeocodedJob[];
-  height?: number;
+  height?: number; // deprecated — use CSS height on parent container
 }
 
 function formatAUD(n: number): string {
@@ -159,6 +159,6 @@ export function JobMap({ jobs, height = 580 }: JobMapProps) {
   }, [jobs]);
 
   return (
-    <div ref={containerRef} style={{ height, width: '100%' }} />
+    <div ref={containerRef} style={{ height: height ?? '100%', width: '100%' }} />
   );
 }

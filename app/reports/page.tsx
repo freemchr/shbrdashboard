@@ -80,7 +80,7 @@ function JobTable({ jobs, sortKey, sortDir, onSort, showAge = 'created', showAss
             <SortTh col="authorisedTotal" label="Auth Total" />
             <SortTh col="daysSinceCreated" label="Created" />
             <SortTh col="daysSinceUpdated" label="Last Update" />
-            <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium whitespace-nowrap">Updated By</th>
+            <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium whitespace-nowrap hidden lg:table-cell">Updated By</th>
             <th className="py-2 px-3"></th>
             {showAssistButton && <th className="py-2 px-3"></th>}
           </tr>
@@ -94,26 +94,26 @@ function JobTable({ jobs, sortKey, sortDir, onSort, showAge = 'created', showAss
                       className="text-red-400 hover:text-red-300 underline underline-offset-2">{job.jobNumber}</a>
                   : <span className="text-red-400">{job.jobNumber}</span>}
               </td>
-              <td className="py-2 px-3 text-gray-300 text-xs max-w-[160px] truncate">{job.address}</td>
-              <td className="py-2 px-3 text-xs text-gray-400 max-w-[140px] truncate">{job.status}</td>
-              <td className="py-2 px-3 text-xs text-gray-500 whitespace-nowrap">{job.jobType}</td>
-              <td className="py-2 px-3 text-xs text-gray-500 whitespace-nowrap">{job.region}</td>
-              <td className="py-2 px-3 text-xs font-mono text-gray-400 whitespace-nowrap">
+              <td className="py-2 px-3 text-gray-300 text-xs max-w-[120px] truncate">{job.address}</td>
+              <td className="py-2 px-3 text-xs text-gray-400 max-w-[120px] truncate">{job.status}</td>
+              <td className="py-2 px-3 text-xs text-gray-500 whitespace-nowrap hidden sm:table-cell">{job.jobType}</td>
+              <td className="py-2 px-3 text-xs text-gray-500 whitespace-nowrap hidden sm:table-cell">{job.region}</td>
+              <td className="py-2 px-3 text-xs font-mono text-gray-400 whitespace-nowrap hidden md:table-cell">
                 {job.authorisedTotal > 0 ? formatCurrency(job.authorisedTotal) : '—'}
               </td>
               <td className="py-2 px-3 text-xs text-gray-500 whitespace-nowrap">
-                <div>{formatDate(job.createdAt)}</div>
+                <div className="hidden sm:block">{formatDate(job.createdAt)}</div>
                 <div className={`font-mono font-bold ${job.daysSinceCreated > 30 ? 'text-red-400' : job.daysSinceCreated > 14 ? 'text-yellow-400' : 'text-gray-500'}`}>
-                  {job.daysSinceCreated}d ago
+                  {job.daysSinceCreated}d
                 </div>
               </td>
-              <td className="py-2 px-3 text-xs text-gray-500 whitespace-nowrap">
+              <td className="py-2 px-3 text-xs text-gray-500 whitespace-nowrap hidden md:table-cell">
                 <div>{formatDate(job.updatedAt)}</div>
                 <div className={`font-mono ${job.daysSinceUpdated > 7 ? 'text-yellow-600' : 'text-gray-600'}`}>
-                  {job.daysSinceUpdated}d ago
+                  {job.daysSinceUpdated}d
                 </div>
               </td>
-              <td className="py-2 px-3 text-xs text-gray-500 whitespace-nowrap">{job.updatedBy || '—'}</td>
+              <td className="py-2 px-3 text-xs text-gray-500 whitespace-nowrap hidden lg:table-cell">{job.updatedBy || '—'}</td>
               <td className="py-2 px-3">
                 {job.primeUrl && <a href={job.primeUrl} target="_blank" rel="noopener noreferrer"
                   className="text-gray-500 hover:text-red-400"><ExternalLink size={14} /></a>}
@@ -224,7 +224,7 @@ export default function ReportsPage() {
             <span className="text-xs text-red-300 font-medium">No Report Started</span>
             <AlertTriangle size={16} className="text-red-400" />
           </div>
-          <p className="text-3xl font-bold text-red-400">{data.noReport}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-red-400">{data.noReport}</p>
           <p className="text-xs text-red-400/60 mt-1">Flagged — action required</p>
         </button>
 
@@ -234,7 +234,7 @@ export default function ReportsPage() {
             <span className="text-xs text-yellow-300 font-medium">Report In Progress</span>
             <Clock size={16} className="text-yellow-400" />
           </div>
-          <p className="text-3xl font-bold text-yellow-400">{data.inProgress}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-yellow-400">{data.inProgress}</p>
           <p className="text-xs text-gray-500 mt-1">Being prepared</p>
         </button>
 
@@ -244,7 +244,7 @@ export default function ReportsPage() {
             <span className="text-xs text-green-300 font-medium">Report Submitted</span>
             <CheckCircle size={16} className="text-green-400" />
           </div>
-          <p className="text-3xl font-bold text-green-400">{data.submitted}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-green-400">{data.submitted}</p>
           <p className="text-xs text-gray-500 mt-1">Awaiting insurer response</p>
         </button>
 
@@ -252,7 +252,7 @@ export default function ReportsPage() {
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-gray-400 font-medium">Past Report Stage</span>
           </div>
-          <p className="text-3xl font-bold text-white">{data.postReport}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-white">{data.postReport}</p>
           <p className="text-xs text-gray-500 mt-1">Works authorised / invoicing</p>
         </div>
       </div>
@@ -260,12 +260,12 @@ export default function ReportsPage() {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
-          className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-500">
+          className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-500 w-full sm:w-auto">
           <option value="">All Types</option>
           {types.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
         <select value={regionFilter} onChange={e => setRegionFilter(e.target.value)}
-          className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-500">
+          className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-500 w-full sm:w-auto">
           <option value="">All Regions</option>
           {regions.map(r => <option key={r} value={r}>{r}</option>)}
         </select>

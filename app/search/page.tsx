@@ -144,7 +144,7 @@ export default function SearchPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-red-500"
+            className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-red-500 w-full sm:w-auto"
           >
             <option value="">All Statuses</option>
             {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -153,7 +153,7 @@ export default function SearchPage() {
           <select
             value={regionFilter}
             onChange={(e) => setRegionFilter(e.target.value)}
-            className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-red-500"
+            className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-red-500 w-full sm:w-auto"
           >
             <option value="">All Regions</option>
             {regions.map((r) => <option key={r} value={r}>{r}</option>)}
@@ -162,7 +162,7 @@ export default function SearchPage() {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-red-500"
+            className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-red-500 w-full sm:w-auto"
           >
             <option value="">All Types</option>
             {types.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -173,14 +173,14 @@ export default function SearchPage() {
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
             placeholder="From date"
-            className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-red-500"
+            className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-red-500 w-full sm:w-auto"
           />
           <input
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
             placeholder="To date"
-            className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-red-500"
+            className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-red-500 w-full sm:w-auto"
           />
 
           {(query || statusFilter || regionFilter || typeFilter || dateFrom || dateTo) && (
@@ -221,11 +221,11 @@ export default function SearchPage() {
                 <tr>
                   <th className="text-left py-3 px-4 text-gray-400">Job #</th>
                   <th className="text-left py-3 px-4 text-gray-400">Address</th>
-                  <th className="text-left py-3 px-4 text-gray-400">Status</th>
-                  <th className="text-left py-3 px-4 text-gray-400">Region</th>
-                  <th className="text-left py-3 px-4 text-gray-400">Type</th>
-                  <th className="text-right py-3 px-4 text-gray-400">Auth. Total</th>
-                  <th className="text-left py-3 px-4 text-gray-400">Updated</th>
+                  <th className="text-left py-3 px-4 text-gray-400 hidden sm:table-cell">Status</th>
+                  <th className="text-left py-3 px-4 text-gray-400 hidden md:table-cell">Region</th>
+                  <th className="text-left py-3 px-4 text-gray-400 hidden md:table-cell">Type</th>
+                  <th className="text-right py-3 px-4 text-gray-400 hidden sm:table-cell">Auth. Total</th>
+                  <th className="text-left py-3 px-4 text-gray-400 hidden lg:table-cell">Updated</th>
                   <th className="py-3 px-4"></th>
                 </tr>
               </thead>
@@ -240,18 +240,18 @@ export default function SearchPage() {
                       <td className="py-3 px-4">
                         <span className="font-mono text-red-400 text-xs">{job.jobNumber}</span>
                       </td>
-                      <td className="py-3 px-4 text-gray-300 max-w-[200px] truncate">{job.address}</td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 text-gray-300 max-w-[140px] truncate">{job.address}</td>
+                      <td className="py-3 px-4 hidden sm:table-cell">
                         <span className="text-xs bg-gray-800 text-gray-300 px-2 py-0.5 rounded">
                           {job.status}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-gray-400 text-xs">{job.region}</td>
-                      <td className="py-3 px-4 text-gray-400 text-xs">{job.jobType}</td>
-                      <td className="py-3 px-4 text-right text-gray-300 text-xs">
+                      <td className="py-3 px-4 text-gray-400 text-xs hidden md:table-cell">{job.region}</td>
+                      <td className="py-3 px-4 text-gray-400 text-xs hidden md:table-cell">{job.jobType}</td>
+                      <td className="py-3 px-4 text-right text-gray-300 text-xs hidden sm:table-cell">
                         {formatCurrency(job.authorisedTotal)}
                       </td>
-                      <td className="py-3 px-4 text-gray-500 text-xs">{formatDate(job.updatedAt)}</td>
+                      <td className="py-3 px-4 text-gray-500 text-xs hidden lg:table-cell">{formatDate(job.updatedAt)}</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           {job.primeUrl && (

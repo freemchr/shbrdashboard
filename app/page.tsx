@@ -247,10 +247,10 @@ export default function OverviewPage() {
         </Link>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-6">
 
         {/* Scrollable bar chart — all statuses */}
-        <div className="xl:col-span-2 bg-gray-900 rounded-xl border border-gray-800 p-5">
+        <div className="xl:col-span-2 bg-gray-900 rounded-xl border border-gray-800 p-3 sm:p-5">
           <h2 className="text-lg font-semibold text-white mb-1">Open Jobs by Status</h2>
           <p className="text-xs text-gray-500 mb-4">Click a bar to see those jobs below ↓ · scroll right to see all statuses</p>
 
@@ -330,11 +330,11 @@ export default function OverviewPage() {
 
         return (
           <div ref={drilldownRef} className="bg-gray-900 rounded-xl border border-red-900/40 p-5">
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
               <div className="flex items-center gap-2">
                 <ChevronRight size={16} className="text-red-400 flex-shrink-0" />
                 <div>
-                  <h2 className="text-xl font-bold text-white">{title}</h2>
+                  <h2 className="text-lg sm:text-xl font-bold text-white">{title}</h2>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {loadingJobs ? '…' : `${jobs.length} job${jobs.length !== 1 ? 's' : ''}`}
                   </p>

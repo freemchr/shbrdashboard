@@ -179,11 +179,11 @@ export default function FinancialPage() {
                 <tr className="text-xs text-gray-500 border-b border-gray-800">
                   <th className="text-left py-2 pr-4 font-medium">Job #</th>
                   <th className="text-left py-2 pr-4 font-medium">Address</th>
-                  <th className="text-left py-2 pr-4 font-medium">Status</th>
-                  <th className="text-left py-2 pr-4 font-medium">Region</th>
-                  <th className="text-left py-2 pr-4 font-medium">Type</th>
+                  <th className="text-left py-2 pr-4 font-medium hidden sm:table-cell">Status</th>
+                  <th className="text-left py-2 pr-4 font-medium hidden md:table-cell">Region</th>
+                  <th className="text-left py-2 pr-4 font-medium hidden md:table-cell">Type</th>
                   <th className="text-left py-2 pr-4 font-medium">Auth. Total</th>
-                  <th className="text-left py-2 pr-4 font-medium">Updated</th>
+                  <th className="text-left py-2 pr-4 font-medium hidden sm:table-cell">Updated</th>
                   <th className="text-left py-2 font-medium"></th>
                 </tr>
               </thead>
@@ -191,12 +191,12 @@ export default function FinancialPage() {
                 {data.invoicingJobs.map(j => (
                   <tr key={j.id} className="hover:bg-gray-800/30 transition-colors">
                     <td className="py-2 pr-4"><JobLink jobNumber={j.jobNumber} primeUrl={j.primeUrl} /></td>
-                    <td className="py-2 pr-4 text-gray-300 text-xs max-w-[180px] truncate">{j.address}</td>
-                    <td className="py-2 pr-4 text-xs text-gray-400">{j.status}</td>
-                    <td className="py-2 pr-4 text-xs text-gray-500">{j.region}</td>
-                    <td className="py-2 pr-4 text-xs text-gray-500">{j.jobType}</td>
+                    <td className="py-2 pr-4 text-gray-300 text-xs max-w-[140px] truncate">{j.address}</td>
+                    <td className="py-2 pr-4 text-xs text-gray-400 hidden sm:table-cell">{j.status}</td>
+                    <td className="py-2 pr-4 text-xs text-gray-500 hidden md:table-cell">{j.region}</td>
+                    <td className="py-2 pr-4 text-xs text-gray-500 hidden md:table-cell">{j.jobType}</td>
                     <td className="py-2 pr-4 text-xs font-mono text-green-400">{formatCurrency(j.authorisedTotal)}</td>
-                    <td className="py-2 pr-4 text-xs text-gray-500">{formatDate(j.updatedAt)}</td>
+                    <td className="py-2 pr-4 text-xs text-gray-500 hidden sm:table-cell">{formatDate(j.updatedAt)}</td>
                     <td className="py-2">
                       {j.primeUrl && <a href={j.primeUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-red-400"><ExternalLink size={14} /></a>}
                     </td>
@@ -232,11 +232,11 @@ export default function FinancialPage() {
               <tr className="text-xs text-gray-500 border-b border-gray-800">
                 <th className="text-left py-2 pr-4 font-medium">Job #</th>
                 <th className="text-left py-2 pr-4 font-medium">Address</th>
-                <th className="text-left py-2 pr-4 font-medium">Status</th>
-                <th className="text-left py-2 pr-4 font-medium">Region</th>
-                <th className="text-left py-2 pr-4 font-medium">Type</th>
-                <th className="text-left py-2 pr-4 font-medium">Created</th>
-                <th className="text-left py-2 pr-4 font-medium">Updated</th>
+                <th className="text-left py-2 pr-4 font-medium hidden sm:table-cell">Status</th>
+                <th className="text-left py-2 pr-4 font-medium hidden md:table-cell">Region</th>
+                <th className="text-left py-2 pr-4 font-medium hidden md:table-cell">Type</th>
+                <th className="text-left py-2 pr-4 font-medium hidden sm:table-cell">Created</th>
+                <th className="text-left py-2 pr-4 font-medium hidden lg:table-cell">Updated</th>
                 <th className="text-left py-2 font-medium"></th>
               </tr>
             </thead>
@@ -244,12 +244,12 @@ export default function FinancialPage() {
               {zeroShown.map(j => (
                 <tr key={j.id} className="hover:bg-gray-800/30 transition-colors">
                   <td className="py-2 pr-4"><JobLink jobNumber={j.jobNumber} primeUrl={j.primeUrl} /></td>
-                  <td className="py-2 pr-4 text-gray-300 text-xs max-w-[180px] truncate">{j.address}</td>
-                  <td className="py-2 pr-4 text-xs text-gray-400 max-w-[140px] truncate">{j.status}</td>
-                  <td className="py-2 pr-4 text-xs text-gray-500">{j.region}</td>
-                  <td className="py-2 pr-4 text-xs text-gray-500">{j.jobType}</td>
-                  <td className="py-2 pr-4 text-xs text-gray-500">{formatDate(j.createdAt)}</td>
-                  <td className="py-2 pr-4 text-xs text-gray-500">{formatDate(j.updatedAt)}</td>
+                  <td className="py-2 pr-4 text-gray-300 text-xs max-w-[140px] truncate">{j.address}</td>
+                  <td className="py-2 pr-4 text-xs text-gray-400 max-w-[120px] truncate hidden sm:table-cell">{j.status}</td>
+                  <td className="py-2 pr-4 text-xs text-gray-500 hidden md:table-cell">{j.region}</td>
+                  <td className="py-2 pr-4 text-xs text-gray-500 hidden md:table-cell">{j.jobType}</td>
+                  <td className="py-2 pr-4 text-xs text-gray-500 hidden sm:table-cell">{formatDate(j.createdAt)}</td>
+                  <td className="py-2 pr-4 text-xs text-gray-500 hidden lg:table-cell">{formatDate(j.updatedAt)}</td>
                   <td className="py-2">
                     {j.primeUrl && <a href={j.primeUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-red-400"><ExternalLink size={14} /></a>}
                   </td>

@@ -15,7 +15,7 @@ const JobMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800" style={{ height: 580 }}>
+      <div className="flex items-center justify-center rounded-xl bg-gray-900 border border-gray-800 h-[320px] sm:h-[450px] lg:h-[580px]">
         <LoadingSpinner message="Initialising map…" />
       </div>
     ),
@@ -170,32 +170,32 @@ export default function MapPage() {
       />
 
       {/* Stats row */}
-      <div className="grid grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center gap-3">
           <MapPin size={20} className="text-red-500 flex-shrink-0" />
           <div>
-            <p className="text-2xl font-bold text-white">{mapped.length}</p>
+            <p className="text-xl sm:text-2xl font-bold text-white">{mapped.length}</p>
             <p className="text-xs text-gray-500">Pinned on Map</p>
           </div>
         </div>
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center gap-3">
           <RefreshCw size={20} className={`text-blue-400 flex-shrink-0 ${geocoding ? 'animate-spin' : ''}`} />
           <div>
-            <p className="text-2xl font-bold text-white">{pending.length}</p>
+            <p className="text-xl sm:text-2xl font-bold text-white">{pending.length}</p>
             <p className="text-xs text-gray-500">Pending Geocode</p>
           </div>
         </div>
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center gap-3">
           <AlertTriangle size={20} className="text-yellow-500 flex-shrink-0" />
           <div>
-            <p className="text-2xl font-bold text-white">{unmapped.length}</p>
+            <p className="text-xl sm:text-2xl font-bold text-white">{unmapped.length}</p>
             <p className="text-xs text-gray-500">Bad Address</p>
           </div>
         </div>
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center gap-3">
           <MapPin size={20} className="text-gray-500 flex-shrink-0" />
           <div>
-            <p className="text-2xl font-bold text-white">{total || jobs.length}</p>
+            <p className="text-xl sm:text-2xl font-bold text-white">{total || jobs.length}</p>
             <p className="text-xs text-gray-500">Total Open Jobs</p>
           </div>
         </div>
@@ -228,7 +228,7 @@ export default function MapPage() {
         <select
           value={regionFilter}
           onChange={e => setRegionFilter(e.target.value)}
-          className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-500"
+          className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-500 w-full sm:w-auto"
         >
           <option value="">All Regions</option>
           {regions.map(r => <option key={r} value={r}>{r}</option>)}
@@ -237,7 +237,7 @@ export default function MapPage() {
         <select
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
-          className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-500"
+          className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-500 w-full sm:w-auto"
         >
           <option value="">All Statuses</option>
           {statuses.map(s => <option key={s} value={s}>{s}</option>)}
@@ -268,12 +268,12 @@ export default function MapPage() {
 
       {/* Map */}
       {loading ? (
-        <div className="bg-gray-900 rounded-xl border border-gray-800 flex items-center justify-center mb-5" style={{ height: 580 }}>
+        <div className="bg-gray-900 rounded-xl border border-gray-800 flex items-center justify-center mb-5 h-[320px] sm:h-[450px] lg:h-[580px]">
           <LoadingSpinner message="Loading cached results…" />
         </div>
       ) : (
-        <div className="rounded-xl border border-gray-800 overflow-hidden mb-5">
-          <JobMap jobs={mapJobs} height={580} />
+        <div className="rounded-xl border border-gray-800 overflow-hidden mb-5 h-[320px] sm:h-[450px] lg:h-[580px]">
+          <JobMap jobs={mapJobs} />
         </div>
       )}
 

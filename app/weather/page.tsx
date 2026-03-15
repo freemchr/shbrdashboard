@@ -259,7 +259,7 @@ export default function WeatherPage() {
   const severeStates = data?.cities.filter(c => c.severity !== 'normal').length ?? 0;
 
   return (
-    <div className="p-6 min-h-screen bg-gray-950">
+    <div className="min-h-screen">
       <PageHeader
         title="Weather Forecast"
         subtitle="7-day outlook across Australian states — storm and severe weather watch"
@@ -336,7 +336,7 @@ export default function WeatherPage() {
           </div>
 
           {/* Footer */}
-          <div className="mt-6 flex items-center justify-between text-xs text-gray-700">
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-700">
             <p>Data sourced from Open-Meteo (open-meteo.com) — free & open-source weather API</p>
             <p>Click any card to expand 7-day detail</p>
           </div>
