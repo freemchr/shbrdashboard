@@ -6,7 +6,7 @@ import { AuthGuard } from '@/components/ui/AuthGuard';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'SHBR Intelligence',
+  title: 'SHBR Insights',
   description: 'SHBR Group - Insurance Builders & Repairs Operations Dashboard',
 };
 

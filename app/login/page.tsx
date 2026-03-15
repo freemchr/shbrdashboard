@@ -53,7 +53,7 @@ export default function LoginPage() {
               unoptimized
             />
           </div>
-          <h1 className="text-xl font-semibold text-white">SHBR Intelligence</h1>
+          <h1 className="text-xl font-semibold text-white">SHBR Insights</h1>
           <p className="text-gray-500 text-sm mt-1">Sign in to your account</p>
         </div>
 

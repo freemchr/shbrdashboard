@@ -154,7 +154,7 @@ export function Sidebar() {
           </button>
 
           <div className="pt-1">
-            <p className="text-xs text-gray-600 text-center">SHBR Intelligence</p>
+            <p className="text-xs text-gray-600 text-center">SHBR Insights</p>
             <p className="text-xs text-gray-700 text-center">Internal Use Only</p>
             <p className="text-xs text-gray-700 text-center mt-1">
               Created by{' '}
