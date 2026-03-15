@@ -169,8 +169,8 @@ function PipelineContent() {
                   <td className="py-2.5 px-3">
                     {job.primeUrl && (
                       <a href={job.primeUrl} target="_blank" rel="noopener noreferrer"
-                        className="text-gray-600 hover:text-red-400 transition-colors">
-                        <ExternalLink size={13} />
+                        className="text-gray-500 hover:text-red-400 transition-colors flex-shrink-0">
+                        <ExternalLink size={14} />
                       </a>
                     )}
                   </td>
