@@ -18,11 +18,13 @@ import {
   X,
   LogOut,
   User,
+  Cloud,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
+  { href: '/weather', label: 'Weather', icon: Cloud },
   { href: '/pipeline', label: 'Pipeline', icon: GitBranch },
   { href: '/reports', label: 'Reports', icon: FileText, alert: true },
   { href: '/report-assist', label: 'Report Assist', icon: FileEdit, alert: true },
