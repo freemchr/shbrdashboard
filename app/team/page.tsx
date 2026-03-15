@@ -22,7 +22,7 @@ interface TeamMember {
   regions: string[];
 }
 
-type SortKey = 'name' | 'openJobs' | 'totalAuthorisedValue' | 'updatedThisWeek' | 'updatedThisMonth';
+type SortKey = 'name' | 'roles' | 'openJobs' | 'totalAuthorisedValue' | 'updatedThisWeek' | 'updatedThisMonth' | 'status';
 
 export default function TeamPage() {
   const [team, setTeam] = useState<TeamMember[]>([]);
@@ -45,11 +45,13 @@ export default function TeamPage() {
 
   const displayed = (showInactive ? team : team.filter(m => m.status === 'active' || m.openJobs > 0))
     .sort((a, b) => {
-      const av = a[sortKey] ?? 0;
-      const bv = b[sortKey] ?? 0;
+      let av: string | number;
+      let bv: string | number;
+      if (sortKey === 'roles') { av = a.roles.join(', '); bv = b.roles.join(', '); }
+      else if (sortKey === 'status') { av = a.status; bv = b.status; }
+      else { av = a[sortKey] ?? 0; bv = b[sortKey] ?? 0; }
       const cmp = typeof av === 'number' && typeof bv === 'number'
-        ? av - bv
-        : String(av).localeCompare(String(bv));
+        ? av - bv : String(av).localeCompare(String(bv));
       return sortDir === 'asc' ? cmp : -cmp;
     });
 
@@ -123,13 +125,13 @@ export default function TeamPage() {
             <thead>
               <tr className="border-b border-gray-800">
                 <SortTh col="name" label="Name" className="pl-5" />
-                <th className="px-4 py-2.5 text-left text-xs text-gray-500 font-medium whitespace-nowrap">Role</th>
+                <SortTh col="roles" label="Role" />
                 <SortTh col="openJobs" label="Open Jobs" />
                 <SortTh col="totalAuthorisedValue" label="Auth. Value" />
                 <SortTh col="updatedThisWeek" label="This Week" />
                 <SortTh col="updatedThisMonth" label="This Month" />
                 <th className="px-4 py-2.5 text-left text-xs text-gray-500 font-medium whitespace-nowrap">Regions</th>
-                <th className="px-4 py-2.5 text-left text-xs text-gray-500 font-medium">Status</th>
+                <SortTh col="status" label="Status" />
               </tr>
             </thead>
             <tbody>
@@ -139,8 +141,17 @@ export default function TeamPage() {
                     <div className="font-medium text-white text-sm">{m.name}</div>
                     {m.email && <div className="text-xs text-gray-500 mt-0.5">{m.email}</div>}
                   </td>
-                  <td className="px-4 py-2.5 text-xs text-gray-400 whitespace-nowrap">
-                    {m.roles.join(', ') || '—'}
+                  <td className="px-4 py-2.5 text-xs text-gray-400 max-w-[140px]">
+                    {m.roles.length === 0 ? '—' : (
+                      <span title={m.roles.join(', ')} className="cursor-default">
+                        {m.roles[0]}
+                        {m.roles.length > 1 && (
+                          <span className="ml-1 text-gray-600 bg-gray-800 px-1.5 py-0.5 rounded-full text-[10px]" title={m.roles.join(', ')}>
+                            +{m.roles.length - 1}
+                          </span>
+                        )}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-2.5 whitespace-nowrap">
                     <span className={`font-bold font-mono text-sm ${
