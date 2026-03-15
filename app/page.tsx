@@ -5,7 +5,7 @@ import { KpiCard } from '@/components/ui/KpiCard';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ErrorMessage, LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatDate, formatCurrency } from '@/lib/prime-helpers';
-import { ExternalLink, Briefcase, AlertTriangle, Calendar, Hash, X, ChevronRight, FileText } from 'lucide-react';
+import { ExternalLink, Briefcase, AlertTriangle, Calendar, Hash, X, ChevronRight, FileText, LayoutGrid, List } from 'lucide-react';
 import Link from 'next/link';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -79,6 +79,30 @@ function JobRow({ job }: { job: FlatJob }) {
   );
 }
 
+function JobListRow({ job }: { job: FlatJob }) {
+  return (
+    <div className="flex items-center gap-3 px-3 py-2 border-b border-gray-800/60 hover:bg-gray-800/30 transition-colors text-xs">
+      <div className="w-28 flex-shrink-0">
+        {job.primeUrl
+          ? <a href={job.primeUrl} target="_blank" rel="noopener noreferrer"
+              className="font-mono text-red-400 hover:text-red-300 underline underline-offset-2 font-semibold">{job.jobNumber}</a>
+          : <span className="font-mono text-red-400 font-semibold">{job.jobNumber}</span>}
+      </div>
+      <div className="flex-1 min-w-0 text-gray-300 truncate">{job.address}</div>
+      <div className="w-32 flex-shrink-0 text-gray-500 truncate hidden md:block">{job.jobType}</div>
+      <div className="w-36 flex-shrink-0 text-gray-500 truncate hidden lg:block">{job.region}</div>
+      <div className="w-28 flex-shrink-0 text-gray-600 hidden xl:block">{formatDate(job.updatedAt)}</div>
+      <div className="w-24 flex-shrink-0 text-gray-500 truncate hidden xl:block">{job.updatedBy || '—'}</div>
+      {job.authorisedTotal > 0 && <div className="w-24 flex-shrink-0 text-gray-400 font-mono text-right hidden lg:block">{formatCurrency(job.authorisedTotal)}</div>}
+      {job.primeUrl && (
+        <a href={job.primeUrl} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-red-400 flex-shrink-0">
+          <ExternalLink size={13} />
+        </a>
+      )}
+    </div>
+  );
+}
+
 export default function OverviewPage() {
   const [openJobs, setOpenJobs] = useState<FlatJob[]>([]);
   const [kpis, setKpis] = useState<Kpis | null>(null);
@@ -89,6 +113,7 @@ export default function OverviewPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [kpiPanel, setKpiPanel] = useState<'open' | 'stuck' | 'week' | 'month' | null>(null);
+  const [viewMode, setViewMode] = useState<'tile' | 'list'>('tile');
   const [noReportCount, setNoReportCount] = useState<number | null>(null);
   const drilldownRef = useRef<HTMLDivElement>(null);
 
@@ -315,17 +340,30 @@ export default function OverviewPage() {
                   </p>
                 </div>
               </div>
-              <button onClick={close}
-                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 px-3 py-1.5 rounded-lg transition-colors">
-                <X size={13} /> Close
-              </button>
+              <div className="flex items-center gap-2">
+                {/* View toggle */}
+                <div className="flex items-center bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+                  <button onClick={() => setViewMode('tile')}
+                    className={`flex items-center gap-1 px-2.5 py-1.5 text-xs transition-colors ${viewMode === 'tile' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+                    <LayoutGrid size={13} /> Tiles
+                  </button>
+                  <button onClick={() => setViewMode('list')}
+                    className={`flex items-center gap-1 px-2.5 py-1.5 text-xs transition-colors ${viewMode === 'list' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+                    <List size={13} /> List
+                  </button>
+                </div>
+                <button onClick={close}
+                  className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 px-3 py-1.5 rounded-lg transition-colors">
+                  <X size={13} /> Close
+                </button>
+              </div>
             </div>
 
             {loadingJobs ? (
               <LoadingSpinner message="Loading jobs…" />
             ) : jobs.length === 0 ? (
               <p className="text-gray-500 text-sm py-8 text-center">No jobs found.</p>
-            ) : (
+            ) : viewMode === 'tile' ? (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
                   {jobs.slice(0, 90).map(job => <JobRow key={job.id} job={job} />)}
@@ -333,6 +371,28 @@ export default function OverviewPage() {
                 {jobs.length > 90 && (
                   <p className="text-xs text-gray-600 text-center mt-4">
                     Showing 90 of {jobs.length} · use Job Search to see all
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                {/* List view header */}
+                <div className="flex items-center gap-3 px-3 py-1.5 text-xs text-gray-600 font-medium border-b border-gray-800 mb-1">
+                  <div className="w-28 flex-shrink-0">Job #</div>
+                  <div className="flex-1">Address</div>
+                  <div className="w-32 flex-shrink-0 hidden md:block">Type</div>
+                  <div className="w-36 flex-shrink-0 hidden lg:block">Region</div>
+                  <div className="w-28 flex-shrink-0 hidden xl:block">Updated</div>
+                  <div className="w-24 flex-shrink-0 hidden xl:block">By</div>
+                  <div className="w-24 flex-shrink-0 hidden lg:block text-right">Value</div>
+                  <div className="w-4 flex-shrink-0"></div>
+                </div>
+                <div className="rounded-lg border border-gray-800 overflow-hidden">
+                  {jobs.slice(0, 200).map(job => <JobListRow key={job.id} job={job} />)}
+                </div>
+                {jobs.length > 200 && (
+                  <p className="text-xs text-gray-600 text-center mt-4">
+                    Showing 200 of {jobs.length} · use Job Search to see all
                   </p>
                 )}
               </>
