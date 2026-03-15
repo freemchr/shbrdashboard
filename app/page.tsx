@@ -93,7 +93,7 @@ export default function OverviewPage() {
   const drilldownRef = useRef<HTMLDivElement>(null);
 
   const scrollToDrilldown = () =>
-    setTimeout(() => drilldownRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    setTimeout(() => drilldownRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
 
   const openKpiPanel = (panel: 'open' | 'stuck' | 'week' | 'month') => {
     setSelectedStatus(null); // close bar chart drilldown
@@ -171,8 +171,10 @@ export default function OverviewPage() {
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleBarClick = (data: any) => {
-    const name = data?.activePayload?.[0]?.payload?.name;
+    // Works for both BarChart onClick (activePayload) and Bar onClick (direct payload)
+    const name = data?.name ?? data?.activePayload?.[0]?.payload?.name;
     if (!name) return;
     openBarDrilldown(name);
   };
@@ -240,8 +242,6 @@ export default function OverviewPage() {
                   height={300}
                   data={chartData}
                   margin={{ top: 5, right: 10, left: 0, bottom: 80 }}
-                  onClick={handleBarClick}
-                  style={{ cursor: 'pointer' }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
                   <XAxis
@@ -253,7 +253,7 @@ export default function OverviewPage() {
                   />
                   <YAxis tick={{ fill: '#9ca3af', fontSize: 12 }} width={32} />
                   <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(220,38,38,0.08)' }} />
-                  <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+                  <Bar dataKey="value" radius={[3, 3, 0, 0]} onClick={handleBarClick} style={{ cursor: 'pointer' }}>
                     {chartData.map(entry => (
                       <Cell
                         key={entry.name}
