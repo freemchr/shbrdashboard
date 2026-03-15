@@ -117,7 +117,9 @@ export default function OverviewPage() {
   const chartWidth = Math.max(600, chartData.length * 60);
 
   const drilledJobs = selectedStatus
-    ? openJobs.filter(j => j.status === selectedStatus).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    ? openJobs
+        .filter(j => j.status.trim().toLowerCase() === selectedStatus.trim().toLowerCase())
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     : [];
 
   const reportQuoteJobs = openJobs
