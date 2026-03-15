@@ -5,7 +5,7 @@ import { KpiCard } from '@/components/ui/KpiCard';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ErrorMessage, LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatDate, formatCurrency } from '@/lib/prime-helpers';
-import { ExternalLink, Briefcase, AlertTriangle, Calendar, Hash, X } from 'lucide-react';
+import { ExternalLink, Briefcase, AlertTriangle, Calendar, Hash, X, ChevronRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface Kpis {
@@ -87,7 +87,21 @@ export default function OverviewPage() {
   const [loadingCounts, setLoadingCounts] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [kpiPanel, setKpiPanel] = useState<'open' | 'stuck' | 'week' | 'month' | null>(null);
   const drilldownRef = useRef<HTMLDivElement>(null);
+
+  const scrollToDrilldown = () =>
+    setTimeout(() => drilldownRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+
+  const openKpiPanel = (panel: 'open' | 'stuck' | 'week' | 'month') => {
+    setSelectedStatus(null); // close bar chart drilldown
+    setKpiPanel(p => { const next = p === panel ? null : panel; if (next) scrollToDrilldown(); return next; });
+  };
+
+  const openBarDrilldown = (name: string) => {
+    setKpiPanel(null); // close KPI panel
+    setSelectedStatus(p => { const next = p === name ? null : name; if (next) scrollToDrilldown(); return next; });
+  };
 
   useEffect(() => {
     fetch('/api/prime/jobs/open')
@@ -116,6 +130,25 @@ export default function OverviewPage() {
   // Dynamic chart width: at least 600px, 60px per bar
   const chartWidth = Math.max(600, chartData.length * 60);
 
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const now = new Date();
+  const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay()); weekStart.setHours(0,0,0,0);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const stuckJobs  = openJobs.filter(j => j.updatedAt && new Date(j.updatedAt) <= sevenDaysAgo)
+    .sort((a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime());
+  const weekJobs   = openJobs.filter(j => j.createdAt && new Date(j.createdAt) >= weekStart)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const monthJobs  = openJobs.filter(j => j.createdAt && new Date(j.createdAt) >= monthStart)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const kpiPanelData = {
+    open:  { title: 'All Open Jobs',              jobs: [...openJobs].sort((a,b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()) },
+    stuck: { title: 'Stuck >7 Days (Open Jobs)',  jobs: stuckJobs },
+    week:  { title: 'Created This Week',          jobs: weekJobs },
+    month: { title: 'Created This Month',         jobs: monthJobs },
+  };
+
   const drilledJobs = selectedStatus
     ? openJobs
         .filter(j => j.status.trim().toLowerCase() === selectedStatus.trim().toLowerCase())
@@ -130,9 +163,7 @@ export default function OverviewPage() {
   const handleBarClick = (data: any) => {
     const name = data?.activePayload?.[0]?.payload?.name;
     if (!name) return;
-    const next = selectedStatus === name ? null : name;
-    setSelectedStatus(next);
-    if (next) setTimeout(() => drilldownRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    openBarDrilldown(name);
   };
 
   return (
@@ -142,15 +173,17 @@ export default function OverviewPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 xl:grid-cols-5 gap-4 mb-8">
         <KpiCard title="Total Jobs" value={loadingKpis ? '…' : (kpis?.totalJobs ?? '—')} icon={<Hash size={18} />} />
-        <KpiCard title="Open Jobs" value={loadingCounts ? '…' : totalOpen} icon={<Briefcase size={18} />} />
-        <KpiCard
-          title="Stuck >7 Days"
-          value={loadingKpis ? '…' : (kpis?.stuckOver7Days ?? '—')}
-          icon={<AlertTriangle size={18} />}
-          accent={!loadingKpis && (kpis?.stuckOver7Days ?? 0) > 0}
-        />
-        <KpiCard title="Created This Week" value={loadingKpis ? '…' : (kpis?.createdThisWeek ?? '—')} icon={<Calendar size={18} />} />
-        <KpiCard title="Created This Month" value={loadingKpis ? '…' : (kpis?.createdThisMonth ?? '—')} icon={<Calendar size={18} />} />
+        <KpiCard title="Open Jobs" value={loadingCounts ? '…' : totalOpen} icon={<Briefcase size={18} />}
+          onClick={() => openKpiPanel('open')} active={kpiPanel === 'open'} subtitle="Click to view ↓" />
+        <KpiCard title="Stuck >7 Days" value={loadingKpis ? '…' : (kpis?.stuckOver7Days ?? '—')}
+          icon={<AlertTriangle size={18} />} accent={!loadingKpis && (kpis?.stuckOver7Days ?? 0) > 0}
+          onClick={() => openKpiPanel('stuck')} active={kpiPanel === 'stuck'} subtitle="Click to view ↓" />
+        <KpiCard title="Created This Week" value={loadingKpis ? '…' : (kpis?.createdThisWeek ?? '—')}
+          icon={<Calendar size={18} />}
+          onClick={() => openKpiPanel('week')} active={kpiPanel === 'week'} subtitle="Click to view ↓" />
+        <KpiCard title="Created This Month" value={loadingKpis ? '…' : (kpis?.createdThisMonth ?? '—')}
+          icon={<Calendar size={18} />}
+          onClick={() => openKpiPanel('month')} active={kpiPanel === 'month'} subtitle="Click to view ↓" />
       </div>
 
       {error && <ErrorMessage message={error} />}
@@ -230,42 +263,51 @@ export default function OverviewPage() {
         </div>
       </div>
 
-      {/* Drilldown panel */}
-      {selectedStatus && (
-        <div ref={drilldownRef} className="bg-gray-900 rounded-xl border border-red-900/40 p-5">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="text-xl font-bold text-white">{selectedStatus}</h2>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {loadingJobs ? '…' : `${drilledJobs.length} open job${drilledJobs.length !== 1 ? 's' : ''} · sorted by most recently updated`}
-              </p>
-            </div>
-            <button
-              onClick={() => setSelectedStatus(null)}
-              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 px-3 py-1.5 rounded-lg transition-colors"
-            >
-              <X size={13} /> Close
-            </button>
-          </div>
+      {/* Shared drilldown panel — bar chart status OR KPI card */}
+      {(selectedStatus || kpiPanel) && (() => {
+        const isKpi = !!kpiPanel;
+        const panel = isKpi ? kpiPanelData[kpiPanel!] : null;
+        const title = isKpi ? panel!.title : selectedStatus!;
+        const jobs  = isKpi ? panel!.jobs : drilledJobs;
+        const close = isKpi ? () => setKpiPanel(null) : () => setSelectedStatus(null);
 
-          {loadingJobs ? (
-            <LoadingSpinner message="Loading jobs…" />
-          ) : drilledJobs.length === 0 ? (
-            <p className="text-gray-500 text-sm py-8 text-center">No jobs found for this status.</p>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
-                {drilledJobs.slice(0, 90).map(job => <JobRow key={job.id} job={job} />)}
+        return (
+          <div ref={drilldownRef} className="bg-gray-900 rounded-xl border border-red-900/40 p-5">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <ChevronRight size={16} className="text-red-400 flex-shrink-0" />
+                <div>
+                  <h2 className="text-xl font-bold text-white">{title}</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {loadingJobs ? '…' : `${jobs.length} job${jobs.length !== 1 ? 's' : ''}`}
+                  </p>
+                </div>
               </div>
-              {drilledJobs.length > 90 && (
-                <p className="text-xs text-gray-600 text-center mt-4">
-                  Showing 90 of {drilledJobs.length} · use Job Search to see all
-                </p>
-              )}
-            </>
-          )}
-        </div>
-      )}
+              <button onClick={close}
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 px-3 py-1.5 rounded-lg transition-colors">
+                <X size={13} /> Close
+              </button>
+            </div>
+
+            {loadingJobs ? (
+              <LoadingSpinner message="Loading jobs…" />
+            ) : jobs.length === 0 ? (
+              <p className="text-gray-500 text-sm py-8 text-center">No jobs found.</p>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+                  {jobs.slice(0, 90).map(job => <JobRow key={job.id} job={job} />)}
+                </div>
+                {jobs.length > 90 && (
+                  <p className="text-xs text-gray-600 text-center mt-4">
+                    Showing 90 of {jobs.length} · use Job Search to see all
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
