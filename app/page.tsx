@@ -5,7 +5,8 @@ import { KpiCard } from '@/components/ui/KpiCard';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ErrorMessage, LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatDate, formatCurrency } from '@/lib/prime-helpers';
-import { ExternalLink, Briefcase, AlertTriangle, Calendar, Hash, X, ChevronRight } from 'lucide-react';
+import { ExternalLink, Briefcase, AlertTriangle, Calendar, Hash, X, ChevronRight, FileText } from 'lucide-react';
+import Link from 'next/link';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface Kpis {
@@ -88,6 +89,7 @@ export default function OverviewPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [kpiPanel, setKpiPanel] = useState<'open' | 'stuck' | 'week' | 'month' | null>(null);
+  const [noReportCount, setNoReportCount] = useState<number | null>(null);
   const drilldownRef = useRef<HTMLDivElement>(null);
 
   const scrollToDrilldown = () =>
@@ -121,6 +123,12 @@ export default function OverviewPage() {
       .then(d => setOpenCounts(Array.isArray(d) ? d.filter((s: StatusCount) => s.statusType === 'Open') : []))
       .catch(() => setOpenCounts([]))
       .finally(() => setLoadingCounts(false));
+
+    // Fetch report alert count (lightweight — uses cached data)
+    fetch('/api/prime/jobs/reports')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d && setNoReportCount(d.noReport))
+      .catch(() => null);
   }, []);
 
   const totalOpen = openCounts.reduce((sum, s) => sum + s.count, 0);
@@ -190,6 +198,27 @@ export default function OverviewPage() {
       </div>
 
       {error && <ErrorMessage message={error} />}
+
+      {/* Report alert banner */}
+      {noReportCount !== null && noReportCount > 0 && (
+        <Link href="/reports"
+          className="flex items-center justify-between gap-4 mb-6 bg-red-950/40 border border-red-700/50 rounded-xl px-5 py-4 hover:bg-red-950/60 transition-colors group">
+          <div className="flex items-center gap-3">
+            <AlertTriangle size={20} className="text-red-400 flex-shrink-0" />
+            <div>
+              <p className="text-red-300 font-semibold text-sm">
+                {noReportCount} open job{noReportCount !== 1 ? 's' : ''} with no report submitted to insurer
+              </p>
+              <p className="text-red-400/60 text-xs mt-0.5">No report = no payment. Click to review and action.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-red-400 text-xs font-medium flex-shrink-0 group-hover:text-red-300">
+            <FileText size={14} />
+            View Reports
+            <ChevronRight size={14} />
+          </div>
+        </Link>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
 

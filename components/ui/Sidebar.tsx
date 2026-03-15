@@ -12,6 +12,7 @@ import {
   DollarSign,
   Search,
   Map,
+  FileText,
   Menu,
   X,
 } from 'lucide-react';
@@ -20,6 +21,7 @@ import { useState } from 'react';
 const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/pipeline', label: 'Pipeline', icon: GitBranch },
+  { href: '/reports', label: 'Reports', icon: FileText, alert: true },
   { href: '/bottlenecks', label: 'Bottlenecks', icon: AlertTriangle },
   { href: '/team', label: 'Team', icon: Users },
   { href: '/aging', label: 'Aging', icon: Clock },
@@ -28,11 +30,12 @@ const navItems = [
   { href: '/map', label: 'Jobs Map', icon: Map },
 ];
 
-function NavItem({ href, label, icon: Icon, active }: {
+function NavItem({ href, label, icon: Icon, active, alert }: {
   href: string;
   label: string;
   icon: React.ElementType;
   active: boolean;
+  alert?: boolean;
 }) {
   return (
     <Link
@@ -44,7 +47,10 @@ function NavItem({ href, label, icon: Icon, active }: {
         }`}
     >
       <Icon size={18} />
-      {label}
+      <span className="flex-1">{label}</span>
+      {alert && !active && (
+        <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
+      )}
     </Link>
   );
 }
@@ -96,6 +102,7 @@ export function Sidebar() {
               label={item.label}
               icon={item.icon}
               active={isActive(item.href)}
+              alert={item.alert}
             />
           ))}
         </nav>
