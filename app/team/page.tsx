@@ -49,17 +49,21 @@ export default function TeamPage() {
       label: 'Name',
       sortable: true,
       render: (m) => (
-        <div>
-          <div className="font-medium text-white text-sm">{m.name}</div>
-          <div className="text-xs text-gray-500">{m.email}</div>
-        </div>
+        <span className="font-medium text-white text-xs whitespace-nowrap">{m.name}</span>
+      ),
+    },
+    {
+      key: 'email',
+      label: 'Email',
+      render: (m) => (
+        <span className="text-xs text-gray-500 whitespace-nowrap">{m.email || '—'}</span>
       ),
     },
     {
       key: 'roles',
       label: 'Role',
       render: (m) => (
-        <span className="text-xs text-gray-400">{m.roles.join(', ') || '—'}</span>
+        <span className="text-xs text-gray-400 whitespace-nowrap">{m.roles.join(', ') || '—'}</span>
       ),
     },
     {
@@ -70,7 +74,7 @@ export default function TeamPage() {
         <span className={`font-bold font-mono text-sm ${
           m.openJobs > 20 ? 'text-red-400' : m.openJobs > 10 ? 'text-yellow-400' : m.openJobs > 0 ? 'text-green-400' : 'text-gray-600'
         }`}>
-          {m.openJobs}
+          {m.openJobs || '—'}
         </span>
       ),
     },
@@ -79,17 +83,17 @@ export default function TeamPage() {
       label: 'Auth. Value',
       sortable: true,
       render: (m) => (
-        <span className="text-xs text-gray-300 font-mono">
+        <span className="text-xs text-gray-300 font-mono whitespace-nowrap">
           {m.totalAuthorisedValue > 0 ? formatCurrency(m.totalAuthorisedValue) : '—'}
         </span>
       ),
     },
     {
       key: 'updatedThisWeek',
-      label: 'Updated This Week',
+      label: 'This Week',
       sortable: true,
       render: (m) => (
-        <span className={`font-mono text-sm ${m.updatedThisWeek > 0 ? 'text-green-400' : 'text-gray-600'}`}>
+        <span className={`font-mono text-xs ${m.updatedThisWeek > 0 ? 'text-green-400' : 'text-gray-600'}`}>
           {m.updatedThisWeek || '—'}
         </span>
       ),
@@ -99,7 +103,7 @@ export default function TeamPage() {
       label: 'This Month',
       sortable: true,
       render: (m) => (
-        <span className="font-mono text-sm text-gray-400">{m.updatedThisMonth || '—'}</span>
+        <span className="font-mono text-xs text-gray-400">{m.updatedThisMonth || '—'}</span>
       ),
     },
     {
@@ -113,7 +117,7 @@ export default function TeamPage() {
       key: 'status',
       label: 'Status',
       render: (m) => (
-        <span className={`text-xs px-2 py-0.5 rounded-full ${
+        <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
           m.status === 'active' ? 'bg-green-900/40 text-green-400' : 'bg-gray-800 text-gray-500'
         }`}>
           {m.status}

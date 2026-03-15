@@ -75,7 +75,7 @@ export function DataTable<T = any>({
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`px-4 py-3 text-left text-gray-400 font-medium whitespace-nowrap ${col.className || ''}`}
+                  className={`px-4 py-2 text-left text-gray-400 font-medium whitespace-nowrap ${col.className || ''}`}
                 >
                   {col.sortable ? (
                     <button
@@ -121,7 +121,7 @@ export function DataTable<T = any>({
                   className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors"
                 >
                   {columns.map((col) => (
-                    <td key={col.key} className={`px-4 py-3 text-gray-200 ${col.className || ''}`}>
+                    <td key={col.key} className={`px-4 py-2 text-gray-200 ${col.className || ''}`}>
                       {col.render ? col.render(item) : String(item[col.key] ?? '—')}
                     </td>
                   ))}
