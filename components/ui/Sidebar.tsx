@@ -101,10 +101,15 @@ export function Sidebar() {
         </nav>
 
         <div className="p-4 border-t border-gray-800">
-          <p className="text-xs text-gray-600 text-center">
-            SHBR Prime Dashboard
-          </p>
+          <p className="text-xs text-gray-600 text-center">SHBR Prime Dashboard</p>
           <p className="text-xs text-gray-700 text-center">Internal Use Only</p>
+          <p className="text-xs text-gray-700 text-center mt-1">
+            Created by{' '}
+            <a href="https://www.techgurus.com.au" target="_blank" rel="noopener noreferrer"
+              className="text-gray-600 hover:text-red-400 transition-colors underline underline-offset-2">
+              TechGurus
+            </a>
+          </p>
         </div>
       </aside>
     </>
