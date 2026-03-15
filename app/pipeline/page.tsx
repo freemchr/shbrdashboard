@@ -35,7 +35,7 @@ function PipelineContent() {
   useEffect(() => {
     Promise.all([
       fetch('/api/prime/jobs/counts-by-status').then(r => r.json()),
-      fetch('/api/prime/jobs/pipeline').then(r => r.json()),
+      fetch('/api/prime/jobs/pipeline?force=1').then(r => r.json()),
       fetch('/api/prime/jobs/open').then(r => r.json()),
     ]).then(([countsData, pipelineData, jobsData]) => {
       setCounts(Array.isArray(countsData) ? countsData : []);
