@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Logo } from './Logo';
 import {
   LayoutDashboard,
@@ -16,8 +16,10 @@ import {
   FileEdit,
   Menu,
   X,
+  LogOut,
+  User,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
@@ -59,10 +61,33 @@ function NavItem({ href, label, icon: Icon, active, alert }: {
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/auth/session')
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.userName) setUserName(data.userName);
+      })
+      .catch(() => {});
+  }, []);
 
   const isActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname.startsWith(href);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // ignore
+    }
+    router.push('/login');
+    router.refresh();
+  };
 
   return (
     <>
@@ -109,16 +134,36 @@ export function Sidebar() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-gray-800">
-          <p className="text-xs text-gray-600 text-center">SHBR Prime Dashboard</p>
-          <p className="text-xs text-gray-700 text-center">Internal Use Only</p>
-          <p className="text-xs text-gray-700 text-center mt-1">
-            Created by{' '}
-            <a href="https://www.techgurus.com.au" target="_blank" rel="noopener noreferrer"
-              className="text-gray-600 hover:text-red-400 transition-colors underline underline-offset-2">
-              TechGurus
-            </a>
-          </p>
+        <div className="p-4 border-t border-gray-800 space-y-3">
+          {/* User info */}
+          {userName && (
+            <div className="flex items-center gap-2 px-2 py-1">
+              <User size={14} className="text-gray-500 flex-shrink-0" />
+              <span className="text-xs text-gray-400 truncate">{userName}</span>
+            </div>
+          )}
+
+          {/* Logout button */}
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <LogOut size={16} />
+            <span>{loggingOut ? 'Signing out...' : 'Sign Out'}</span>
+          </button>
+
+          <div className="pt-1">
+            <p className="text-xs text-gray-600 text-center">SHBR Prime Dashboard</p>
+            <p className="text-xs text-gray-700 text-center">Internal Use Only</p>
+            <p className="text-xs text-gray-700 text-center mt-1">
+              Created by{' '}
+              <a href="https://www.techgurus.com.au" target="_blank" rel="noopener noreferrer"
+                className="text-gray-600 hover:text-red-400 transition-colors underline underline-offset-2">
+                TechGurus
+              </a>
+            </p>
+          </div>
         </div>
       </aside>
     </>

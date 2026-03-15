@@ -1,22 +1,85 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSession } from '@/lib/session';
 
-const DASHBOARD_SECRET = process.env.DASHBOARD_SECRET || 'shbr2026';
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
-  const { secret, redirect } = await req.json();
+  try {
+    const { email, password } = await req.json();
 
-  if (secret?.trim() !== DASHBOARD_SECRET?.trim()) {
-    return NextResponse.json({ error: 'Invalid access code' }, { status: 401 });
+    if (!email || !password) {
+      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+    }
+
+    const primeBaseUrl = process.env.PRIME_BASE_URL;
+    if (!primeBaseUrl) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+
+    // Authenticate with Prime OAuth
+    const tokenParams = new URLSearchParams({
+      grant_type: 'password',
+      username: email,
+      password: password,
+      client_id: process.env.PRIME_CLIENT_ID || '',
+      client_secret: process.env.PRIME_CLIENT_SECRET || '',
+    });
+
+    const tokenResponse = await fetch(`${primeBaseUrl}/oauth/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/vnd.api.v2+json',
+      },
+      body: tokenParams.toString(),
+    });
+
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      console.error('Prime OAuth error:', tokenResponse.status, errorText);
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
+
+    const tokenData = await tokenResponse.json();
+    const { access_token, refresh_token, expires_in } = tokenData;
+
+    if (!access_token) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
+
+    // Fetch user name from Prime
+    let userName = email;
+    try {
+      const encodedEmail = encodeURIComponent(email);
+      const userResponse = await fetch(`${primeBaseUrl}/users?filter[email]=${encodedEmail}`, {
+        headers: {
+          'Authorization': `Bearer ${access_token}`,
+          'Accept': 'application/vnd.api.v2+json',
+        },
+      });
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        const user = userData?.data?.[0];
+        if (user) {
+          userName = user.attributes?.name || user.attributes?.fullName || email;
+        }
+      }
+    } catch (err) {
+      console.warn('Could not fetch user name:', err);
+    }
+
+    // Store session
+    const session = await getSession();
+    session.accessToken = access_token;
+    session.refreshToken = refresh_token || '';
+    session.expiresAt = Date.now() + (expires_in || 28800) * 1000;
+    session.userName = userName;
+    session.userEmail = email;
+    await session.save();
+
+    return NextResponse.json({ success: true, userName });
+  } catch (error) {
+    console.error('Login error:', error);
+    return NextResponse.json({ error: 'Login failed' }, { status: 500 });
   }
-
-  const response = NextResponse.json({ ok: true, redirect: redirect || '/' });
-  response.cookies.set('shbr_secret', DASHBOARD_SECRET, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-    path: '/',
-  });
-  return response;
 }
-// Sat Mar 14 10:09:10 UTC 2026

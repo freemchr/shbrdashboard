@@ -2,20 +2,40 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-
-const SECRET = 'shbr2026';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
-  const [code, setCode] = useState('');
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (code.trim() === SECRET) {
-      localStorage.setItem('shbr_auth', SECRET);
-      window.location.href = '/';
-    } else {
-      setError('Invalid access code. Please try again.');
+    setError('');
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Login failed. Please try again.');
+        return;
+      }
+
+      router.push('/');
+      router.refresh();
+    } catch {
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -34,28 +54,56 @@ export default function LoginPage() {
             />
           </div>
           <h1 className="text-xl font-semibold text-white">Prime Dashboard</h1>
-          <p className="text-gray-500 text-sm mt-1">Internal access only</p>
+          <p className="text-gray-500 text-sm mt-1">Sign in with your Prime account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Access Code</label>
+            <label className="block text-sm text-gray-400 mb-1">Email</label>
             <input
-              type="password"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="Enter access code"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
               autoFocus
+              autoComplete="email"
               className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-red-500 transition-colors"
               required
             />
           </div>
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              autoComplete="current-password"
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-red-500 transition-colors"
+              required
+            />
+          </div>
+
+          {error && (
+            <div className="bg-red-950/50 border border-red-800 rounded-lg px-4 py-2.5">
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+
           <button
             type="submit"
-            className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 rounded-lg transition-colors"
+            disabled={loading}
+            className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2"
           >
-            Access Dashboard
+            {loading ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              'Sign In'
+            )}
           </button>
         </form>
       </div>
