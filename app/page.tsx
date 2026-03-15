@@ -209,7 +209,7 @@ export default function OverviewPage() {
               <p className="text-red-300 font-semibold text-sm">
                 {noReportCount} open job{noReportCount !== 1 ? 's' : ''} with no report submitted to insurer
               </p>
-              <p className="text-red-400/60 text-xs mt-0.5">No report = no payment. Click to review and action.</p>
+              <p className="text-red-400/60 text-xs mt-0.5">Reports not yet submitted. Click to review and action.</p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-red-400 text-xs font-medium flex-shrink-0 group-hover:text-red-300">
