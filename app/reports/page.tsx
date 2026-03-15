@@ -5,7 +5,8 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { LoadingSpinner, ErrorMessage } from '@/components/ui/LoadingSpinner';
 import { formatCurrency, formatDate } from '@/lib/prime-helpers';
 import { downloadCSV } from '@/lib/export-csv';
-import { ExternalLink, Download, AlertTriangle, Clock, CheckCircle, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { ExternalLink, Download, AlertTriangle, Clock, CheckCircle, ChevronUp, ChevronDown, ChevronsUpDown, FileEdit } from 'lucide-react';
+import Link from 'next/link';
 
 interface ReportJob {
   id: string;
@@ -38,12 +39,13 @@ interface ReportSummary {
 type Tab = 'no_report' | 'in_progress' | 'submitted';
 type SortKey = 'jobNumber' | 'jobType' | 'region' | 'status' | 'daysSinceCreated' | 'daysSinceUpdated' | 'authorisedTotal';
 
-function JobTable({ jobs, sortKey, sortDir, onSort, showAge = 'created' }: {
+function JobTable({ jobs, sortKey, sortDir, onSort, showAge = 'created', showAssistButton = false }: {
   jobs: ReportJob[];
   sortKey: SortKey;
   sortDir: 'asc' | 'desc';
   onSort: (k: SortKey) => void;
   showAge?: 'created' | 'updated';
+  showAssistButton?: boolean;
 }) {
   const SortTh = ({ col, label }: { col: SortKey; label: string }) => (
     <th onClick={() => onSort(col)}
@@ -80,6 +82,7 @@ function JobTable({ jobs, sortKey, sortDir, onSort, showAge = 'created' }: {
             <SortTh col="daysSinceUpdated" label="Last Update" />
             <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium whitespace-nowrap">Updated By</th>
             <th className="py-2 px-3"></th>
+            {showAssistButton && <th className="py-2 px-3"></th>}
           </tr>
         </thead>
         <tbody>
@@ -115,6 +118,14 @@ function JobTable({ jobs, sortKey, sortDir, onSort, showAge = 'created' }: {
                 {job.primeUrl && <a href={job.primeUrl} target="_blank" rel="noopener noreferrer"
                   className="text-gray-500 hover:text-red-400"><ExternalLink size={14} /></a>}
               </td>
+              {showAssistButton && (
+                <td className="py-2 px-3">
+                  <Link href={`/report-assist/${job.jobNumber}`}
+                    className="flex items-center gap-1 text-xs bg-red-600 hover:bg-red-500 text-white px-2.5 py-1 rounded-md transition-colors whitespace-nowrap font-medium">
+                    <FileEdit size={11} /> Create Report
+                  </Link>
+                </td>
+              )}
             </tr>
           ))}
           {sorted.length === 0 && (
@@ -284,6 +295,7 @@ export default function ReportsPage() {
           sortDir={sortDir}
           onSort={handleSort}
           showAge={tab === 'submitted' ? 'updated' : 'created'}
+          showAssistButton={tab === 'no_report'}
         />
       </div>
     </div>
