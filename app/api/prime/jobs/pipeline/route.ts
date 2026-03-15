@@ -7,7 +7,7 @@ export const maxDuration = 60;
 
 export async function GET() {
   try {
-    const cacheKey = 'pipeline-v2';
+    const cacheKey = 'pipeline-v3';
     const cached = await getCached<unknown>(cacheKey);
     if (cached) return NextResponse.json(cached);
 
@@ -48,8 +48,9 @@ export async function GET() {
 
     const counts = await pMap(weeks, async (w) => {
       try {
+        const qs = encodeURIComponent(`'createdAt'.gte('${w.start} 00:00:00'),'createdAt'.lte('${w.end} 23:59:59')`);
         const data = await primeGet(
-          `/jobs?per_page=1&q='createdAt'.gte('${w.start} 00:00:00'),'createdAt'.lte('${w.end} 23:59:59')`
+          `/jobs?per_page=1&q=${qs}`
         ) as { meta?: { pagination?: { total?: number } } };
         return data.meta?.pagination?.total ?? 0;
       } catch {
