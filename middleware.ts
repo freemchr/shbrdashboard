@@ -1,42 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Public paths that don't require authentication
-const PUBLIC_PATHS = [
+const PUBLIC_PATHS = new Set([
   '/login',
   '/api/auth/login',
   '/api/auth/logout',
   '/api/auth/session',
-];
+]);
 
-const PUBLIC_PREFIXES = [
-  '/_next/',
-  '/favicon.ico',
-  '/shbr-logo.png',
-];
+const PUBLIC_EXTENSIONS = /\.(png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot|css|js|map)$/i;
 
-function isPublicPath(pathname: string): boolean {
-  if (PUBLIC_PATHS.includes(pathname)) return true;
-  if (PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return true;
-  // Public assets (images, etc.)
-  if (/\.(png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot)$/.test(pathname)) return true;
+function isPublic(pathname: string): boolean {
+  if (PUBLIC_PATHS.has(pathname)) return true;
+  if (pathname.startsWith('/_next/')) return true;
+  if (PUBLIC_EXTENSIONS.test(pathname)) return true;
   return false;
 }
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Allow public paths through
-  if (isPublicPath(pathname)) {
-    return NextResponse.next();
-  }
+  if (isPublic(pathname)) return NextResponse.next();
 
-  // Check for session cookie existence (simplified check)
-  // Full validation happens in API routes and server components via iron-session
-  const sessionCookie = req.cookies.get('shbr_session');
-
-  if (!sessionCookie || !sessionCookie.value) {
-    const loginUrl = new URL('/login', req.url);
-    return NextResponse.redirect(loginUrl);
+  const session = req.cookies.get('shbr_session');
+  if (!session?.value) {
+    // API requests → 401 JSON (don't redirect API calls to login page)
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    // Page requests → redirect to login
+    return NextResponse.redirect(new URL('/login', req.url));
   }
 
   return NextResponse.next();

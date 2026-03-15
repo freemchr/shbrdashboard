@@ -1,30 +1,30 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [checked, setChecked] = useState(false);
+  // Start as false — content is hidden until auth confirmed
+  const [authed, setAuthed] = useState(false);
 
-  // Login page never needs auth check
   const isLoginPage = pathname === '/login';
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isLoginPage) {
-      setChecked(true);
+      setAuthed(true);
       return;
     }
 
-    // Verify session server-side — if not valid, redirect to login
     fetch('/api/auth/session')
       .then(res => {
         if (!res.ok) {
           router.replace('/login');
+          // keep authed=false so nothing shows
         } else {
-          setChecked(true);
+          setAuthed(true);
         }
       })
       .catch(() => {
@@ -32,17 +32,28 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       });
   }, [isLoginPage, router]);
 
-  // Show nothing until auth is confirmed — prevents any flash of content
-  if (!isLoginPage && !checked) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Image src="/shbr-logo.png" alt="SHBR Group" width={160} height={62} unoptimized priority />
-          <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin mt-2" />
-        </div>
-      </div>
-    );
-  }
+  if (isLoginPage) return <>{children}</>;
 
-  return <>{children}</>;
+  // Not yet confirmed — show SHBR splash, hide all page content via CSS
+  // Using visibility:hidden (not display:none) so layout doesn't shift on reveal
+  return (
+    <>
+      {/* Fullscreen overlay blocks ALL content until auth confirmed */}
+      {!authed && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#030712' }}
+          className="flex items-center justify-center"
+        >
+          <div className="flex flex-col items-center gap-5">
+            <Image src="/shbr-logo.png" alt="SHBR Group" width={160} height={62} unoptimized priority />
+            <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        </div>
+      )}
+      {/* Children always in DOM (for hydration) but hidden behind overlay */}
+      <div style={{ visibility: authed ? 'visible' : 'hidden' }}>
+        {children}
+      </div>
+    </>
+  );
 }
