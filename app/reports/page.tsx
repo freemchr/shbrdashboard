@@ -181,7 +181,7 @@ export default function ReportsPage() {
     <div>
       <PageHeader
         title="Reports"
-        subtitle="Track which jobs have reports submitted to the insurer — no report = no payment"
+        subtitle="Track which jobs have reports submitted to the insurer"
         actions={
           <button onClick={handleExport}
             className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-sm px-4 py-2 rounded-lg transition-colors">
@@ -199,7 +199,7 @@ export default function ReportsPage() {
               {data.noReport} open job{data.noReport !== 1 ? 's' : ''} with no report started
             </p>
             <p className="text-red-400/70 text-xs mt-0.5">
-              These jobs have not had a report submitted to the insurer. SHBR cannot be paid until a report is submitted. Review and action immediately.
+              These jobs have not had a report submitted to the insurer yet. Please review and action.
             </p>
           </div>
         </div>
@@ -214,7 +214,7 @@ export default function ReportsPage() {
             <AlertTriangle size={16} className="text-red-400" />
           </div>
           <p className="text-3xl font-bold text-red-400">{data.noReport}</p>
-          <p className="text-xs text-red-400/60 mt-1">Critical — action required</p>
+          <p className="text-xs text-red-400/60 mt-1">Flagged — action required</p>
         </button>
 
         <button onClick={() => setTab('in_progress')}
