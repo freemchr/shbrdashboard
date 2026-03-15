@@ -26,6 +26,8 @@ export interface GeocodedJob {
   region: string;
   primeUrl: string;
   authorisedTotal: number;
+  updatedAt: string;
+  updatedBy: string;
   lat: number | null;
   lng: number | null;
 }
@@ -40,6 +42,8 @@ type RawJob = {
     region?: string;
     authorisedTotalIncludingTax?: number;
     primeUrl?: string;
+    updatedAt?: string;
+    updatedBy?: string;
   };
 };
 
@@ -81,11 +85,20 @@ function flattenJob(j: RawJob, statusNames: Record<string, string>): Omit<Geocod
     region: j.attributes?.region || '—',
     primeUrl: j.attributes?.primeUrl || '',
     authorisedTotal: j.attributes?.authorisedTotalIncludingTax || 0,
+    updatedAt: j.attributes?.updatedAt || '',
+    updatedBy: j.attributes?.updatedBy || '',
   };
 }
 
-const CACHE_KEY = 'geocoded-jobs-v3';
-const SKIP_ADDRESSES = new Set(['—', '', 'undefined', 'null']);
+const CACHE_KEY = 'geocoded-jobs-v4';
+
+// Addresses that are definitely not geocodable — skip immediately
+function isSkippableAddress(addr: string): boolean {
+  if (!addr || addr.length < 5) return true;
+  const upper = addr.toUpperCase();
+  const junkPatterns = ['—', 'UNDEFINED', 'NULL', 'N/A', 'TBA', 'TBC', 'DESKTOP QUOTE', 'NO ADDRESS', 'UNKNOWN'];
+  return junkPatterns.some(p => upper.includes(p));
+}
 
 // GET — return cached results (may be partial/stale), plus progress info
 export async function GET() {
@@ -105,7 +118,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({})) as { batchSize?: number; reset?: boolean };
-    const batchSize = Math.min(body.batchSize ?? 40, 50);
+    const batchSize = Math.min(body.batchSize ?? 30, 35); // 30 * 1.1s = 33s + overhead, safe under 60s
     const reset = body.reset === true;
 
     // Load all open jobs from Prime (cached 30 min)
@@ -142,7 +155,7 @@ export async function POST(req: NextRequest) {
 
     for (const job of toProcess) {
       let coords: { lat: number; lng: number } | null = null;
-      if (!SKIP_ADDRESSES.has(job.address)) {
+      if (!isSkippableAddress(job.address)) {
         coords = await nominatimGeocode(job.address);
         await sleep(1100);
       }

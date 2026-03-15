@@ -3,11 +3,10 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { LoadingSpinner, ErrorMessage } from '@/components/ui/LoadingSpinner';
-import { MapPin, RefreshCw, AlertTriangle } from 'lucide-react';
+import { MapPin, RefreshCw, AlertTriangle, CheckCircle } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { formatCurrency } from '@/lib/prime-helpers';
 
-// Load map client-side only (Leaflet requires window)
 const JobMap = dynamic(
   () => import('@/components/ui/JobMap').then(m => m.JobMap),
   {
@@ -29,14 +28,13 @@ export interface GeocodedJob {
   region: string;
   primeUrl: string;
   authorisedTotal: number;
+  updatedAt: string;
+  updatedBy: string;
   lat: number | null;
   lng: number | null;
 }
 
-type FilterKey = 'all' | 'mapped' | 'unmapped';
-
-const BATCH_SIZE = 40; // geocode 40 addresses per Vercel function call (~44s at 1.1s/req)
-const POLL_INTERVAL_MS = 3000; // poll for new results every 3s while geocoding
+const BATCH_SIZE = 30;
 
 export default function MapPage() {
   const [jobs, setJobs] = useState<GeocodedJob[]>([]);
@@ -46,8 +44,12 @@ export default function MapPage() {
   const [loading, setLoading] = useState(true);
   const [geocoding, setGeocoding] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<FilterKey>('mapped');
+
+  // Filters
   const [regionFilter, setRegionFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [listTab, setListTab] = useState<'mapped' | 'unmapped' | 'all'>('mapped');
+
   const geocodingRef = useRef(false);
 
   const runGeocoding = useCallback(async (reset = false) => {
@@ -80,7 +82,7 @@ export default function MapPage() {
         setComplete(data.complete);
         done = data.complete;
 
-        if (!done) await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+        if (!done) await new Promise(r => setTimeout(r, 2000));
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -91,7 +93,6 @@ export default function MapPage() {
   }, []);
 
   useEffect(() => {
-    // On mount: check cache first (GET), then geocode if needed
     async function init() {
       setLoading(true);
       try {
@@ -105,16 +106,11 @@ export default function MapPage() {
           error?: string;
         };
         if (data.error) throw new Error(data.error);
-
-        setJobs(data.jobs);
-        setTotal(data.total);
-        setGeocoded(data.geocoded ?? data.jobs.filter(j => j.lat !== null).length);
-        setComplete(data.complete);
-
-        // If not complete (cache miss or partial), kick off geocoding
-        if (!data.complete) {
-          runGeocoding(false);
-        }
+        setJobs(data.jobs ?? []);
+        setTotal(data.total ?? 0);
+        setGeocoded(data.geocoded ?? data.jobs?.filter((j: GeocodedJob) => j.lat !== null).length ?? 0);
+        setComplete(data.complete ?? false);
+        if (!data.complete) runGeocoding(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
       } finally {
@@ -124,13 +120,22 @@ export default function MapPage() {
     init();
   }, [runGeocoding]);
 
-  const mapped = jobs.filter(j => j.lat !== null && j.lng !== null);
-  const unmapped = jobs.filter(j => j.lat === null || j.lng === null);
+  // Derived
   const regions = Array.from(new Set(jobs.map(j => j.region).filter(r => r && r !== '—'))).sort();
+  const statuses = Array.from(new Set(jobs.map(j => j.status).filter(s => s && s !== '—'))).sort();
 
-  const filteredForMap = mapped.filter(j => !regionFilter || j.region === regionFilter);
-  const filteredList = (filter === 'mapped' ? mapped : filter === 'unmapped' ? unmapped : jobs)
-    .filter(j => !regionFilter || j.region === regionFilter);
+  const applyFilters = (list: GeocodedJob[]) =>
+    list.filter(j =>
+      (!regionFilter || j.region === regionFilter) &&
+      (!statusFilter || j.status === statusFilter)
+    );
+
+  const mapped    = jobs.filter(j => j.lat !== null && j.lng !== null);
+  const unmapped  = jobs.filter(j => j.lat === null || j.lng === null);
+
+  const mapJobs   = applyFilters(mapped);   // what goes on the map
+  const listJobs  = applyFilters(listTab === 'mapped' ? mapped : listTab === 'unmapped' ? unmapped : jobs)
+    .sort((a, b) => (a.jobNumber > b.jobNumber ? 1 : -1));
 
   const pct = total > 0 ? Math.round((geocoded / total) * 100) : 0;
 
@@ -138,11 +143,11 @@ export default function MapPage() {
     <div>
       <PageHeader
         title="Jobs Map"
-        subtitle="Open jobs plotted on OpenStreetMap — click a pin for details"
+        subtitle="All open jobs pinpointed on OpenStreetMap — click a pin for details"
       />
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-4 mb-5">
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center gap-3">
           <MapPin size={20} className="text-red-500 flex-shrink-0" />
           <div>
@@ -166,25 +171,23 @@ export default function MapPage() {
         </div>
       </div>
 
-      {/* Geocoding progress bar */}
+      {/* Geocoding progress */}
       {geocoding && (
-        <div className="mb-4 bg-gray-900 border border-yellow-800/40 rounded-lg px-4 py-3">
+        <div className="mb-4 bg-gray-900 border border-yellow-800/40 rounded-xl px-4 py-3">
           <div className="flex items-center gap-2 text-sm text-yellow-400 mb-2">
             <RefreshCw size={13} className="animate-spin flex-shrink-0" />
-            Geocoding addresses via OpenStreetMap… {geocoded}/{total} ({pct}%)
+            Geocoding via OpenStreetMap… {geocoded}/{total} ({pct}%) — dropping pins as they resolve
           </div>
           <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-yellow-500 rounded-full transition-all duration-500"
-              style={{ width: `${pct}%` }}
-            />
+            <div className="h-full bg-yellow-500 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
           </div>
         </div>
       )}
 
       {complete && !geocoding && (
-        <div className="mb-4 flex items-center gap-2 text-xs text-green-500 bg-green-900/20 border border-green-800/30 rounded-lg px-3 py-2">
-          ✓ All addresses geocoded — results cached for 2 hours
+        <div className="mb-4 flex items-center gap-2 text-xs text-green-400 bg-green-900/20 border border-green-800/30 rounded-xl px-4 py-2.5">
+          <CheckCircle size={13} />
+          All {total} addresses geocoded · results cached for 2 hours
         </div>
       )}
 
@@ -201,67 +204,88 @@ export default function MapPage() {
           {regions.map(r => <option key={r} value={r}>{r}</option>)}
         </select>
 
+        <select
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+          className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-red-500"
+        >
+          <option value="">All Statuses</option>
+          {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+
+        {(regionFilter || statusFilter) && (
+          <button
+            onClick={() => { setRegionFilter(''); setStatusFilter(''); }}
+            className="text-xs text-gray-400 hover:text-white bg-gray-800 border border-gray-700 px-3 py-2 rounded-lg transition-colors"
+          >
+            Clear filters
+          </button>
+        )}
+
         <button
           onClick={() => { setJobs([]); setComplete(false); setGeocoded(0); runGeocoding(true); }}
           disabled={geocoding}
-          className="flex items-center gap-2 text-sm text-gray-400 hover:text-white bg-gray-800 border border-gray-700 px-3 py-2 rounded-lg transition-colors disabled:opacity-40"
+          className="ml-auto flex items-center gap-2 text-xs text-gray-400 hover:text-white bg-gray-800 border border-gray-700 px-3 py-2 rounded-lg transition-colors disabled:opacity-40"
         >
-          <RefreshCw size={14} className={geocoding ? 'animate-spin' : ''} />
+          <RefreshCw size={13} className={geocoding ? 'animate-spin' : ''} />
           Re-geocode all
         </button>
 
-        <span className="text-xs text-gray-500 ml-auto">
-          {filteredForMap.length} pin{filteredForMap.length !== 1 ? 's' : ''} on map
-          {regionFilter ? ` · ${regionFilter}` : ''}
+        <span className="text-xs text-gray-500">
+          {mapJobs.length} pin{mapJobs.length !== 1 ? 's' : ''} on map
         </span>
       </div>
 
       {/* Map */}
       {loading ? (
-        <div className="bg-gray-900 rounded-xl border border-gray-800 flex items-center justify-center mb-6" style={{ height: 580 }}>
+        <div className="bg-gray-900 rounded-xl border border-gray-800 flex items-center justify-center mb-5" style={{ height: 580 }}>
           <LoadingSpinner message="Loading cached results…" />
         </div>
       ) : (
-        <div className="rounded-xl border border-gray-800 overflow-hidden mb-6">
-          <JobMap jobs={filteredForMap} height={580} />
+        <div className="rounded-xl border border-gray-800 overflow-hidden mb-5">
+          <JobMap jobs={mapJobs} height={580} />
         </div>
       )}
 
-      {/* Job list */}
+      {/* Job list table */}
       <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
         <div className="flex items-center gap-3 mb-4 flex-wrap">
-          <h2 className="text-lg font-semibold text-white">Job List</h2>
+          <h2 className="text-base font-semibold text-white">Job List</h2>
           <div className="flex gap-1">
-            {(['all', 'mapped', 'unmapped'] as FilterKey[]).map(f => (
+            {(['mapped', 'unmapped', 'all'] as const).map(tab => (
               <button
-                key={f}
-                onClick={() => setFilter(f)}
+                key={tab}
+                onClick={() => setListTab(tab)}
                 className={`text-xs px-3 py-1 rounded-full transition-colors ${
-                  filter === f ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
+                  listTab === tab ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
                 }`}
               >
-                {f === 'all' ? `All (${jobs.length})` : f === 'mapped' ? `Mapped (${mapped.length})` : `Unmapped (${unmapped.length})`}
+                {tab === 'all' ? `All (${jobs.length})` : tab === 'mapped' ? `Mapped (${mapped.length})` : `Unmapped (${unmapped.length})`}
               </button>
             ))}
           </div>
+          <span className="text-xs text-gray-600 ml-auto">
+            {listJobs.length} shown{regionFilter || statusFilter ? ' (filtered)' : ''}
+          </span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-xs text-gray-500 border-b border-gray-800">
-                <th className="text-left py-2 pr-3 font-medium">Job #</th>
-                <th className="text-left py-2 pr-3 font-medium">Address</th>
-                <th className="text-left py-2 pr-3 font-medium">Status</th>
-                <th className="text-left py-2 pr-3 font-medium">Region</th>
-                <th className="text-left py-2 pr-3 font-medium">Auth Total</th>
+                <th className="text-left py-2 pr-4 font-medium">Job #</th>
+                <th className="text-left py-2 pr-4 font-medium">Address</th>
+                <th className="text-left py-2 pr-4 font-medium">Status</th>
+                <th className="text-left py-2 pr-4 font-medium">Region</th>
+                <th className="text-left py-2 pr-4 font-medium">Type</th>
+                <th className="text-left py-2 pr-4 font-medium">Auth Total</th>
                 <th className="text-left py-2 font-medium">Pin</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-800/50">
-              {filteredList.slice(0, 150).map(job => (
-                <tr key={job.id} className="hover:bg-gray-800/30 transition-colors">
-                  <td className="py-2 pr-3">
+            <tbody className="divide-y divide-gray-800/40">
+              {listJobs.slice(0, 200).map(job => (
+                <tr key={job.id} className="hover:bg-gray-800/30 transition-colors group">
+                  <td className="py-2 pr-4">
                     {job.primeUrl ? (
                       <a href={job.primeUrl} target="_blank" rel="noopener noreferrer"
                         className="font-mono text-red-400 text-xs hover:text-red-300 underline underline-offset-2">
@@ -271,24 +295,29 @@ export default function MapPage() {
                       <span className="font-mono text-red-400 text-xs">{job.jobNumber}</span>
                     )}
                   </td>
-                  <td className="py-2 pr-3 text-gray-300 text-xs max-w-[200px] truncate">{job.address}</td>
-                  <td className="py-2 pr-3 text-xs text-gray-400">{job.status}</td>
-                  <td className="py-2 pr-3 text-xs text-gray-500">{job.region}</td>
-                  <td className="py-2 pr-3 text-xs text-gray-400">{formatCurrency(job.authorisedTotal)}</td>
+                  <td className="py-2 pr-4 text-gray-300 text-xs max-w-[180px] truncate">{job.address}</td>
+                  <td className="py-2 pr-4 text-xs text-gray-400 max-w-[140px] truncate">{job.status}</td>
+                  <td className="py-2 pr-4 text-xs text-gray-500">{job.region}</td>
+                  <td className="py-2 pr-4 text-xs text-gray-500">{job.jobType}</td>
+                  <td className="py-2 pr-4 text-xs text-gray-400 font-mono">
+                    {job.authorisedTotal > 0 ? formatCurrency(job.authorisedTotal) : '—'}
+                  </td>
                   <td className="py-2 text-xs">
-                    {job.lat !== null ? <span className="text-green-500">✓</span> : <span className="text-yellow-600">—</span>}
+                    {job.lat !== null
+                      ? <span className="text-green-500">✓</span>
+                      : <span className="text-yellow-600">—</span>}
                   </td>
                 </tr>
               ))}
-              {filteredList.length === 0 && (
+              {listJobs.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-gray-500 text-sm">No jobs</td>
+                  <td colSpan={7} className="py-10 text-center text-gray-500 text-sm">No jobs match current filters</td>
                 </tr>
               )}
             </tbody>
           </table>
-          {filteredList.length > 150 && (
-            <p className="text-xs text-gray-600 text-center mt-3">Showing first 150 of {filteredList.length}</p>
+          {listJobs.length > 200 && (
+            <p className="text-xs text-gray-600 text-center mt-3">Showing 200 of {listJobs.length}</p>
           )}
         </div>
       </div>
