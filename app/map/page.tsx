@@ -32,6 +32,7 @@ export interface GeocodedJob {
   updatedBy: string;
   lat: number | null;
   lng: number | null;
+  failed?: boolean;
 }
 
 const BATCH_SIZE = 30;
@@ -130,11 +131,14 @@ export default function MapPage() {
       (!statusFilter || j.status === statusFilter)
     );
 
-  const mapped    = jobs.filter(j => j.lat !== null && j.lng !== null);
-  const unmapped  = jobs.filter(j => j.lat === null || j.lng === null);
+  const mapped   = jobs.filter(j => j.lat !== null && j.lng !== null);
+  // "unmapped" = geocoding was attempted but address couldn't be resolved (bad/vague address)
+  const unmapped = jobs.filter(j => j.lat === null && j.failed === true);
+  // "pending" = geocoding not attempted yet (still in queue)
+  const pending  = jobs.filter(j => j.lat === null && !j.failed);
 
-  const mapJobs   = applyFilters(mapped);   // what goes on the map
-  const listJobs  = applyFilters(listTab === 'mapped' ? mapped : listTab === 'unmapped' ? unmapped : jobs)
+  const mapJobs  = applyFilters(mapped);
+  const listJobs = applyFilters(listTab === 'mapped' ? mapped : listTab === 'unmapped' ? unmapped : jobs)
     .sort((a, b) => (a.jobNumber > b.jobNumber ? 1 : -1));
 
   const pct = total > 0 ? Math.round((geocoded / total) * 100) : 0;
@@ -147,19 +151,26 @@ export default function MapPage() {
       />
 
       {/* Stats row */}
-      <div className="grid grid-cols-3 gap-4 mb-5">
+      <div className="grid grid-cols-4 gap-4 mb-5">
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center gap-3">
           <MapPin size={20} className="text-red-500 flex-shrink-0" />
           <div>
             <p className="text-2xl font-bold text-white">{mapped.length}</p>
-            <p className="text-xs text-gray-500">Mapped Jobs</p>
+            <p className="text-xs text-gray-500">Pinned on Map</p>
+          </div>
+        </div>
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center gap-3">
+          <RefreshCw size={20} className={`text-blue-400 flex-shrink-0 ${geocoding ? 'animate-spin' : ''}`} />
+          <div>
+            <p className="text-2xl font-bold text-white">{pending.length}</p>
+            <p className="text-xs text-gray-500">Pending Geocode</p>
           </div>
         </div>
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center gap-3">
           <AlertTriangle size={20} className="text-yellow-500 flex-shrink-0" />
           <div>
             <p className="text-2xl font-bold text-white">{unmapped.length}</p>
-            <p className="text-xs text-gray-500">Unmapped</p>
+            <p className="text-xs text-gray-500">Bad Address</p>
           </div>
         </div>
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center gap-3">
@@ -260,7 +271,7 @@ export default function MapPage() {
                   listTab === tab ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
                 }`}
               >
-                {tab === 'all' ? `All (${jobs.length})` : tab === 'mapped' ? `Mapped (${mapped.length})` : `Unmapped (${unmapped.length})`}
+                {tab === 'all' ? `All (${jobs.length})` : tab === 'mapped' ? `Pinned (${mapped.length})` : `Bad Address (${unmapped.length})`}
               </button>
             ))}
           </div>
@@ -305,7 +316,9 @@ export default function MapPage() {
                   <td className="py-2 text-xs">
                     {job.lat !== null
                       ? <span className="text-green-500">✓</span>
-                      : <span className="text-yellow-600">—</span>}
+                      : job.failed
+                        ? <span className="text-yellow-600" title="Address could not be geocoded">✗</span>
+                        : <span className="text-blue-500" title="Pending geocode">…</span>}
                   </td>
                 </tr>
               ))}

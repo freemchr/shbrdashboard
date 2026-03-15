@@ -30,6 +30,8 @@ export interface GeocodedJob {
   updatedBy: string;
   lat: number | null;
   lng: number | null;
+  /** true = geocoding attempted but address couldn't be resolved; false/undefined = not attempted yet */
+  failed?: boolean;
 }
 
 type RawJob = {
@@ -90,7 +92,7 @@ function flattenJob(j: RawJob, statusNames: Record<string, string>): Omit<Geocod
   };
 }
 
-const CACHE_KEY = 'geocoded-jobs-v4';
+const CACHE_KEY = 'geocoded-jobs-v5';
 
 // Addresses that are definitely not geocodable — skip immediately
 function isSkippableAddress(addr: string): boolean {
@@ -155,15 +157,17 @@ export async function POST(req: NextRequest) {
 
     for (const job of toProcess) {
       let coords: { lat: number; lng: number } | null = null;
-      if (!isSkippableAddress(job.address)) {
+      const skippable = isSkippableAddress(job.address);
+      if (!skippable) {
         coords = await nominatimGeocode(job.address);
         await sleep(1100);
       }
-      geocodedBatch.push({ ...job, lat: coords?.lat ?? null, lng: coords?.lng ?? null });
+      // failed=true means we tried (or it's a junk address) and got nothing
+      geocodedBatch.push({ ...job, lat: coords?.lat ?? null, lng: coords?.lng ?? null, failed: coords === null });
     }
 
-    // Remaining still-todo (not processed this batch)
-    const remaining = todo.slice(batchSize).map(j => ({ ...j, lat: null as null, lng: null as null }));
+    // Remaining still-todo — lat/lng null but failed=false (not attempted yet)
+    const remaining = todo.slice(batchSize).map(j => ({ ...j, lat: null as null, lng: null as null, failed: false }));
 
     const allJobs = [...alreadyDone, ...geocodedBatch, ...remaining];
     const complete = remaining.length === 0;
