@@ -495,9 +495,9 @@ function CommandCentreInner() {
     load();
   }, [load]);
 
-  // Auto-refresh every 5 minutes
+  // Auto-refresh every hour
   useEffect(() => {
-    intervalRef.current = setInterval(load, 5 * 60 * 1000);
+    intervalRef.current = setInterval(load, 60 * 60 * 1000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [load]);
 
@@ -706,7 +706,7 @@ function CommandCentreInner() {
         {/* Footer */}
         <div className="flex items-center justify-between text-xs text-gray-800 mt-auto">
           <p>SHBR Insights — Internal Use Only</p>
-          <p>Auto-refreshes every 5 minutes</p>
+          <p>Auto-refreshes every hour</p>
         </div>
       </div>
 
