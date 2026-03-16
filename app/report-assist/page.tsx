@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { LoadingSpinner, ErrorMessage } from '@/components/ui/LoadingSpinner';
-import { FileEdit, AlertTriangle, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { FileEdit, AlertTriangle, ChevronUp, ChevronDown, ChevronsUpDown, Sparkles } from 'lucide-react';
 
 interface ReportJob {
   id: string;
@@ -91,9 +91,18 @@ export default function ReportAssistPage() {
         title="Report Assist"
         subtitle="AI-powered assessment report wizard — create and upload reports to Prime for jobs pending submission"
         actions={
-          <div className="flex items-center gap-2 bg-red-950/30 border border-red-700/50 rounded-lg px-4 py-2">
-            <AlertTriangle size={16} className="text-red-400" />
-            <span className="text-red-300 text-sm font-medium">{jobs.length} jobs need reports</span>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/report-assist/polish"
+              className="inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 hover:text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              <Sparkles size={15} className="text-purple-400" />
+              ✨ Polish a Report
+            </Link>
+            <div className="flex items-center gap-2 bg-red-950/30 border border-red-700/50 rounded-lg px-4 py-2">
+              <AlertTriangle size={16} className="text-red-400" />
+              <span className="text-red-300 text-sm font-medium">{jobs.length} jobs need reports</span>
+            </div>
           </div>
         }
       />

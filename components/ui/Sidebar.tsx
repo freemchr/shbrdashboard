@@ -20,6 +20,9 @@ import {
   User,
   Cloud,
   Shield,
+  BarChart2,
+  Sparkles,
+  ChevronDown,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -27,14 +30,18 @@ const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/weather', label: 'Weather', icon: Cloud },
   { href: '/pipeline', label: 'Pipeline', icon: GitBranch },
-  { href: '/reports', label: 'Reports', icon: FileText, alert: true },
-  { href: '/report-assist', label: 'Report Assist', icon: FileEdit, alert: true },
   { href: '/bottlenecks', label: 'Bottlenecks', icon: AlertTriangle },
   { href: '/team', label: 'Team', icon: Users },
   { href: '/aging', label: 'Aging', icon: Clock },
   { href: '/financial', label: 'Financial', icon: DollarSign },
   { href: '/search', label: 'Job Search', icon: Search },
   { href: '/map', label: 'Jobs Map', icon: Map },
+];
+
+const reportsSubItems = [
+  { href: '/reports', label: 'Overview', icon: BarChart2, alert: true },
+  { href: '/report-assist', label: 'Report Assist', icon: FileEdit, alert: true },
+  { href: '/report-assist/polish', label: 'Report Polisher', icon: Sparkles },
 ];
 
 function NavItem({ href, label, icon: Icon, active, alert }: {
@@ -72,6 +79,14 @@ export function Sidebar() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
 
+  const isInReports = pathname.startsWith('/reports') || pathname.startsWith('/report-assist');
+  const [reportsOpen, setReportsOpen] = useState(isInReports);
+
+  // Auto-expand when navigating into a reports route
+  useEffect(() => {
+    if (isInReports) setReportsOpen(true);
+  }, [isInReports]);
+
   useEffect(() => {
     fetch('/api/auth/session')
       .then((res) => res.ok ? res.json() : null)
@@ -83,7 +98,13 @@ export function Sidebar() {
   }, []);
 
   const isActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname.startsWith(href);
+    href === '/report-assist/polish'
+      ? pathname === '/report-assist/polish'
+      : href === '/report-assist'
+      ? pathname === '/report-assist' || (pathname.startsWith('/report-assist/') && pathname !== '/report-assist/polish')
+      : href === '/'
+      ? pathname === '/'
+      : pathname.startsWith(href);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -129,16 +150,69 @@ export function Sidebar() {
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {navItems.map((item) => (
+          {/* Overview, Weather, Pipeline */}
+          {navItems.slice(0, 3).map((item) => (
             <NavItem
               key={item.href}
               href={item.href}
               label={item.label}
               icon={item.icon}
               active={isActive(item.href)}
-              alert={item.alert}
             />
           ))}
+
+          {/* Collapsible Reports group */}
+          <div>
+            <button
+              onClick={() => setReportsOpen(o => !o)}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all
+                ${isInReports ? 'text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'}`}
+            >
+              <FileText size={18} className={isInReports ? 'text-red-400' : ''} />
+              <span className="flex-1 text-left">Reports</span>
+              {isInReports && !reportsOpen && (
+                <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0 mr-1" />
+              )}
+              <ChevronDown
+                size={15}
+                className={`text-gray-500 transition-transform duration-200 ${reportsOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            <div className={`overflow-hidden transition-all duration-200 ${reportsOpen ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
+              <div className="mt-0.5 space-y-0.5">
+                {reportsSubItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-3 pl-8 pr-4 py-2 rounded-lg text-sm transition-all
+                      ${isActive(item.href)
+                        ? 'bg-red-600 text-white font-medium'
+                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                      }`}
+                  >
+                    <item.icon size={15} />
+                    <span className="flex-1">{item.label}</span>
+                    {item.alert && !isActive(item.href) && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Remaining nav items (Bottlenecks onward) */}
+          {navItems.slice(3).map((item) => (
+            <NavItem
+              key={item.href}
+              href={item.href}
+              label={item.label}
+              icon={item.icon}
+              active={isActive(item.href)}
+            />
+          ))}
+
           {userEmail?.toLowerCase() === ADMIN_EMAIL && (
             <NavItem
               href="/audit"
