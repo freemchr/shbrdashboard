@@ -23,11 +23,13 @@ import {
   BarChart2,
   Sparkles,
   ChevronDown,
+  Tv2,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
+  { href: '/command-centre', label: 'Command Centre', icon: Tv2 },
   { href: '/weather', label: 'Weather', icon: Cloud },
   { href: '/pipeline', label: 'Pipeline', icon: GitBranch },
   { href: '/bottlenecks', label: 'Bottlenecks', icon: AlertTriangle },
