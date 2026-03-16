@@ -71,7 +71,7 @@ export async function setCached(key: string, data: unknown, ttlMs: number): Prom
     await put(blobFilename(key), JSON.stringify(meta), {
       access: 'private',
       contentType: 'application/json',
-      addRandomSuffix: false,
+      addRandomSuffix: false, allowOverwrite: true,
     });
   } catch (e) {
     console.warn('[blob-cache] Failed to write to Blob:', e);
@@ -83,7 +83,7 @@ export async function invalidateCache(key?: string): Promise<void> {
     memCache.delete(key);
     try {
       await put(blobFilename(key), JSON.stringify({ expiresAt: 0, data: null }), {
-        access: 'private', contentType: 'application/json', addRandomSuffix: false,
+        access: 'private', contentType: 'application/json', addRandomSuffix: false, allowOverwrite: true,
       });
     } catch { /* ignore */ }
   } else {
