@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/prime/jobs/geocode-auto",
+      "schedule": "0 15 * * *"
+    }
+  ]
+}
