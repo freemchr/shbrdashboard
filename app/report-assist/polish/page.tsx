@@ -14,6 +14,8 @@ import {
   ChevronUp,
   Download,
   RotateCcw,
+  Info,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface Section {
@@ -43,6 +45,7 @@ export default function ReportPolisherPage() {
   const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set([0]));
   const [generating, setGenerating] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const MAX_SIZE = 10 * 1024 * 1024;
@@ -207,6 +210,52 @@ export default function ReportPolisherPage() {
         }
       />
 
+      {/* ── API Cost Notice ── */}
+      <div className="mb-6 flex items-start gap-3 bg-amber-950/30 border border-amber-700/40 rounded-xl px-5 py-4">
+        <Info size={18} className="text-amber-400 flex-shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <p className="text-amber-300 font-semibold text-sm">AI API Usage Notice</p>
+          <p className="text-amber-400/80 text-xs leading-relaxed">
+            <strong>1.</strong> Each report polish uses OpenAI API credits — costs apply per use. Please only polish reports that are complete and ready for final review.
+          </p>
+          <p className="text-amber-400/80 text-xs leading-relaxed">
+            <strong>2.</strong> A confirmation prompt will appear before processing begins. Please use this tool for final-stage reports only, not drafts or rough notes.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Confirmation dialog ── */}
+      {showConfirm && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-amber-700/50 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="flex items-start gap-3 mb-4">
+              <AlertTriangle size={22} className="text-amber-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-white font-semibold text-base">Confirm AI Polish</h3>
+                <p className="text-gray-400 text-sm mt-1">This will use OpenAI API credits to polish <span className="text-white font-medium">{file?.name}</span>.</p>
+              </div>
+            </div>
+            <p className="text-gray-500 text-xs mb-5 leading-relaxed">
+              Please confirm this report is complete and ready for final polishing — not a rough draft. Each polish costs API credits.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowConfirm(false); handlePolish(); }}
+                className="flex-1 bg-red-600 hover:bg-red-500 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm"
+              >
+                ✨ Yes, Polish It
+              </button>
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium py-2.5 rounded-xl transition-colors text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Step indicators */}
       <div className="flex items-center gap-3 mb-8">
         {[
@@ -298,7 +347,7 @@ export default function ReportPolisherPage() {
 
           {file && (
             <button
-              onClick={handlePolish}
+              onClick={() => setShowConfirm(true)}
               disabled={polishing}
               className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold py-4 rounded-xl transition-colors text-base"
             >
