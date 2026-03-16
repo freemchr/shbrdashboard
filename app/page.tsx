@@ -5,7 +5,7 @@ import { KpiCard } from '@/components/ui/KpiCard';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ErrorMessage, LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatDate, formatCurrency } from '@/lib/prime-helpers';
-import { ExternalLink, Briefcase, AlertTriangle, Calendar, Hash, X, ChevronRight, FileText, LayoutGrid, List } from 'lucide-react';
+import { ExternalLink, Briefcase, AlertTriangle, Calendar, Hash, X, ChevronRight, FileText, LayoutGrid, List, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -116,6 +116,12 @@ export default function OverviewPage() {
   const [viewMode, setViewMode] = useState<'tile' | 'list'>('tile');
   const [noReportCount, setNoReportCount] = useState<number | null>(null);
   const drilldownRef = useRef<HTMLDivElement>(null);
+  const chartScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollChart = (dir: 'left' | 'right') => {
+    if (!chartScrollRef.current) return;
+    chartScrollRef.current.scrollBy({ left: dir === 'left' ? -300 : 300, behavior: 'smooth' });
+  };
 
   const scrollToDrilldown = () =>
     setTimeout(() => drilldownRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
@@ -251,16 +257,29 @@ export default function OverviewPage() {
 
         {/* Scrollable bar chart — all statuses */}
         <div className="xl:col-span-2 bg-gray-900 rounded-xl border border-gray-800 p-3 sm:p-5">
-          <h2 className="text-lg font-semibold text-white mb-1">Open Jobs by Status</h2>
-          <p className="text-xs text-gray-500 mb-4">Click a bar to see those jobs below ↓ · scroll right to see all statuses</p>
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-lg font-semibold text-white">Open Jobs by Status</h2>
+            {!loadingCounts && chartData.length > 0 && (
+              <div className="flex items-center gap-1">
+                <button onClick={() => scrollChart('left')}
+                  className="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-400 hover:text-white transition-colors">
+                  <ChevronLeft size={16} />
+                </button>
+                <button onClick={() => scrollChart('right')}
+                  className="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-400 hover:text-white transition-colors">
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 mb-4">Click a bar to see those jobs below ↓</p>
 
           {loadingCounts ? (
             <LoadingSpinner message="Loading status counts…" />
           ) : chartData.length === 0 ? (
             <p className="text-gray-500 text-sm py-8 text-center">No data</p>
           ) : (
-            /* Outer div scrolls horizontally; inner div sets the real width */
-            <div className="overflow-x-auto">
+            <div ref={chartScrollRef} className="overflow-x-auto scrollbar-hide">
               <div style={{ width: chartWidth, minWidth: '100%' }}>
                 <BarChart
                   width={chartWidth}
