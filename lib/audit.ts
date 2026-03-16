@@ -28,7 +28,7 @@ export async function appendAuditLog(entry: Omit<AuditEntry, 'id' | 'timestamp'>
     const updated = [newEntry, ...existing].slice(0, MAX_ENTRIES);
 
     await put(AUDIT_BLOB_PATH, JSON.stringify(updated), {
-      access: 'public',
+      access: 'private',
       contentType: 'application/json',
       addRandomSuffix: false,
     });
@@ -41,7 +41,11 @@ export async function readAuditLog(): Promise<AuditEntry[]> {
   try {
     const { blobs } = await list({ prefix: AUDIT_BLOB_PATH, limit: 1 });
     if (!blobs.length) return [];
-    const res = await fetch(blobs[0].downloadUrl);
+    const res = await fetch(blobs[0].downloadUrl, {
+      headers: process.env.BLOB_READ_WRITE_TOKEN
+        ? { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` }
+        : {},
+    });
     if (!res.ok) return [];
     return await res.json();
   } catch {
