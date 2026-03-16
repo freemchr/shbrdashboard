@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Briefcase,
   AlertTriangle,
@@ -12,6 +13,8 @@ import {
   Thermometer,
   RefreshCw,
   Tv2,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import type { WeatherForecastResponse, CityForecast } from '@/app/api/weather/forecast/route';
 
@@ -300,6 +303,16 @@ function LiveClock() {
 // ─────────────────────────────────────────────────────────────────
 
 export default function CommandCentrePage() {
+  return (
+    <Suspense>
+      <CommandCentreInner />
+    </Suspense>
+  );
+}
+
+function CommandCentreInner() {
+  const searchParams = useSearchParams();
+  const isKiosk = searchParams.get('kiosk') === '1';
   const [kpis, setKpis] = useState<Kpis | null>(null);
   const [counts, setCounts] = useState<StatusCount[]>([]);
   const [weather, setWeather] = useState<WeatherForecastResponse | null>(null);
@@ -379,7 +392,7 @@ export default function CommandCentrePage() {
             </div>
           </div>
           <div className="flex items-center gap-5">
-            {/* Refresh status */}
+            {/* Refresh + kiosk controls */}
             <div className="flex items-center gap-2">
               <button
                 onClick={handleRefresh}
@@ -393,6 +406,16 @@ export default function CommandCentrePage() {
                 <span className="text-xs text-gray-700">
                   Last update: {lastRefresh.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}
                 </span>
+              )}
+              {!isKiosk && (
+                <a
+                  href="/command-centre?kiosk=1"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-700 hover:bg-red-600 text-xs text-white font-medium transition-all"
+                  title="Enter TV Kiosk Mode — hides sidebar and topbar"
+                >
+                  <Maximize2 size={12} />
+                  Kiosk Mode
+                </a>
               )}
             </div>
             <LiveClock />
@@ -526,6 +549,18 @@ export default function CommandCentrePage() {
 
       {/* Floating weather alerts corner */}
       {weather && <WeatherAlertCorner cities={weather.cities} />}
+
+      {/* Kiosk exit button — bottom-left, subtle */}
+      {isKiosk && (
+        <a
+          href="/command-centre"
+          className="fixed bottom-4 left-4 z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-900/80 hover:bg-gray-800 border border-gray-700 text-xs text-gray-500 hover:text-white transition-all backdrop-blur-sm"
+          title="Exit Kiosk Mode"
+        >
+          <Minimize2 size={12} />
+          Exit Kiosk
+        </a>
+      )}
     </div>
   );
 }

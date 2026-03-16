@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useState } from 'react';
+import { useLayoutEffect, useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { Sidebar } from '@/components/ui/Sidebar';
@@ -14,6 +14,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [checking, setChecking] = useState(true);
 
   const isLoginPage = pathname === '/login';
+  const [isKiosk, setIsKiosk] = useState(false);
+
+  useEffect(() => {
+    setIsKiosk(new URLSearchParams(window.location.search).get('kiosk') === '1');
+  }, [pathname]);
 
   useLayoutEffect(() => {
     if (isLoginPage) {
@@ -49,6 +54,18 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           <Image src="/shbr-logo.png" alt="SHBR Group" width={160} height={62} unoptimized priority />
           <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
         </div>
+      </div>
+    );
+  }
+
+  // Authenticated — kiosk mode (no sidebar/topbar, pure full-bleed)
+  if (isKiosk) {
+    return (
+      <div className="flex h-screen overflow-hidden">
+        <AuditTracker />
+        <main className="flex-1 overflow-hidden">
+          {children}
+        </main>
       </div>
     );
   }
