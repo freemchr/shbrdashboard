@@ -144,7 +144,7 @@ export default function MapPage() {
     );
 
   const mapped   = jobs.filter(j => j.lat !== null && j.lng !== null);
-  // When complete, anything unresolved is a bad address. When still geocoding, it's pending.
+  // When complete, anything unresolved is a not geocoded. When still geocoding, it's pending.
   const unmapped = jobs.filter(j => j.lat === null && (j.failed === true || complete));
   const pending  = complete ? [] : jobs.filter(j => j.lat === null && !j.failed);
 
@@ -189,7 +189,7 @@ export default function MapPage() {
           <AlertTriangle size={20} className="text-yellow-500 flex-shrink-0" />
           <div>
             <p className="text-xl sm:text-2xl font-bold text-white">{unmapped.length}</p>
-            <p className="text-xs text-gray-500">Bad Address</p>
+            <p className="text-xs text-gray-500">Not Geocoded</p>
           </div>
         </div>
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center gap-3">
@@ -290,7 +290,7 @@ export default function MapPage() {
                   listTab === tab ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
                 }`}
               >
-                {tab === 'all' ? `All (${jobs.length})` : tab === 'mapped' ? `Pinned (${mapped.length})` : `Bad Address (${unmapped.length})`}
+                {tab === 'all' ? `All (${jobs.length})` : tab === 'mapped' ? `Pinned (${mapped.length})` : `Not Geocoded (${unmapped.length})`}
               </button>
             ))}
           </div>
