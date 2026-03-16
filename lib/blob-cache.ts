@@ -1,15 +1,16 @@
 /**
  * Persistent cache backed by Vercel Blob storage.
- * Falls back gracefully to in-memory if Blob is unavailable or misconfigured.
  *
- * - Blob = persistent across cold starts and deploys
- * - In-memory layer = avoids redundant Blob reads within the same instance
- * - Supports both public and private blob stores (auto-detects via env)
+ * OPTIMISED to minimise Blob API operations (free tier = 2,000 ops/month):
+ * - No list() calls — uses predictable blob URLs directly (saves 1 op per read)
+ * - In-memory layer absorbs repeated reads within the same function instance  
+ * - Max 1 op per cache read (fetch), 1 op per cache write (put)
+ * - In-memory HIT = 0 Blob ops
  */
 
-import { put, list, del } from '@vercel/blob';
+import { put } from '@vercel/blob';
 
-// In-memory layer (fast, per-instance)
+// In-memory layer — zero Blob ops, per-instance
 const memCache = new Map<string, { data: unknown; expiresAt: number }>();
 
 function memGet<T>(key: string): T | null {
@@ -24,44 +25,36 @@ function memSet(key: string, data: unknown, ttlMs: number) {
 }
 
 const BLOB_PREFIX = 'shbr-cache/';
+// Predictable base URL — avoids list() calls entirely
+const BLOB_BASE = 'https://4sgwpkfrmhyjifry.private.blob.vercel-storage.com';
 
 function blobFilename(key: string) {
   return `${BLOB_PREFIX}${key.replace(/[^a-z0-9-_]/gi, '_')}.json`;
 }
 
-interface BlobMeta { expiresAt: number; data: unknown }
-
-function blobAccess(): 'public' | 'private' {
-  // Use 'private' when the store is configured with private access (Vercel project default)
-  return 'private';
+function blobDirectUrl(key: string) {
+  return `${BLOB_BASE}/${blobFilename(key)}`;
 }
 
+interface BlobMeta { expiresAt: number; data: unknown }
+
 export async function getCached<T>(key: string): Promise<T | null> {
-  // 1. Check in-memory first
+  // 1. In-memory — 0 Blob ops
   const mem = memGet<T>(key);
   if (mem !== null) return mem;
 
-  // 2. Check Blob storage via list (works for both public/private stores)
+  // 2. Direct Blob fetch — 1 Blob op, no list() needed
   try {
-    const filename = blobFilename(key);
-    const { blobs } = await list({ prefix: filename, limit: 1 });
-    if (!blobs.length) return null;
-
-    const blob = blobs[0];
-    // Use the blob URL to fetch — for private stores this requires token in env
-    const res = await fetch(blob.downloadUrl, {
-      headers: process.env.BLOB_READ_WRITE_TOKEN
-        ? { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` }
-        : {},
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    const res = await fetch(blobDirectUrl(key), {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      signal: AbortSignal.timeout(5000),
     });
-    if (!res.ok) return null;
+
+    if (!res.ok) return null; // 404 = cache miss
 
     const meta: BlobMeta = await res.json();
-    if (Date.now() > meta.expiresAt) {
-      // Stale — clean up in background
-      del(blob.url).catch(() => null);
-      return null;
-    }
+    if (Date.now() > meta.expiresAt) return null; // stale
 
     const ttlLeft = meta.expiresAt - Date.now();
     memSet(key, meta.data, ttlLeft);
@@ -72,19 +65,15 @@ export async function getCached<T>(key: string): Promise<T | null> {
 }
 
 export async function setCached(key: string, data: unknown, ttlMs: number): Promise<void> {
-  // 1. Always set in-memory
   memSet(key, data, ttlMs);
-
-  // 2. Persist to Blob
   try {
     const meta: BlobMeta = { expiresAt: Date.now() + ttlMs, data };
     await put(blobFilename(key), JSON.stringify(meta), {
-      access: blobAccess(),
+      access: 'private',
       contentType: 'application/json',
       addRandomSuffix: false,
     });
   } catch (e) {
-    // Non-fatal — in-memory cache still works within the same instance
     console.warn('[blob-cache] Failed to write to Blob:', e);
   }
 }
@@ -93,19 +82,11 @@ export async function invalidateCache(key?: string): Promise<void> {
   if (key) {
     memCache.delete(key);
     try {
-      const filename = blobFilename(key);
-      const { blobs } = await list({ prefix: filename, limit: 1 });
-      if (blobs.length) await del(blobs[0].url);
-    } catch {
-      // ignore
-    }
+      await put(blobFilename(key), JSON.stringify({ expiresAt: 0, data: null }), {
+        access: 'private', contentType: 'application/json', addRandomSuffix: false,
+      });
+    } catch { /* ignore */ }
   } else {
     memCache.clear();
-    try {
-      const { blobs } = await list({ prefix: BLOB_PREFIX });
-      if (blobs.length) await del(blobs.map(b => b.url));
-    } catch {
-      // ignore
-    }
   }
 }
