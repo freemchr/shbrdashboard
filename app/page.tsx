@@ -7,7 +7,8 @@ import { ErrorMessage, LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatDate, formatCurrency } from '@/lib/prime-helpers';
 import { ExternalLink, Briefcase, AlertTriangle, Calendar, Hash, X, ChevronRight, FileText, LayoutGrid, List, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, LabelList } from 'recharts';
+import type { TrendsResult } from '@/app/api/prime/jobs/trends/route';
 
 interface Kpis {
   totalJobs: number;
@@ -18,6 +19,8 @@ interface Kpis {
 }
 
 interface StatusCount { status: string; count: number; statusType: string; }
+
+interface ChartEntry { name: string; value: number; delta: number | null; }
 
 interface FlatJob {
   id: string;
@@ -34,12 +37,21 @@ interface FlatJob {
   primeUrl: string;
 }
 
-const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) => {
+const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number; payload?: ChartEntry }[]; label?: string }) => {
   if (active && payload?.length) {
+    const delta = payload[0].payload?.delta;
+    const deltaStr = delta === null || delta === undefined ? null
+      : delta === 0 ? 'No change'
+      : delta > 0 ? `+${delta} since last snapshot`
+      : `${delta} since last snapshot`;
+    const deltaColour = delta === null || delta === undefined || delta === 0
+      ? 'text-gray-500'
+      : delta > 0 ? 'text-red-400' : 'text-emerald-400';
     return (
       <div className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm shadow-xl">
         <p className="text-gray-300 font-medium mb-0.5">{label}</p>
         <p className="text-red-400 font-bold">{payload[0].value} jobs</p>
+        {deltaStr && <p className={`text-xs mt-0.5 ${deltaColour}`}>{deltaStr}</p>}
       </div>
     );
   }
@@ -107,6 +119,7 @@ export default function OverviewPage() {
   const [openJobs, setOpenJobs] = useState<FlatJob[]>([]);
   const [kpis, setKpis] = useState<Kpis | null>(null);
   const [openCounts, setOpenCounts] = useState<StatusCount[]>([]);
+  const [trends, setTrends] = useState<TrendsResult | null>(null);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [loadingKpis, setLoadingKpis] = useState(true);
   const [loadingCounts, setLoadingCounts] = useState(true);
@@ -155,6 +168,11 @@ export default function OverviewPage() {
       .catch(() => setOpenCounts([]))
       .finally(() => setLoadingCounts(false));
 
+    fetch('/api/prime/jobs/trends')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d && setTrends(d))
+      .catch(() => null);
+
     // Fetch report alert count (lightweight — uses cached data)
     fetch('/api/prime/jobs/reports')
       .then(r => r.ok ? r.json() : null)
@@ -164,10 +182,37 @@ export default function OverviewPage() {
 
   const totalOpen = openCounts.reduce((sum, s) => sum + s.count, 0);
 
-  // All statuses for the scrollable bar chart
-  const chartData = openCounts.map(s => ({ name: s.status, value: s.count }));
+  // All statuses for the scrollable bar chart — enrich with trend deltas
+  const chartData: ChartEntry[] = openCounts.map(s => {
+    const d = trends?.statusDeltas?.[s.status];
+    const delta = d && d.previous !== null ? d.current - d.previous : null;
+    return { name: s.status, value: s.count, delta };
+  });
   // Dynamic chart width: at least 600px, 60px per bar
   const chartWidth = Math.max(600, chartData.length * 60);
+
+  // Custom label rendered above each bar showing ↑/↓ delta
+  const DeltaLabel = (props: { x?: number; y?: number; width?: number; value?: number; index?: number }) => {
+    const { x = 0, y = 0, width = 0, index = 0 } = props;
+    const entry = chartData[index];
+    if (!entry || entry.delta === null) return null;
+    if (entry.delta === 0) return null;
+    const up = entry.delta > 0;
+    const colour = up ? '#f87171' : '#34d399'; // red up, green down
+    const arrow = up ? '↑' : '↓';
+    return (
+      <text
+        x={x + width / 2}
+        y={y - 4}
+        textAnchor="middle"
+        fontSize={10}
+        fontWeight={600}
+        fill={colour}
+      >
+        {arrow}{Math.abs(entry.delta)}
+      </text>
+    );
+  };
 
   // Prime returns dates as "2026-03-15 09:00:00" — replace space with T so all browsers parse correctly
   const pd = (s?: string) => s ? new Date(s.replace(' ', 'T')) : null;
@@ -258,7 +303,19 @@ export default function OverviewPage() {
         {/* Scrollable bar chart — all statuses */}
         <div className="xl:col-span-2 bg-gray-900 rounded-xl border border-gray-800 p-3 sm:p-5">
           <div className="flex items-center justify-between mb-1">
-            <h2 className="text-lg font-semibold text-white">Open Jobs by Status</h2>
+            <div>
+              <h2 className="text-lg font-semibold text-white">Open Jobs by Status</h2>
+              {trends?.snapshotAge && (
+                <p className="text-xs text-gray-600 mt-0.5">
+                  ↑↓ compared to {(() => {
+                    const ageMs = Date.now() - new Date(trends.snapshotAge).getTime();
+                    const h = Math.floor(ageMs / 3_600_000);
+                    const d = Math.floor(h / 24);
+                    return d >= 1 ? `${d}d ago` : h >= 1 ? `${h}h ago` : 'recent snapshot';
+                  })()}
+                </p>
+              )}
+            </div>
             {!loadingCounts && chartData.length > 0 && (
               <div className="flex items-center gap-1">
                 <button onClick={() => scrollChart('left')}
@@ -285,7 +342,7 @@ export default function OverviewPage() {
                   width={chartWidth}
                   height={300}
                   data={chartData}
-                  margin={{ top: 5, right: 10, left: 0, bottom: 80 }}
+                  margin={{ top: 22, right: 10, left: 0, bottom: 80 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
                   <XAxis
@@ -305,6 +362,7 @@ export default function OverviewPage() {
                         opacity={selectedStatus && selectedStatus !== entry.name ? 0.45 : 1}
                       />
                     ))}
+                    <LabelList content={<DeltaLabel />} />
                   </Bar>
                 </BarChart>
               </div>
