@@ -7,6 +7,8 @@ import {
   AlertTriangle,
   CheckCircle,
   TrendingUp,
+  TrendingDown,
+  Minus,
   Clock,
   Cloud,
   Wind,
@@ -17,6 +19,7 @@ import {
   Minimize2,
 } from 'lucide-react';
 import type { WeatherForecastResponse, CityForecast } from '@/app/api/weather/forecast/route';
+import type { TrendsResult } from '@/app/api/prime/jobs/trends/route';
 
 // ─────────────────────────────────────────────────────────────────
 // Types
@@ -34,6 +37,53 @@ interface StatusCount {
   status: string;
   count: number;
   statusType: string;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Trend delta helper
+// ─────────────────────────────────────────────────────────────────
+
+// "upIsGood" = true  → green when value goes up (e.g. jobs created — more work coming in)
+// "upIsGood" = false → green when value goes down (e.g. stuck jobs, open backlog)
+function TrendBadge({
+  current,
+  previous,
+  upIsGood,
+  label = 'vs last week',
+}: {
+  current: number;
+  previous: number;
+  upIsGood: boolean;
+  label?: string;
+}) {
+  if (previous === 0 && current === 0) return null;
+
+  const diff = current - previous;
+  const pct = previous > 0 ? Math.round(Math.abs(diff / previous) * 100) : null;
+
+  const isUp   = diff > 0;
+  const isDown = diff < 0;
+  const flat   = diff === 0;
+
+  // Determine colour: good = green, bad = red, flat = gray
+  let colour = 'text-gray-500';
+  if (!flat) {
+    const good = (isUp && upIsGood) || (isDown && !upIsGood);
+    colour = good ? 'text-emerald-400' : 'text-red-400';
+  }
+
+  const Icon = flat ? Minus : isUp ? TrendingUp : TrendingDown;
+  const sign = isUp ? '+' : '';
+
+  return (
+    <div className={`flex items-center gap-1 text-xs font-medium ${colour}`}>
+      <Icon size={13} />
+      <span>
+        {flat ? 'No change' : `${sign}${diff}${pct !== null ? ` (${pct}%)` : ''}`}
+      </span>
+      <span className="text-gray-700 font-normal">{label}</span>
+    </div>
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -148,6 +198,11 @@ function BigKpi({
   accent,
   sub,
   loading,
+  trendCurrent,
+  trendPrevious,
+  trendUpIsGood,
+  trendLabel,
+  trendLoading,
 }: {
   label: string;
   value: number | string;
@@ -155,7 +210,14 @@ function BigKpi({
   accent?: boolean;
   sub?: string;
   loading?: boolean;
+  trendCurrent?: number;
+  trendPrevious?: number;
+  trendUpIsGood?: boolean;
+  trendLabel?: string;
+  trendLoading?: boolean;
 }) {
+  const hasTrend = trendCurrent !== undefined && trendPrevious !== undefined && trendUpIsGood !== undefined;
+
   return (
     <div
       className={`rounded-2xl border p-6 flex flex-col justify-between min-h-[160px] transition-all ${
@@ -183,6 +245,19 @@ function BigKpi({
         {sub && (
           <p className={`text-xs mt-2 ${accent ? 'text-red-400/70' : 'text-gray-600'}`}>{sub}</p>
         )}
+        {/* Week-on-week trend */}
+        <div className="mt-2 min-h-[18px]">
+          {trendLoading ? (
+            <div className="h-3 w-20 bg-gray-800 animate-pulse rounded" />
+          ) : hasTrend ? (
+            <TrendBadge
+              current={trendCurrent!}
+              previous={trendPrevious!}
+              upIsGood={trendUpIsGood!}
+              label={trendLabel ?? 'vs last week'}
+            />
+          ) : null}
+        </div>
       </div>
     </div>
   );
@@ -314,9 +389,11 @@ function CommandCentreInner() {
   const searchParams = useSearchParams();
   const isKiosk = searchParams.get('kiosk') === '1';
   const [kpis, setKpis] = useState<Kpis | null>(null);
+  const [trends, setTrends] = useState<TrendsResult | null>(null);
   const [counts, setCounts] = useState<StatusCount[]>([]);
   const [weather, setWeather] = useState<WeatherForecastResponse | null>(null);
   const [loadingKpis, setLoadingKpis] = useState(true);
+  const [loadingTrends, setLoadingTrends] = useState(true);
   const [loadingCounts, setLoadingCounts] = useState(true);
   const [loadingWeather, setLoadingWeather] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
@@ -325,13 +402,15 @@ function CommandCentreInner() {
 
   const load = useCallback(async () => {
     try {
-      const [kpiRes, countsRes, weatherRes] = await Promise.all([
+      const [kpiRes, trendsRes, countsRes, weatherRes] = await Promise.all([
         fetch('/api/prime/jobs/kpis'),
+        fetch('/api/prime/jobs/trends'),
         fetch('/api/prime/jobs/counts-by-status'),
         fetch('/api/weather/forecast'),
       ]);
 
       if (kpiRes.ok) setKpis(await kpiRes.json());
+      if (trendsRes.ok) setTrends(await trendsRes.json());
       if (countsRes.ok) {
         const d: StatusCount[] = await countsRes.json();
         setCounts(Array.isArray(d) ? d.filter(s => s.statusType === 'Open') : []);
@@ -341,6 +420,7 @@ function CommandCentreInner() {
       // silently fail — will retry on next cycle
     } finally {
       setLoadingKpis(false);
+      setLoadingTrends(false);
       setLoadingCounts(false);
       setLoadingWeather(false);
       setLastRefresh(new Date());
@@ -448,6 +528,11 @@ function CommandCentreInner() {
             icon={Briefcase}
             loading={loadingCounts}
             sub="Currently active"
+            trendCurrent={trends?.openNow}
+            trendPrevious={trends?.openLastWeek}
+            trendUpIsGood={false}
+            trendLabel="vs last week (est.)"
+            trendLoading={loadingTrends}
           />
           <BigKpi
             label="Stuck >7 Days"
@@ -456,6 +541,11 @@ function CommandCentreInner() {
             accent={(kpis?.stuckOver7Days ?? 0) > 0}
             loading={loadingKpis}
             sub="Open & not updated"
+            trendCurrent={trends?.stuckNow}
+            trendPrevious={trends?.stuckLastWeek}
+            trendUpIsGood={false}
+            trendLabel="vs last week (est.)"
+            trendLoading={loadingTrends}
           />
           <BigKpi
             label="This Week"
@@ -463,6 +553,11 @@ function CommandCentreInner() {
             icon={CheckCircle}
             loading={loadingKpis}
             sub="Jobs created"
+            trendCurrent={trends?.createdThisWeek}
+            trendPrevious={trends?.createdLastWeek}
+            trendUpIsGood={true}
+            trendLabel="vs last week"
+            trendLoading={loadingTrends}
           />
           <BigKpi
             label="This Month"
@@ -470,6 +565,11 @@ function CommandCentreInner() {
             icon={Clock}
             loading={loadingKpis}
             sub="Jobs created"
+            trendCurrent={trends?.createdThisMonth}
+            trendPrevious={trends?.createdLastMonth}
+            trendUpIsGood={true}
+            trendLabel="vs last month"
+            trendLoading={loadingTrends}
           />
         </div>
 
