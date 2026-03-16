@@ -49,7 +49,7 @@ function TrendBadge({
   current,
   previous,
   upIsGood,
-  label = 'vs last week',
+  label = 'week on week',
 }: {
   current: number;
   previous: number;
@@ -254,7 +254,7 @@ function BigKpi({
               current={trendCurrent!}
               previous={trendPrevious!}
               upIsGood={trendUpIsGood!}
-              label={trendLabel ?? 'vs last week'}
+              label={trendLabel ?? "week on week"}
             />
           ) : null}
         </div>
@@ -308,16 +308,7 @@ function StatusBreakdown({
   const maxVal = top[0]?.count ?? 1;
 
   // Format snapshot age into a human label
-  const snapshotLabel = snapshotAge
-    ? (() => {
-        const ageMs = Date.now() - new Date(snapshotAge).getTime();
-        const h = Math.floor(ageMs / (1000 * 60 * 60));
-        const d = Math.floor(h / 24);
-        if (d >= 1) return `vs ${d}d ago`;
-        if (h >= 1) return `vs ${h}h ago`;
-        return 'vs recent';
-      })()
-    : null;
+  const snapshotLabel = snapshotAge ? 'week on week' : null;
 
   if (loading) {
     return (
@@ -597,7 +588,7 @@ function CommandCentreInner() {
             trendCurrent={trends?.openNow}
             trendPrevious={trends?.openLastWeek}
             trendUpIsGood={false}
-            trendLabel="vs last week (est.)"
+            trendLabel="week on week"
             trendLoading={loadingTrends}
           />
           <BigKpi
@@ -610,7 +601,7 @@ function CommandCentreInner() {
             trendCurrent={trends?.stuckNow}
             trendPrevious={trends?.stuckLastWeek}
             trendUpIsGood={false}
-            trendLabel="vs last week (est.)"
+            trendLabel="week on week"
             trendLoading={loadingTrends}
           />
           <BigKpi
@@ -622,7 +613,7 @@ function CommandCentreInner() {
             trendCurrent={trends?.createdThisWeek}
             trendPrevious={trends?.createdLastWeek}
             trendUpIsGood={true}
-            trendLabel="vs last week"
+            trendLabel="week on week"
             trendLoading={loadingTrends}
           />
           <BigKpi
@@ -634,7 +625,7 @@ function CommandCentreInner() {
             trendCurrent={trends?.createdThisMonth}
             trendPrevious={trends?.createdLastMonth}
             trendUpIsGood={true}
-            trendLabel="vs last month"
+            trendLabel="month on month"
             trendLoading={loadingTrends}
           />
         </div>

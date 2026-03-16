@@ -52,7 +52,7 @@ export interface TrendsResult {
 
 const SNAPSHOT_CURRENT_KEY = 'status-snapshot-current';
 const SNAPSHOT_PREV_KEY    = 'status-snapshot-prev';
-const SNAPSHOT_MIN_AGE_MS  = 6 * 60 * 60 * 1000; // only rotate after 6h
+const SNAPSHOT_MIN_AGE_MS  = 7 * 24 * 60 * 60 * 1000; // rotate weekly
 
 async function buildCurrentCounts(
   openJobs: { attributes?: { statusId?: string } }[],

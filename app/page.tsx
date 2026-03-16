@@ -306,14 +306,7 @@ export default function OverviewPage() {
             <div>
               <h2 className="text-lg font-semibold text-white">Open Jobs by Status</h2>
               {trends?.snapshotAge && (
-                <p className="text-xs text-gray-600 mt-0.5">
-                  ↑↓ compared to {(() => {
-                    const ageMs = Date.now() - new Date(trends.snapshotAge).getTime();
-                    const h = Math.floor(ageMs / 3_600_000);
-                    const d = Math.floor(h / 24);
-                    return d >= 1 ? `${d}d ago` : h >= 1 ? `${h}h ago` : 'recent snapshot';
-                  })()}
-                </p>
+                <p className="text-xs text-gray-600 mt-0.5">↑↓ week on week</p>
               )}
             </div>
             {!loadingCounts && chartData.length > 0 && (
