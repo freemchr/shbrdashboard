@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
+import { appendAuditLog } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,6 +77,18 @@ export async function POST(req: NextRequest) {
     session.userName = userName;
     session.userEmail = email;
     await session.save();
+
+    // Log login event (fire and forget)
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || undefined;
+    const userAgent = req.headers.get('user-agent') || undefined;
+    appendAuditLog({
+      email: email.trim().toLowerCase(),
+      name: userName,
+      action: 'login',
+      details: 'Login successful',
+      ip,
+      userAgent,
+    }).catch(() => null);
 
     return NextResponse.json({ success: true, userName });
   } catch (error) {

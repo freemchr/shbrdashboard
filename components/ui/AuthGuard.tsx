@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { TopBar } from '@/components/ui/TopBar';
+import { AuditTracker } from '@/components/ui/AuditTracker';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -55,6 +56,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   // Authenticated — render full dashboard shell with sidebar + topbar
   return (
     <div className="flex h-screen overflow-hidden">
+      <AuditTracker />
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
         {/* Top bar */}

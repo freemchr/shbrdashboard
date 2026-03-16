@@ -19,6 +19,7 @@ import {
   LogOut,
   User,
   Cloud,
+  Shield,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -61,11 +62,14 @@ function NavItem({ href, label, icon: Icon, active, alert }: {
   );
 }
 
+const ADMIN_EMAIL = 'chris.freeman@techgurus.com.au';
+
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
@@ -73,6 +77,7 @@ export function Sidebar() {
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
         if (data?.userName) setUserName(data.userName);
+        if (data?.userEmail) setUserEmail(data.userEmail);
       })
       .catch(() => {});
   }, []);
@@ -134,6 +139,14 @@ export function Sidebar() {
               alert={item.alert}
             />
           ))}
+          {userEmail?.toLowerCase() === ADMIN_EMAIL && (
+            <NavItem
+              href="/audit"
+              label="Audit Log"
+              icon={Shield}
+              active={isActive('/audit')}
+            />
+          )}
         </nav>
 
         <div className="p-4 border-t border-gray-800 space-y-3">
