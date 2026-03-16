@@ -267,9 +267,57 @@ function BigKpi({
 // Status Bar (open jobs breakdown)
 // ─────────────────────────────────────────────────────────────────
 
-function StatusBreakdown({ counts, loading }: { counts: StatusCount[]; loading: boolean }) {
+function StatusDeltaPill({ current, previous }: { current: number; previous: number | null }) {
+  if (previous === null) return <span className="text-xs text-gray-700 w-16 text-right">no data</span>;
+
+  const diff = current - previous;
+  if (diff === 0) return (
+    <span className="flex items-center gap-0.5 text-xs text-gray-600 w-16 justify-end">
+      <Minus size={11} />
+    </span>
+  );
+
+  const up = diff > 0;
+  // Open job status counts going down = good (work being resolved)
+  const colour = up ? 'text-red-400' : 'text-emerald-400';
+  const Icon = up ? TrendingUp : TrendingDown;
+  const sign = up ? '+' : '';
+
+  return (
+    <span className={`flex items-center gap-0.5 text-xs font-semibold ${colour} w-16 justify-end tabular-nums`}>
+      <Icon size={11} />
+      {sign}{diff}
+    </span>
+  );
+}
+
+function StatusBreakdown({
+  counts,
+  loading,
+  statusDeltas,
+  snapshotAge,
+  trendsLoading,
+}: {
+  counts: StatusCount[];
+  loading: boolean;
+  statusDeltas?: Record<string, { current: number; previous: number | null }>;
+  snapshotAge?: string | null;
+  trendsLoading?: boolean;
+}) {
   const top = [...counts].sort((a, b) => b.count - a.count).slice(0, 8);
   const maxVal = top[0]?.count ?? 1;
+
+  // Format snapshot age into a human label
+  const snapshotLabel = snapshotAge
+    ? (() => {
+        const ageMs = Date.now() - new Date(snapshotAge).getTime();
+        const h = Math.floor(ageMs / (1000 * 60 * 60));
+        const d = Math.floor(h / 24);
+        if (d >= 1) return `vs ${d}d ago`;
+        if (h >= 1) return `vs ${h}h ago`;
+        return 'vs recent';
+      })()
+    : null;
 
   if (loading) {
     return (
@@ -286,20 +334,38 @@ function StatusBreakdown({ counts, loading }: { counts: StatusCount[]; loading: 
 
   return (
     <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6 flex flex-col">
-      <p className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">Open Jobs by Status</p>
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm font-medium text-gray-400 uppercase tracking-wide">Open Jobs by Status</p>
+        {snapshotLabel && !trendsLoading && (
+          <span className="text-xs text-gray-600">{snapshotLabel}</span>
+        )}
+        {trendsLoading && (
+          <div className="h-3 w-16 bg-gray-800 animate-pulse rounded" />
+        )}
+      </div>
       <div className="space-y-2.5 flex-1">
-        {top.map(s => (
-          <div key={s.status} className="flex items-center gap-3">
-            <span className="text-xs text-gray-400 w-40 flex-shrink-0 truncate">{s.status}</span>
-            <div className="flex-1 h-6 bg-gray-800 rounded overflow-hidden">
-              <div
-                className="h-full bg-red-600 rounded transition-all"
-                style={{ width: `${(s.count / maxVal) * 100}%` }}
-              />
+        {top.map(s => {
+          const delta = statusDeltas?.[s.status];
+          return (
+            <div key={s.status} className="flex items-center gap-3">
+              <span className="text-xs text-gray-400 w-40 flex-shrink-0 truncate">{s.status}</span>
+              <div className="flex-1 h-6 bg-gray-800 rounded overflow-hidden">
+                <div
+                  className="h-full bg-red-600 rounded transition-all"
+                  style={{ width: `${(s.count / maxVal) * 100}%` }}
+                />
+              </div>
+              <span className="text-sm font-bold text-white w-8 text-right tabular-nums">{s.count}</span>
+              {trendsLoading ? (
+                <div className="h-3 w-10 bg-gray-800 animate-pulse rounded" />
+              ) : delta ? (
+                <StatusDeltaPill current={delta.current} previous={delta.previous} />
+              ) : (
+                <span className="w-16" />
+              )}
             </div>
-            <span className="text-sm font-bold text-white w-8 text-right tabular-nums">{s.count}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -576,7 +642,13 @@ function CommandCentreInner() {
         {/* Middle row: status breakdown + weather mini */}
         <div className="grid grid-cols-3 gap-4 flex-1">
           <div className="col-span-2">
-            <StatusBreakdown counts={counts} loading={loadingCounts} />
+            <StatusBreakdown
+              counts={counts}
+              loading={loadingCounts}
+              statusDeltas={trends?.statusDeltas}
+              snapshotAge={trends?.snapshotAge}
+              trendsLoading={loadingTrends}
+            />
           </div>
 
           {/* Today's weather highlight */}
