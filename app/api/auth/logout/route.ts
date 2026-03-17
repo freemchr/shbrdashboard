@@ -14,7 +14,6 @@ export async function POST() {
         email: session.userEmail.toLowerCase(),
         name: session.userName,
         action: 'logout',
-        details: 'Logout successful',
       });
     }
 

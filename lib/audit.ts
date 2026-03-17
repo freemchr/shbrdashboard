@@ -1,11 +1,10 @@
 import { put } from '@vercel/blob';
 
 const AUDIT_BLOB_PATH = 'audit/audit-log.json';
-const MAX_ENTRIES = 1000;
+const MAX_ENTRIES = 200;
 
-// Direct blob URL — avoids list() call on every read
 function getAuditBlobUrl(): string {
-  const base = process.env.BLOB_BASE_URL || process.env.NEXT_PUBLIC_BLOB_BASE_URL || '';
+  const base = process.env.BLOB_BASE_URL || '';
   return `${base}/${AUDIT_BLOB_PATH}`;
 }
 
@@ -13,12 +12,8 @@ export interface AuditEntry {
   id: string;
   email: string;
   name?: string;
-  action: 'login' | 'logout' | 'page_view';
-  page?: string;
-  details?: string;
+  action: 'login' | 'logout';
   timestamp: string;
-  ip?: string;
-  userAgent?: string;
 }
 
 export async function appendAuditLog(entry: Omit<AuditEntry, 'id' | 'timestamp'>): Promise<void> {
@@ -48,7 +43,6 @@ export async function readAuditLog(): Promise<AuditEntry[]> {
   try {
     const url = getAuditBlobUrl();
     if (!url || url === '/audit/audit-log.json') {
-      // Fallback to list() if BLOB_BASE_URL not set
       const { list } = await import('@vercel/blob');
       const { blobs } = await list({ prefix: AUDIT_BLOB_PATH, limit: 1 });
       if (!blobs.length) return [];
