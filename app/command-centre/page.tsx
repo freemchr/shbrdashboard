@@ -153,36 +153,39 @@ function WeatherAlertCorner({ cities }: { cities: CityForecast[] }) {
   const severe = cities.filter(c => c.severity !== 'normal');
   if (severe.length === 0) return null;
 
+  const visible = severe.slice(0, 2);
+  const overflow = severe.length - visible.length;
+
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-[260px]">
-      {severe.map(city => (
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-1.5 max-w-[220px]">
+      {visible.map(city => (
         <div
           key={city.city}
-          className={`rounded-xl border px-4 py-3 shadow-2xl backdrop-blur-sm ${
+          className={`rounded-lg border px-3 py-2 shadow-xl backdrop-blur-sm ${
             city.severity === 'warning'
-              ? 'bg-red-950/90 border-red-600 shadow-red-900/40'
-              : 'bg-orange-950/90 border-orange-600 shadow-orange-900/40'
+              ? 'bg-red-950/90 border-red-600/70 shadow-red-900/40'
+              : 'bg-orange-950/90 border-orange-600/70 shadow-orange-900/40'
           }`}
         >
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-1.5">
             <AlertTriangle
-              size={14}
+              size={12}
               className={city.severity === 'warning' ? 'text-red-400' : 'text-orange-400'}
             />
-            <span className={`text-xs font-bold uppercase tracking-wide ${
-              city.severity === 'warning' ? 'text-red-300' : 'text-orange-300'
-            }`}>
-              {city.severity === 'warning' ? 'Weather Warning' : 'Weather Watch'}
+            <span className="text-white text-xs font-semibold truncate">
+              {weatherEmoji(city.current.weatherCode)} {city.city} {city.state}
             </span>
           </div>
-          <p className="text-white text-sm font-semibold">
-            {weatherEmoji(city.current.weatherCode)} {city.city} {city.state}
-          </p>
-          <p className={`text-xs mt-0.5 ${city.severity === 'warning' ? 'text-red-300' : 'text-orange-300'}`}>
-            {city.alerts.join(' · ')}
+          <p className={`text-xs mt-0.5 truncate ${city.severity === 'warning' ? 'text-red-300' : 'text-orange-300'}`}>
+            {city.alerts[0]}
           </p>
         </div>
       ))}
+      {overflow > 0 && (
+        <div className="rounded-lg border border-gray-700 bg-gray-900/90 px-3 py-1.5 text-xs text-gray-400 text-center backdrop-blur-sm">
+          +{overflow} more alert{overflow !== 1 ? 's' : ''} — see ticker
+        </div>
+      )}
     </div>
   );
 }
