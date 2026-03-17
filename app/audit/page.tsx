@@ -7,7 +7,7 @@ import type { AuditEntry } from '@/lib/audit';
 
 const ADMIN_EMAIL = 'chris.freeman@techgurus.com.au';
 
-type ActionFilter = 'all' | 'login' | 'logout' | 'page_view';
+type ActionFilter = 'all' | 'login' | 'logout';
 type RangeFilter = 'all' | 'today' | 'week';
 
 function formatAEDT(iso: string): string {
@@ -31,31 +31,20 @@ function ActionBadge({ action }: { action: string }) {
       </span>
     );
   }
-  if (action === 'logout') {
-    return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-800 text-gray-400 border border-gray-700">
-        Logout
-      </span>
-    );
-  }
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-900/50 text-blue-400 border border-blue-800">
-      Page View
+    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-800 text-gray-400 border border-gray-700">
+      Logout
     </span>
   );
 }
 
 function exportCSV(entries: AuditEntry[]) {
-  const headers = ['Timestamp (AEDT)', 'Email', 'Name', 'Action', 'Page', 'Details', 'IP', 'User Agent'];
+  const headers = ['Timestamp (AEDT)', 'Email', 'Name', 'Action'];
   const rows = entries.map(e => [
     formatAEDT(e.timestamp),
     e.email,
     e.name || '',
     e.action,
-    e.page || '',
-    e.details || '',
-    e.ip || '',
-    e.userAgent || '',
   ]);
 
   const csv = [headers, ...rows]
@@ -85,7 +74,7 @@ export default function AuditPage() {
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ limit: '500' });
+      const params = new URLSearchParams({ limit: '200' });
       if (actionFilter !== 'all') params.set('action', actionFilter);
       if (rangeFilter !== 'all') params.set('range', rangeFilter);
 
@@ -150,7 +139,7 @@ export default function AuditPage() {
           <Shield size={24} className="text-red-500" />
           <div>
             <h1 className="text-2xl font-bold text-white">Audit Log</h1>
-            <p className="text-sm text-gray-500">Track user activity across the dashboard</p>
+            <p className="text-sm text-gray-500">Login and logout activity · Last 200 events</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -182,10 +171,9 @@ export default function AuditPage() {
             onChange={e => setActionFilter(e.target.value as ActionFilter)}
             className="bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:border-red-600"
           >
-            <option value="all">All actions</option>
+            <option value="all">All</option>
             <option value="login">Login</option>
             <option value="logout">Logout</option>
-            <option value="page_view">Page View</option>
           </select>
         </div>
         <div className="flex items-center gap-2">
@@ -229,18 +217,12 @@ export default function AuditPage() {
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Action
                 </th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Page / Details
-                </th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  IP Address
-                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800/60">
               {entries.length === 0 && !loading && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-gray-600">
+                  <td colSpan={3} className="px-4 py-8 text-center text-gray-600">
                     No entries found
                   </td>
                 </tr>
@@ -259,17 +241,6 @@ export default function AuditPage() {
                   <td className="px-4 py-3">
                     <ActionBadge action={entry.action} />
                   </td>
-                  <td className="px-4 py-3">
-                    {entry.page && (
-                      <div className="text-gray-400 font-mono text-xs">{entry.page}</div>
-                    )}
-                    {entry.details && (
-                      <div className="text-gray-600 text-xs">{entry.details}</div>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600 font-mono text-xs">
-                    {entry.ip || '—'}
-                  </td>
                 </tr>
               ))}
             </tbody>
@@ -278,7 +249,7 @@ export default function AuditPage() {
       </div>
 
       <p className="text-xs text-gray-700 text-center">
-        Auto-refreshes every 60 seconds · Admin access only
+        Auto-refreshes every 60 seconds · Admin access only · Max 200 entries retained
       </p>
     </div>
   );

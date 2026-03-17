@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const limit = Math.min(parseInt(searchParams.get('limit') || '500', 10), 1000);
+    const limit = Math.min(parseInt(searchParams.get('limit') || '200', 10), 200);
     const emailFilter = searchParams.get('email')?.toLowerCase();
     const actionFilter = searchParams.get('action');
     const range = searchParams.get('range'); // 'today' | 'week' | 'all'
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Filter by action
-    if (actionFilter && ['login', 'logout', 'page_view'].includes(actionFilter)) {
+    if (actionFilter && ['login', 'logout'].includes(actionFilter)) {
       entries = entries.filter(e => e.action === actionFilter);
     }
 
