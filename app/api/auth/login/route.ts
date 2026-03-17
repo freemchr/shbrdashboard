@@ -78,17 +78,17 @@ export async function POST(req: NextRequest) {
     session.userEmail = email;
     await session.save();
 
-    // Log login event (fire and forget)
+    // Log login event — must await before response or Vercel will kill the function
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || undefined;
     const userAgent = req.headers.get('user-agent') || undefined;
-    appendAuditLog({
+    await appendAuditLog({
       email: email.trim().toLowerCase(),
       name: userName,
       action: 'login',
       details: 'Login successful',
       ip,
       userAgent,
-    }).catch(() => null);
+    });
 
     return NextResponse.json({ success: true, userName });
   } catch (error) {

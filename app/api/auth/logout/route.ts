@@ -8,14 +8,14 @@ export async function POST() {
   try {
     const session = await getSession();
 
-    // Log logout event before destroying session
+    // Log logout event — must await before response or Vercel will kill the function
     if (session.userEmail) {
-      appendAuditLog({
+      await appendAuditLog({
         email: session.userEmail.toLowerCase(),
         name: session.userName,
         action: 'logout',
         details: 'Logout successful',
-      }).catch(() => null);
+      });
     }
 
     session.destroy();
