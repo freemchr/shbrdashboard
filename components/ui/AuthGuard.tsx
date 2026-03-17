@@ -6,7 +6,6 @@ import Image from 'next/image';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { TopBar } from '@/components/ui/TopBar';
 import { AuditTracker } from '@/components/ui/AuditTracker';
-import { DataRefreshButton } from '@/components/ui/DataRefreshButton';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -79,8 +78,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
         {/* Top bar */}
         <div className="flex items-center justify-end gap-3 px-6 py-3 border-b border-gray-800/60 bg-gray-950/80 backdrop-blur-sm flex-shrink-0">
-          <DataRefreshButton />
-          <div className="w-px h-4 bg-gray-700" />
           <TopBar />
         </div>
         <main className="flex-1 overflow-y-auto">

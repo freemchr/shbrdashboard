@@ -7,6 +7,7 @@ import { ErrorMessage, LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatDate, formatCurrency } from '@/lib/prime-helpers';
 import { ExternalLink, Briefcase, AlertTriangle, Calendar, Hash, X, ChevronRight, FileText, LayoutGrid, List, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
+import { DataRefreshButton } from '@/components/ui/DataRefreshButton';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, LabelList } from 'recharts';
 import type { TrendsResult } from '@/app/api/prime/jobs/trends/route';
 
@@ -257,7 +258,7 @@ export default function OverviewPage() {
 
   return (
     <div>
-      <PageHeader title="Overview" subtitle="Real-time snapshot of SHBR operations" />
+      <PageHeader title="Overview" subtitle="Real-time snapshot of SHBR operations" actions={<DataRefreshButton />} />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 xl:grid-cols-5 gap-4 mb-8">
