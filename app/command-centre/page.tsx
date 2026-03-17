@@ -635,7 +635,7 @@ function CommandCentreInner() {
               <span className="text-red-300 text-sm font-bold uppercase tracking-wide">
                 Active Weather Alerts — {severeWeather} region{severeWeather !== 1 ? 's' : ''}
               </span>
-              <span className="text-red-400/50 text-xs ml-1">· Increased claim volume expected</span>
+              <span className="text-red-400/50 text-xs ml-1">· Increased Claim Volume Expected</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {weather.cities.filter(c => c.severity !== 'normal').map(city => (
