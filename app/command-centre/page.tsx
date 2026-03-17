@@ -323,6 +323,114 @@ function StatusBreakdown({
 }
 
 // ─────────────────────────────────────────────────────────────────
+// Weather City Carousel (auto-rotates every 4 seconds)
+// ─────────────────────────────────────────────────────────────────
+
+function WeatherCityCarousel({ cities, loading }: { cities: CityForecast[]; loading: boolean }) {
+  const [idx, setIdx] = useState(0);
+  const [fading, setFading] = useState(false);
+
+  useEffect(() => {
+    if (!cities.length) return;
+    const t = setInterval(() => {
+      setFading(true);
+      setTimeout(() => {
+        setIdx(i => (i + 1) % cities.length);
+        setFading(false);
+      }, 300);
+    }, 4000);
+    return () => clearInterval(t);
+  }, [cities.length]);
+
+  const city = cities[idx];
+
+  return (
+    <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6 flex flex-col">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Thermometer size={16} className="text-gray-500" />
+          <p className="text-sm font-medium text-gray-400 uppercase tracking-wide">City Weather</p>
+        </div>
+        {/* Dot indicators */}
+        {cities.length > 0 && (
+          <div className="flex items-center gap-1">
+            {cities.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => { setFading(true); setTimeout(() => { setIdx(i); setFading(false); }, 200); }}
+                className={`rounded-full transition-all duration-300 ${
+                  i === idx ? 'w-4 h-1.5 bg-red-500' : 'w-1.5 h-1.5 bg-gray-700 hover:bg-gray-500'
+                }`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-16 h-16 bg-gray-800 animate-pulse rounded-xl" />
+        </div>
+      ) : !city ? (
+        <p className="text-gray-600 text-sm">No data</p>
+      ) : (
+        <div
+          className="flex flex-col gap-3 transition-opacity duration-300"
+          style={{ opacity: fading ? 0 : 1 }}
+        >
+          <div className="flex items-center justify-between">
+            <span className={`text-lg font-bold ${
+              city.severity === 'warning' ? 'text-red-300' :
+              city.severity === 'watch' ? 'text-orange-300' : 'text-white'
+            }`}>
+              {city.city}
+              <span className="text-gray-500 text-sm font-normal ml-1.5">{city.state}</span>
+            </span>
+            {city.severity !== 'normal' && (
+              <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
+                city.severity === 'warning'
+                  ? 'bg-red-950/60 border-red-600/60 text-red-300'
+                  : 'bg-orange-950/50 border-orange-600/50 text-orange-300'
+              }`}>
+                ⚠️ {city.severity === 'warning' ? 'Warning' : 'Watch'}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-6xl leading-none">{weatherEmoji(city.current.weatherCode)}</span>
+            <div>
+              <span className="text-5xl font-bold text-white">{city.current.temp}°C</span>
+              <p className="text-gray-400 text-sm mt-1">{weatherLabel(city.current.weatherCode)}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 mt-1">
+            <div className="bg-gray-800/60 rounded-lg px-3 py-2">
+              <p className="text-xs text-gray-500">Wind</p>
+              <p className="text-sm font-semibold text-white">{city.current.windSpeed} km/h</p>
+            </div>
+            <div className="bg-gray-800/60 rounded-lg px-3 py-2">
+              <p className="text-xs text-gray-500">Hi / Lo</p>
+              <p className="text-sm font-semibold text-white">
+                {city.daily[0]?.tempMax ?? '—'}° / {city.daily[0]?.tempMin ?? '—'}°
+              </p>
+            </div>
+          </div>
+          {city.alerts.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              {city.alerts.map(a => (
+                <span key={a} className="text-xs bg-red-900/50 text-red-300 border border-red-700/50 px-2 py-0.5 rounded-full">
+                  ⚠️ {a}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────
 // Weather Mini-Cards row
 // ─────────────────────────────────────────────────────────────────
 
@@ -620,53 +728,8 @@ function CommandCentreInner() {
             />
           </div>
 
-          {/* Today's weather highlight */}
-          <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6 flex flex-col">
-            <div className="flex items-center gap-2 mb-4">
-              <Thermometer size={16} className="text-gray-500" />
-              <p className="text-sm font-medium text-gray-400 uppercase tracking-wide">Sydney Weather</p>
-            </div>
-            {loadingWeather ? (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="w-16 h-16 bg-gray-800 animate-pulse rounded-xl" />
-              </div>
-            ) : (() => {
-              const syd = weather?.cities.find(c => c.city === 'Sydney');
-              if (!syd) return <p className="text-gray-600 text-sm">No data</p>;
-              return (
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-4">
-                    <span className="text-7xl leading-none">{weatherEmoji(syd.current.weatherCode)}</span>
-                    <div>
-                      <span className="text-5xl font-bold text-white">{syd.current.temp}°C</span>
-                      <p className="text-gray-400 text-sm mt-1">{weatherLabel(syd.current.weatherCode)}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    <div className="bg-gray-800/60 rounded-lg px-3 py-2">
-                      <p className="text-xs text-gray-500">Wind</p>
-                      <p className="text-sm font-semibold text-white">{syd.current.windSpeed} km/h</p>
-                    </div>
-                    <div className="bg-gray-800/60 rounded-lg px-3 py-2">
-                      <p className="text-xs text-gray-500">Today Hi/Lo</p>
-                      <p className="text-sm font-semibold text-white">
-                        {syd.daily[0]?.tempMax ?? '—'}° / {syd.daily[0]?.tempMin ?? '—'}°
-                      </p>
-                    </div>
-                  </div>
-                  {syd.alerts.length > 0 && (
-                    <div className="mt-1 flex flex-wrap gap-1.5">
-                      {syd.alerts.map(a => (
-                        <span key={a} className="text-xs bg-red-900/50 text-red-300 border border-red-700/50 px-2 py-0.5 rounded-full">
-                          ⚠️ {a}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-          </div>
+          {/* Rotating city weather highlight */}
+          <WeatherCityCarousel cities={weather?.cities ?? []} loading={loadingWeather} />
         </div>
 
         {/* Weather row — all states */}
