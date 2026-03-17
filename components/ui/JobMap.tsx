@@ -75,8 +75,8 @@ export function JobMap({ jobs, height = 580 }: JobMapProps) {
         .setView([-33.86, 151.21], 9);
       mapRef.current = map;
 
-      // CartoDB dark tiles — no referrer requirement, free, matches dashboard theme
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      // CartoDB light tiles — clean grey base, red pins pop clearly
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, © <a href="https://carto.com/attributions">CARTO</a>',
         subdomains: 'abcd',
         maxZoom: 19,
@@ -109,10 +109,10 @@ export function JobMap({ jobs, height = 580 }: JobMapProps) {
       const redIcon = new L.Icon({
         iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
         shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41],
+        iconSize: [30, 49],
+        iconAnchor: [15, 49],
+        popupAnchor: [1, -40],
+        shadowSize: [49, 49],
       });
 
       const bounds: [number, number][] = [];
@@ -126,19 +126,19 @@ export function JobMap({ jobs, height = 580 }: JobMapProps) {
         const updated = job.updatedAt ? `${formatDate(job.updatedAt)}${job.updatedBy ? ' · ' + job.updatedBy : ''}` : '—';
 
         const popup = `
-          <div style="min-width:220px;font-family:system-ui,sans-serif;font-size:12px;line-height:1.5;background:#1f2937;color:#e5e7eb;border-radius:6px;padding:2px;">
-            <div style="font-weight:700;font-size:14px;color:#f87171;margin-bottom:2px;">${job.jobNumber}</div>
-            <div style="color:#9ca3af;margin-bottom:8px;font-size:11px;">${job.address}</div>
+          <div style="min-width:220px;font-family:system-ui,sans-serif;font-size:12px;line-height:1.5;background:#fff;color:#111;border-radius:6px;padding:2px;">
+            <div style="font-weight:700;font-size:14px;color:#dc2626;margin-bottom:2px;">${job.jobNumber}</div>
+            <div style="color:#555;margin-bottom:8px;font-size:11px;">${job.address}</div>
             <table style="width:100%;border-collapse:collapse;font-size:11px;">
-              <tr><td style="color:#6b7280;padding:2px 8px 2px 0;white-space:nowrap;vertical-align:top;">Status</td><td style="font-weight:600;color:#f3f4f6;">${job.status}</td></tr>
-              <tr><td style="color:#6b7280;padding:2px 8px 2px 0;vertical-align:top;">Type</td><td style="color:#d1d5db;">${job.jobType}</td></tr>
-              <tr><td style="color:#6b7280;padding:2px 8px 2px 0;vertical-align:top;">Region</td><td style="color:#d1d5db;">${job.region}</td></tr>
-              <tr><td style="color:#6b7280;padding:2px 8px 2px 0;vertical-align:top;">Auth Total</td><td style="font-weight:600;color:#f3f4f6;">${total}</td></tr>
-              <tr><td style="color:#6b7280;padding:2px 8px 2px 0;vertical-align:top;">Updated</td><td style="color:#9ca3af;font-size:10px;">${updated}</td></tr>
+              <tr><td style="color:#888;padding:2px 8px 2px 0;white-space:nowrap;vertical-align:top;">Status</td><td style="font-weight:600;color:#111;">${job.status}</td></tr>
+              <tr><td style="color:#888;padding:2px 8px 2px 0;vertical-align:top;">Type</td><td style="color:#333;">${job.jobType}</td></tr>
+              <tr><td style="color:#888;padding:2px 8px 2px 0;vertical-align:top;">Region</td><td style="color:#333;">${job.region}</td></tr>
+              <tr><td style="color:#888;padding:2px 8px 2px 0;vertical-align:top;">Auth Total</td><td style="font-weight:600;color:#111;">${total}</td></tr>
+              <tr><td style="color:#888;padding:2px 8px 2px 0;vertical-align:top;">Updated</td><td style="color:#666;font-size:10px;">${updated}</td></tr>
             </table>
             ${job.primeUrl
               ? `<a href="${job.primeUrl}" target="_blank" rel="noopener noreferrer"
-                   style="display:inline-flex;align-items:center;gap:4px;margin-top:10px;font-size:11px;color:#f87171;text-decoration:none;font-weight:600;border:1px solid #f87171;padding:3px 10px;border-radius:4px;">
+                   style="display:inline-flex;align-items:center;gap:4px;margin-top:10px;font-size:11px;color:#dc2626;text-decoration:none;font-weight:600;border:1px solid #dc2626;padding:3px 10px;border-radius:4px;">
                    Open in Prime ↗
                  </a>`
               : ''}
