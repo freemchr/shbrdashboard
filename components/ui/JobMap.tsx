@@ -63,13 +63,7 @@ export function JobMap({ jobs, height = 580 }: JobMapProps) {
     import('leaflet').then((L) => {
       if (!containerRef.current || mapRef.current) return;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      });
+
 
       const map = L.map(containerRef.current!, { preferCanvas: true })
         .setView([-33.86, 151.21], 9);
@@ -106,13 +100,16 @@ export function JobMap({ jobs, height = 580 }: JobMapProps) {
       const plotted = jobs.filter(j => j.lat !== null && j.lng !== null);
       if (plotted.length === 0) return;
 
-      const redIcon = new L.Icon({
-        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-        iconSize: [30, 49],
-        iconAnchor: [15, 49],
-        popupAnchor: [1, -40],
-        shadowSize: [49, 49],
+      // SVG pin — no external image dependency, always renders
+      const redIcon = L.divIcon({
+        className: '',
+        html: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40">
+          <path d="M14 0C6.268 0 0 6.268 0 14c0 9.333 14 26 14 26S28 23.333 28 14C28 6.268 21.732 0 14 0z" fill="#DC2626" stroke="#fff" stroke-width="1.5"/>
+          <circle cx="14" cy="14" r="5" fill="#fff"/>
+        </svg>`,
+        iconSize: [28, 40],
+        iconAnchor: [14, 40],
+        popupAnchor: [0, -42],
       });
 
       const bounds: [number, number][] = [];
