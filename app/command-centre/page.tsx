@@ -338,7 +338,7 @@ function WeatherCityCarousel({ cities, loading }: { cities: CityForecast[]; load
         setIdx(i => (i + 1) % cities.length);
         setFading(false);
       }, 300);
-    }, 4000);
+    }, 15000);
     return () => clearInterval(t);
   }, [cities.length]);
 
