@@ -145,50 +145,7 @@ function WeatherTicker({ cities }: { cities: CityForecast[] }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────
-// Weather Alert Corner
-// ─────────────────────────────────────────────────────────────────
 
-function WeatherAlertCorner({ cities }: { cities: CityForecast[] }) {
-  const severe = cities.filter(c => c.severity !== 'normal');
-  if (severe.length === 0) return null;
-
-  const visible = severe.slice(0, 2);
-  const overflow = severe.length - visible.length;
-
-  return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-1.5 max-w-[220px]">
-      {visible.map(city => (
-        <div
-          key={city.city}
-          className={`rounded-lg border px-3 py-2 shadow-xl backdrop-blur-sm ${
-            city.severity === 'warning'
-              ? 'bg-red-950/90 border-red-600/70 shadow-red-900/40'
-              : 'bg-orange-950/90 border-orange-600/70 shadow-orange-900/40'
-          }`}
-        >
-          <div className="flex items-center gap-1.5">
-            <AlertTriangle
-              size={12}
-              className={city.severity === 'warning' ? 'text-red-400' : 'text-orange-400'}
-            />
-            <span className="text-white text-xs font-semibold truncate">
-              {weatherEmoji(city.current.weatherCode)} {city.city} {city.state}
-            </span>
-          </div>
-          <p className={`text-xs mt-0.5 truncate ${city.severity === 'warning' ? 'text-red-300' : 'text-orange-300'}`}>
-            {city.alerts[0]}
-          </p>
-        </div>
-      ))}
-      {overflow > 0 && (
-        <div className="rounded-lg border border-gray-700 bg-gray-900/90 px-3 py-1.5 text-xs text-gray-400 text-center backdrop-blur-sm">
-          +{overflow} more alert{overflow !== 1 ? 's' : ''} — see ticker
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────
 // Big KPI Tile
@@ -562,14 +519,32 @@ function CommandCentreInner() {
           </div>
         </div>
 
-        {/* Severe weather banner */}
+        {/* Severe weather tile */}
         {severeWeather > 0 && weather && (
-          <div className="flex items-center gap-3 bg-red-950/50 border border-red-700/50 rounded-xl px-5 py-3">
-            <AlertTriangle size={18} className="text-red-400 flex-shrink-0" />
-            <p className="text-red-200 text-sm font-semibold">
-              ⚠️ Severe weather in {severeWeather} state{severeWeather !== 1 ? 's' : ''} —
-              increased claim volume expected. Monitor affected regions.
-            </p>
+          <div className="bg-red-950/30 border border-red-700/50 rounded-2xl px-5 py-4">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle size={16} className="text-red-400 flex-shrink-0" />
+              <span className="text-red-300 text-sm font-bold uppercase tracking-wide">
+                Active Weather Alerts — {severeWeather} region{severeWeather !== 1 ? 's' : ''}
+              </span>
+              <span className="text-red-400/50 text-xs ml-1">· Increased claim volume expected</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {weather.cities.filter(c => c.severity !== 'normal').map(city => (
+                <div
+                  key={city.city}
+                  className={`flex items-center gap-2 rounded-xl px-3 py-2 border text-sm ${
+                    city.severity === 'warning'
+                      ? 'bg-red-950/60 border-red-600/60 text-red-200'
+                      : 'bg-orange-950/50 border-orange-600/50 text-orange-200'
+                  }`}
+                >
+                  <span>{weatherEmoji(city.current.weatherCode)}</span>
+                  <span className="font-semibold">{city.city} {city.state}</span>
+                  <span className="text-xs opacity-70">{city.alerts[0]}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -713,8 +688,7 @@ function CommandCentreInner() {
         </div>
       </div>
 
-      {/* Floating weather alerts corner — kiosk/TV only */}
-      {isKiosk && weather && <WeatherAlertCorner cities={weather.cities} />}
+
 
       {/* Kiosk exit button — bottom-left, subtle */}
       {isKiosk && (
