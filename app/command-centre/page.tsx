@@ -713,8 +713,8 @@ function CommandCentreInner() {
         </div>
       </div>
 
-      {/* Floating weather alerts corner */}
-      {weather && <WeatherAlertCorner cities={weather.cities} />}
+      {/* Floating weather alerts corner — kiosk/TV only */}
+      {isKiosk && weather && <WeatherAlertCorner cities={weather.cities} />}
 
       {/* Kiosk exit button — bottom-left, subtle */}
       {isKiosk && (
