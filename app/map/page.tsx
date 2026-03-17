@@ -38,7 +38,7 @@ export interface GeocodedJob {
   failed?: boolean;
 }
 
-const BATCH_SIZE = 30;
+const BATCH_SIZE = 15; // 15 * 1.1s = ~17s per batch, well under Vercel's 60s limit
 
 export default function MapPage() {
   const [jobs, setJobs] = useState<GeocodedJob[]>([]);
@@ -71,34 +71,65 @@ export default function MapPage() {
     setGeocoding(true);
     setError(null);
 
+    let consecutiveErrors = 0;
+    const MAX_ERRORS = 3;
+    let isReset = reset;
+
     try {
       let done = false;
       while (!done) {
-        const res = await fetch('/api/prime/jobs/geocode', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ batchSize: BATCH_SIZE, reset }),
-        });
-        if (!res.ok) throw new Error(`Geocode error: ${res.status}`);
-        const data = await res.json() as {
-          jobs: GeocodedJob[];
-          complete: boolean;
-          total: number;
-          geocoded: number;
-          error?: string;
-        };
-        if (data.error) throw new Error(data.error);
+        try {
+          const res = await fetch('/api/prime/jobs/geocode', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ batchSize: BATCH_SIZE, reset: isReset }),
+          });
 
-        setJobs(data.jobs);
-        setTotal(data.total);
-        setGeocoded(data.geocoded);
-        setComplete(data.complete);
-        done = data.complete;
+          // 504 / 502 = Vercel timeout — partial progress was still saved, just retry
+          if (res.status === 504 || res.status === 502) {
+            consecutiveErrors++;
+            if (consecutiveErrors >= MAX_ERRORS) {
+              setError('Geocoding timed out repeatedly. Showing partial results — refresh the page to resume.');
+              break;
+            }
+            // Pull whatever was cached so far and keep showing it
+            const cached = await fetch('/api/prime/jobs/geocode').then(r => r.ok ? r.json() : null);
+            if (cached?.jobs) { setJobs(cached.jobs); setTotal(cached.total); setGeocoded(cached.geocoded ?? 0); }
+            await new Promise(r => setTimeout(r, 3000));
+            isReset = false; // never reset on retry
+            continue;
+          }
 
-        if (!done) await new Promise(r => setTimeout(r, 2000));
+          if (!res.ok) throw new Error(`Geocode error: ${res.status}`);
+
+          const data = await res.json() as {
+            jobs: GeocodedJob[];
+            complete: boolean;
+            total: number;
+            geocoded: number;
+            error?: string;
+          };
+          if (data.error) throw new Error(data.error);
+
+          consecutiveErrors = 0;
+          isReset = false;
+          setJobs(data.jobs);
+          setTotal(data.total);
+          setGeocoded(data.geocoded);
+          setComplete(data.complete);
+          done = data.complete;
+
+          if (!done) await new Promise(r => setTimeout(r, 2000));
+
+        } catch (fetchErr) {
+          consecutiveErrors++;
+          if (consecutiveErrors >= MAX_ERRORS) {
+            setError('Network error during geocoding. Showing cached results.');
+            break;
+          }
+          await new Promise(r => setTimeout(r, 3000));
+        }
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
     } finally {
       geocodingRef.current = false;
       setGeocoding(false);
@@ -253,7 +284,7 @@ export default function MapPage() {
         )}
 
         <button
-          onClick={() => { setJobs([]); setComplete(false); setGeocoded(0); runGeocoding(true); }}
+          onClick={() => { setComplete(false); setGeocoded(0); runGeocoding(true); }}
           disabled={geocoding}
           className="ml-auto flex items-center gap-2 text-xs text-gray-400 hover:text-white bg-gray-800 border border-gray-700 px-3 py-2 rounded-lg transition-colors disabled:opacity-40"
         >
