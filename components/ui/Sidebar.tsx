@@ -24,6 +24,8 @@ import {
   Sparkles,
   ChevronDown,
   Tv2,
+  HardHat,
+  Activity,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -34,6 +36,8 @@ const navItems = [
   { href: '/pipeline', label: 'Pipeline', icon: GitBranch },
   { href: '/bottlenecks', label: 'Bottlenecks', icon: AlertTriangle },
   { href: '/team', label: 'Team', icon: Users },
+  { href: '/estimators', label: 'Estimators', icon: HardHat },
+  { href: '/timeline', label: 'Timeline Tracking', icon: Activity },
   { href: '/aging', label: 'Aging', icon: Clock },
   { href: '/financial', label: 'Financial', icon: DollarSign },
   { href: '/search', label: 'Job Search', icon: Search },

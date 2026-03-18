@@ -37,7 +37,7 @@ interface ReportSummary {
 }
 
 type Tab = 'no_report' | 'in_progress' | 'submitted';
-type SortKey = 'jobNumber' | 'jobType' | 'region' | 'status' | 'daysSinceCreated' | 'daysSinceUpdated' | 'authorisedTotal';
+type SortKey = 'jobNumber' | 'jobType' | 'region' | 'status' | 'daysSinceCreated' | 'daysSinceUpdated' | 'authorisedTotal' | 'updatedBy';
 
 function JobTable({ jobs, sortKey, sortDir, onSort, showAge = 'created', showAssistButton = false }: {
   jobs: ReportJob[];
@@ -80,7 +80,7 @@ function JobTable({ jobs, sortKey, sortDir, onSort, showAge = 'created', showAss
             <SortTh col="authorisedTotal" label="Auth Total" />
             <SortTh col="daysSinceCreated" label="Created" />
             <SortTh col="daysSinceUpdated" label="Last Update" />
-            <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium whitespace-nowrap hidden lg:table-cell">Updated By</th>
+            <SortTh col="updatedBy" label="Updated By" />
             <th className="py-2 px-3"></th>
             {showAssistButton && <th className="py-2 px-3"></th>}
           </tr>
