@@ -43,7 +43,20 @@ export async function GET() {
     const sixMonthsAgo = new Date(Date.now() - SIX_MONTHS_MS).toISOString().slice(0, 10);
     const q = encodeURIComponent(`'createdAt'.gte('${sixMonthsAgo}')`);
 
-    const all: SiteForm['attributes'] & { id: string; jobId: string } [] = [];
+    interface SwmsForm {
+      id: string;
+      number?: string;
+      label?: string;
+      jobId: string;
+      status: string;
+      assignedContact?: string;
+      assignedUser?: string;
+      approvedBy?: string;
+      approvedAt?: string;
+      createdAt: string;
+      updatedAt?: string;
+    }
+    const all: SwmsForm[] = [];
     let page = 1;
     let totalPages = 1;
 

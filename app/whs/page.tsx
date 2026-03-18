@@ -164,11 +164,10 @@ export default function WHSPage() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'awaiting' | 'noswms'>('awaiting');
 
-  const fetchData = (force = false) => {
+  const fetchData = () => {
     setLoading(true);
     setError(null);
-    const url = force ? '/api/prime/whs?force=1' : '/api/prime/whs';
-    fetch(url)
+    fetch('/api/prime/whs')
       .then((r) => (r.ok ? r.json() : Promise.reject('Failed to load WHS data')))
       .then((d) => { setData(d); setLoading(false); })
       .catch((e) => { setError(String(e)); setLoading(false); });
@@ -210,7 +209,7 @@ export default function WHSPage() {
                 day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
               })}
             </span>
-            <DataRefreshButton onRefresh={() => fetchData(true)} />
+            <DataRefreshButton />
           </div>
         </div>
 
