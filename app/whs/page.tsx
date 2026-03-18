@@ -400,9 +400,10 @@ export default function WHSPage() {
                   tickLine={false}
                 />
                 <Tooltip
-                  contentStyle={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 8, fontSize: 12 }}
+                  contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8, fontSize: 12 }}
                   labelStyle={{ color: '#e5e7eb' }}
                   itemStyle={{ color: '#9ca3af' }}
+                  cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                 />
                 <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={22}>
                   {statusDist.map((entry) => (
@@ -426,8 +427,10 @@ export default function WHSPage() {
                 <YAxis yAxisId="left" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} unit="%" domain={[0, 100]} />
                 <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
                 <Tooltip
-                  contentStyle={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 8, fontSize: 12 }}
+                  contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8, fontSize: 12 }}
                   labelStyle={{ color: '#e5e7eb' }}
+                  itemStyle={{ color: '#9ca3af' }}
+                  cursor={{ stroke: 'rgba(255,255,255,0.05)' }}
                 />
                 <Legend wrapperStyle={{ fontSize: 11, color: '#9ca3af' }} />
                 <Line
