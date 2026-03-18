@@ -51,10 +51,10 @@ export async function POST(req: NextRequest) {
     // Fetch user name from Prime
     // Fall back to deriving a friendly name from the email if Prime returns something generic
     const genericNames = ['prime admin', 'admin', 'administrator', 'user', 'prime user'];
-    function friendlyNameFromEmail(e: string): string {
+    const friendlyNameFromEmail = (e: string): string => {
       const local = e.split('@')[0] || e;
-      return local.split(/[._-]/).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
-    }
+      return local.split(/[._-]/).map((p: string) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+    };
 
     let userName = friendlyNameFromEmail(email);
     try {
