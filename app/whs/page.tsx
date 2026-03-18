@@ -164,30 +164,48 @@ export default function WHSPage() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'awaiting' | 'noswms'>('awaiting');
 
-  const fetchData = (attempt = 1) => {
+  const [notReady, setNotReady] = useState(false);
+
+  const fetchData = () => {
     setLoading(true);
     setError(null);
+    setNotReady(false);
     fetch('/api/prime/whs')
-      .then((r) => {
-        if (r.status === 504 || r.status === 502) throw new Error('timeout');
-        return r.ok ? r.json() : r.json().then((e: { error?: string }) => Promise.reject(e?.error || 'Failed to load WHS data'));
-      })
-      .then((d) => { setData(d); setLoading(false); })
-      .catch((e) => {
-        // Auto-retry once on timeout — first cold load can be slow
-        if (String(e).includes('timeout') && attempt === 1) {
-          setTimeout(() => fetchData(2), 3000);
-        } else {
-          setError(String(e));
+      .then(async (r) => {
+        const json = await r.json();
+        if (r.status === 503 && json?.error === 'not_ready') {
+          setNotReady(true);
           setLoading(false);
+          return;
         }
-      });
+        if (!r.ok) throw new Error(json?.message || 'Failed to load WHS data');
+        setData(json);
+        setLoading(false);
+      })
+      .catch((e) => { setError(String(e)); setLoading(false); });
   };
 
   useEffect(() => { fetchData(); }, []);
 
-  if (loading) return <LoadingSpinner message="Loading WHS data… (first load may take up to 30s while fetching from Prime)" />;
+  if (loading) return <LoadingSpinner message="Loading WHS data…" />;
   if (error) return <ErrorMessage message={error} />;
+  if (notReady) return (
+    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-8">
+      <div className="max-w-md text-center space-y-4">
+        <div className="w-14 h-14 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto">
+          <svg className="w-7 h-7 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
+          </svg>
+        </div>
+        <h2 className="text-white text-lg font-semibold">WHS data not yet built</h2>
+        <p className="text-gray-400 text-sm leading-relaxed">
+          The WHS dataset is built nightly at <strong className="text-gray-300">3am AEDT</strong> by a scheduled job.
+          It hasn&apos;t run yet — ask an admin to trigger a manual refresh, or check back after the first nightly run.
+        </p>
+        <p className="text-gray-600 text-xs">Admin: POST to <code className="text-gray-500">/api/prime/whs/refresh</code> with the CRON_SECRET header.</p>
+      </div>
+    </div>
+  );
   if (!data) return null;
 
   const completionTL = trafficLight(data.completionRate, { green: 75, amber: 50 });

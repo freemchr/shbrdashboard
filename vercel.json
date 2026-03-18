@@ -7,6 +7,10 @@
     {
       "path": "/api/prime/jobs/timeline",
       "schedule": "0 20 * * *"
+    },
+    {
+      "path": "/api/prime/whs/refresh",
+      "schedule": "0 16 * * *"
     }
   ]
 }
