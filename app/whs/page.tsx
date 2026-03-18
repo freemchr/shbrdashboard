@@ -164,18 +164,29 @@ export default function WHSPage() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'awaiting' | 'noswms'>('awaiting');
 
-  const fetchData = () => {
+  const fetchData = (attempt = 1) => {
     setLoading(true);
     setError(null);
     fetch('/api/prime/whs')
-      .then((r) => (r.ok ? r.json() : Promise.reject('Failed to load WHS data')))
+      .then((r) => {
+        if (r.status === 504 || r.status === 502) throw new Error('timeout');
+        return r.ok ? r.json() : r.json().then((e: { error?: string }) => Promise.reject(e?.error || 'Failed to load WHS data'));
+      })
       .then((d) => { setData(d); setLoading(false); })
-      .catch((e) => { setError(String(e)); setLoading(false); });
+      .catch((e) => {
+        // Auto-retry once on timeout — first cold load can be slow
+        if (String(e).includes('timeout') && attempt === 1) {
+          setTimeout(() => fetchData(2), 3000);
+        } else {
+          setError(String(e));
+          setLoading(false);
+        }
+      });
   };
 
   useEffect(() => { fetchData(); }, []);
 
-  if (loading) return <LoadingSpinner message="Loading WHS data…" />;
+  if (loading) return <LoadingSpinner message="Loading WHS data… (first load may take up to 30s while fetching from Prime)" />;
   if (error) return <ErrorMessage message={error} />;
   if (!data) return null;
 
