@@ -285,9 +285,6 @@ export function Sidebar() {
               <span className="text-xs text-gray-400 truncate">
                 {userName.includes('@') ? userName.split('@')[0] : userName}
               </span>
-              {userName.includes('@') && (
-                <span className="text-xs text-gray-600 truncate">@{userName.split('@')[1]}</span>
-              )}
             </div>
           )}
 
