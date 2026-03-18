@@ -149,19 +149,19 @@ function KpiTile({
   small?: boolean;
 }) {
   return (
-    <div className={`rounded-xl border p-5 flex flex-col gap-2 ${tl.bg} ${tl.border}`}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Icon size={16} className={tl.color} />
-          <span className="text-xs text-gray-400 font-medium uppercase tracking-wide">{label}</span>
+    <div className={`rounded-xl border p-4 flex flex-col gap-2 ${tl.bg} ${tl.border}`}>
+      <div className="flex items-start justify-between gap-1 flex-wrap">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Icon size={14} className={`${tl.color} flex-shrink-0`} />
+          <span className="text-xs text-gray-400 font-medium uppercase tracking-wide leading-tight">{label}</span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 flex-shrink-0">
           <DotIndicator color={tl.dot} />
-          <span className={`text-xs font-semibold ${tl.color}`}>{tl.label}</span>
+          <span className={`text-xs font-semibold ${tl.color} whitespace-nowrap`}>{tl.label}</span>
         </div>
       </div>
       <div className={`font-bold ${tl.color} ${small ? 'text-2xl' : 'text-3xl'}`}>{value}</div>
-      {subtext && <div className="text-xs text-gray-500">{subtext}</div>}
+      {subtext && <div className="text-xs text-gray-500 leading-tight">{subtext}</div>}
     </div>
   );
 }
