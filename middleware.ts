@@ -7,6 +7,12 @@ const PUBLIC_PATHS = new Set([
   '/api/auth/session',
 ]);
 
+// Paths allowed when called with the Vercel cron authorization header
+const CRON_PATHS = new Set([
+  '/api/prime/jobs/timeline',
+  '/api/prime/jobs/geocode-auto',
+]);
+
 const PUBLIC_EXTENSIONS = /\.(png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot|css|js|map)$/i;
 
 function isPublic(pathname: string): boolean {
@@ -20,6 +26,19 @@ export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   if (isPublic(pathname)) return NextResponse.next();
+
+  // Allow Vercel cron jobs (they send Authorization: Bearer <CRON_SECRET>)
+  if (CRON_PATHS.has(pathname)) {
+    const authHeader = req.headers.get('authorization');
+    const cronSecret = process.env.CRON_SECRET;
+    if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
+      return NextResponse.next();
+    }
+    // Also allow internal Vercel cron calls (x-vercel-cron header)
+    if (req.headers.get('x-vercel-cron') === '1') {
+      return NextResponse.next();
+    }
+  }
 
   const session = req.cookies.get('shbr_session');
   if (!session?.value) {
