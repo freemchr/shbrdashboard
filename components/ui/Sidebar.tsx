@@ -36,8 +36,6 @@ const navItems = [
   { href: '/pipeline', label: 'Pipeline', icon: GitBranch },
   { href: '/bottlenecks', label: 'Bottlenecks', icon: AlertTriangle },
   { href: '/team', label: 'Team', icon: Users },
-  { href: '/estimators', label: 'Estimators', icon: HardHat },
-  { href: '/timeline', label: 'Timeline Tracking', icon: Activity },
   { href: '/aging', label: 'Aging', icon: Clock },
   { href: '/financial', label: 'Financial', icon: DollarSign },
   { href: '/search', label: 'Job Search', icon: Search },
@@ -48,6 +46,11 @@ const reportsSubItems = [
   { href: '/reports', label: 'Overview', icon: BarChart2, alert: true },
   { href: '/report-assist', label: 'Report Assist', icon: FileEdit, alert: true },
   { href: '/report-assist/polish', label: 'Report Polisher', icon: Sparkles },
+];
+
+const estimatorsSubItems = [
+  { href: '/estimators', label: 'Workload', icon: HardHat },
+  { href: '/timeline', label: 'Timeline Tracking', icon: Activity },
 ];
 
 function NavItem({ href, label, icon: Icon, active, alert }: {
@@ -88,10 +91,17 @@ export function Sidebar() {
   const isInReports = pathname.startsWith('/reports') || pathname.startsWith('/report-assist');
   const [reportsOpen, setReportsOpen] = useState(isInReports);
 
-  // Auto-expand when navigating into a reports route
+  const isInEstimators = pathname.startsWith('/estimators') || pathname.startsWith('/timeline');
+  const [estimatorsOpen, setEstimatorsOpen] = useState(isInEstimators);
+
+  // Auto-expand when navigating into a reports or estimators route
   useEffect(() => {
     if (isInReports) setReportsOpen(true);
   }, [isInReports]);
+
+  useEffect(() => {
+    if (isInEstimators) setEstimatorsOpen(true);
+  }, [isInEstimators]);
 
   useEffect(() => {
     fetch('/api/auth/session')
@@ -202,6 +212,41 @@ export function Sidebar() {
                     {item.alert && !isActive(item.href) && (
                       <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
                     )}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Collapsible Estimators group */}
+          <div>
+            <button
+              onClick={() => setEstimatorsOpen(o => !o)}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all
+                ${isInEstimators ? 'text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'}`}
+            >
+              <HardHat size={18} className={isInEstimators ? 'text-red-400' : ''} />
+              <span className="flex-1 text-left">Estimators</span>
+              <ChevronDown
+                size={15}
+                className={`text-gray-500 transition-transform duration-200 ${estimatorsOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            <div className={`overflow-hidden transition-all duration-200 ${estimatorsOpen ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
+              <div className="mt-0.5 space-y-0.5">
+                {estimatorsSubItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-3 pl-8 pr-4 py-2 rounded-lg text-sm transition-all
+                      ${isActive(item.href)
+                        ? 'bg-red-600 text-white font-medium'
+                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                      }`}
+                  >
+                    <item.icon size={15} />
+                    <span className="flex-1">{item.label}</span>
                   </Link>
                 ))}
               </div>
