@@ -224,7 +224,7 @@ export default function TimelinePage() {
           accent={summary.avgDaysCreatedToFirstAtp > 60}
         />
         <KpiCard
-          title="Avg Days in Insurer's Court"
+          title="Avg Days with Insurer"
           value={summary.avgDaysInAwaiting > 0 ? `${summary.avgDaysInAwaiting}d` : '—'}
           subtitle="Time spent awaiting approval"
           icon={<Clock size={18} className="text-amber-400" />}
