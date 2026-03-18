@@ -27,6 +27,7 @@ import {
   HardHat,
   Activity,
   ShieldCheck,
+  HelpCircle,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -265,6 +266,13 @@ export function Sidebar() {
               active={isActive(item.href)}
             />
           ))}
+
+          <NavItem
+            href="/support"
+            label="Support"
+            icon={HelpCircle}
+            active={isActive('/support')}
+          />
 
           {userEmail?.toLowerCase() === ADMIN_EMAIL && (
             <NavItem
