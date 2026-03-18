@@ -26,6 +26,7 @@ import {
   Tv2,
   HardHat,
   Activity,
+  ShieldCheck,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -33,6 +34,7 @@ const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/command-centre', label: 'Command Centre', icon: Tv2 },
   { href: '/weather', label: 'Weather', icon: Cloud },
+  { href: '/whs', label: 'WHS', icon: ShieldCheck },
   { href: '/pipeline', label: 'Pipeline', icon: GitBranch },
   { href: '/bottlenecks', label: 'Bottlenecks', icon: AlertTriangle },
   { href: '/team', label: 'Team', icon: Users },
