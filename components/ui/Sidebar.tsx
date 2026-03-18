@@ -297,17 +297,17 @@ export function Sidebar() {
           </button>
 
           <div className="pt-1">
+            <p className="text-xs text-gray-600 text-center">SHBR Insights</p>
+            <p className="text-xs text-gray-700 text-center">Internal Use Only</p>
             <Link
               href="/support"
-              className={`flex items-center justify-center gap-1.5 text-xs mb-2 transition-colors ${
+              className={`flex items-center justify-center gap-1.5 text-xs mt-1.5 transition-colors ${
                 isActive('/support') ? 'text-red-400' : 'text-gray-600 hover:text-gray-400'
               }`}
             >
               <HelpCircle size={11} />
               <span>Support &amp; Help</span>
             </Link>
-            <p className="text-xs text-gray-600 text-center">SHBR Insights</p>
-            <p className="text-xs text-gray-700 text-center">Internal Use Only</p>
             <p className="text-xs text-gray-700 text-center mt-1">
               Created by{' '}
               <a href="https://www.techgurus.com.au" target="_blank" rel="noopener noreferrer"
