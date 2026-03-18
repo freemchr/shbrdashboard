@@ -27,6 +27,11 @@ import {
   FileX,
   Activity,
   ExternalLink,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 interface TrendPoint {
@@ -40,6 +45,9 @@ interface AwaitingItem {
   id: string;
   number?: string;
   jobId: string;
+  jobNumber?: string;
+  primeUrl?: string;
+  location?: string;
   assignedContact?: string;
   createdAt: string;
   daysPending: number;
@@ -158,11 +166,68 @@ function KpiTile({
   );
 }
 
+const PAGE_SIZE = 25;
+
+function SortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
+  if (!active) return <ChevronsUpDown size={11} className="text-gray-700" />;
+  return dir === 'asc' ? <ChevronUp size={11} className="text-red-400" /> : <ChevronDown size={11} className="text-red-400" />;
+}
+
+function Pagination({ page, total, pageSize, onChange }: { page: number; total: number; pageSize: number; onChange: (p: number) => void }) {
+  const pages = Math.ceil(total / pageSize);
+  if (pages <= 1) return null;
+  return (
+    <div className="flex items-center justify-between px-4 py-3 border-t border-gray-800 text-xs text-gray-500">
+      <span>{total} records · page {page} of {pages}</span>
+      <div className="flex items-center gap-1">
+        <button onClick={() => onChange(page - 1)} disabled={page === 1}
+          className="p-1 rounded hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+          <ChevronLeft size={14} />
+        </button>
+        {Array.from({ length: Math.min(pages, 7) }, (_, i) => {
+          const p = pages <= 7 ? i + 1 : page <= 4 ? i + 1 : page >= pages - 3 ? pages - 6 + i : page - 3 + i;
+          return (
+            <button key={p} onClick={() => onChange(p)}
+              className={`w-6 h-6 rounded text-xs transition-colors ${p === page ? 'bg-red-600 text-white' : 'hover:bg-gray-800'}`}>
+              {p}
+            </button>
+          );
+        })}
+        <button onClick={() => onChange(page + 1)} disabled={page === pages}
+          className="p-1 rounded hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+          <ChevronRight size={14} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function WHSPage() {
   const [data, setData] = useState<WHSData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'awaiting' | 'noswms'>('awaiting');
+
+  // Awaiting table state
+  const [awaitSort, setAwaitSort] = useState<keyof AwaitingItem>('daysPending');
+  const [awaitDir, setAwaitDir] = useState<'asc' | 'desc'>('desc');
+  const [awaitPage, setAwaitPage] = useState(1);
+
+  // No SWMS table state
+  const [noSwmsSort, setNoSwmsSort] = useState<keyof NoSwmsJob>('daysSinceCreated');
+  const [noSwmsDir, setNoSwmsDir] = useState<'asc' | 'desc'>('desc');
+  const [noSwmsPage, setNoSwmsPage] = useState(1);
+
+  const handleAwaitSort = (col: keyof AwaitingItem) => {
+    if (awaitSort === col) setAwaitDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setAwaitSort(col); setAwaitDir('asc'); }
+    setAwaitPage(1);
+  };
+  const handleNoSwmsSort = (col: keyof NoSwmsJob) => {
+    if (noSwmsSort === col) setNoSwmsDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setNoSwmsSort(col); setNoSwmsDir('asc'); }
+    setNoSwmsPage(1);
+  };
 
   const [notReady, setNotReady] = useState(false);
 
@@ -393,180 +458,145 @@ export default function WHSPage() {
         <div className="bg-[#111111] rounded-xl border border-gray-800">
           {/* Tab switcher */}
           <div className="flex border-b border-gray-800">
-            <button
-              onClick={() => setTab('awaiting')}
-              className={`px-5 py-3 text-sm font-medium transition-colors flex items-center gap-2 ${
-                tab === 'awaiting'
-                  ? 'text-white border-b-2 border-red-500'
-                  : 'text-gray-500 hover:text-gray-300'
-              }`}
-            >
+            <button onClick={() => setTab('awaiting')}
+              className={`px-5 py-3 text-sm font-medium transition-colors flex items-center gap-2 ${tab === 'awaiting' ? 'text-white border-b-2 border-red-500' : 'text-gray-500 hover:text-gray-300'}`}>
               <Clock size={14} />
               Awaiting Approval
               {data.awaitingApproval > 0 && (
-                <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
-                  awaitingTL.color === 'text-red-400' ? 'bg-red-500/20 text-red-400' :
-                  awaitingTL.color === 'text-amber-400' ? 'bg-amber-500/20 text-amber-400' :
-                  'bg-emerald-500/20 text-emerald-400'
-                }`}>
+                <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${awaitingTL.color === 'text-red-400' ? 'bg-red-500/20 text-red-400' : awaitingTL.color === 'text-amber-400' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
                   {data.awaitingApproval}
                 </span>
               )}
             </button>
-            <button
-              onClick={() => setTab('noswms')}
-              className={`px-5 py-3 text-sm font-medium transition-colors flex items-center gap-2 ${
-                tab === 'noswms'
-                  ? 'text-white border-b-2 border-red-500'
-                  : 'text-gray-500 hover:text-gray-300'
-              }`}
-            >
+            <button onClick={() => setTab('noswms')}
+              className={`px-5 py-3 text-sm font-medium transition-colors flex items-center gap-2 ${tab === 'noswms' ? 'text-white border-b-2 border-red-500' : 'text-gray-500 hover:text-gray-300'}`}>
               <AlertTriangle size={14} />
               Open Jobs Without SWMS
               {data.openJobsNoSwms > 0 && (
-                <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
-                  noSwmsTL.color === 'text-red-400' ? 'bg-red-500/20 text-red-400' :
-                  noSwmsTL.color === 'text-amber-400' ? 'bg-amber-500/20 text-amber-400' :
-                  'bg-emerald-500/20 text-emerald-400'
-                }`}>
+                <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${noSwmsTL.color === 'text-red-400' ? 'bg-red-500/20 text-red-400' : noSwmsTL.color === 'text-amber-400' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
                   {data.openJobsNoSwms}
                 </span>
               )}
             </button>
           </div>
 
-          {/* Awaiting Approval table */}
-          {tab === 'awaiting' && (
-            <div className="overflow-x-auto">
-              {data.awaitingList.length === 0 ? (
-                <div className="py-10 text-center">
-                  <CheckCircle2 size={32} className="mx-auto text-emerald-500 mb-3" />
-                  <p className="text-gray-400 text-sm">No forms awaiting approval — all clear!</p>
+          {/* ── Awaiting Approval table ── */}
+          {tab === 'awaiting' && (() => {
+            const sorted = [...data.awaitingList].sort((a, b) => {
+              const av = a[awaitSort] ?? ''; const bv = b[awaitSort] ?? '';
+              const cmp = typeof av === 'number' && typeof bv === 'number' ? av - bv : String(av).localeCompare(String(bv), undefined, { numeric: true });
+              return awaitDir === 'asc' ? cmp : -cmp;
+            });
+            const paged = sorted.slice((awaitPage - 1) * PAGE_SIZE, awaitPage * PAGE_SIZE);
+            type ACol = keyof AwaitingItem;
+            const Th = ({ col, label }: { col: ACol; label: string }) => (
+              <th onClick={() => handleAwaitSort(col)}
+                className="py-2.5 px-4 text-left text-xs text-gray-500 font-medium cursor-pointer select-none hover:text-white transition-colors whitespace-nowrap">
+                <span className="inline-flex items-center gap-1">{label}<SortIcon active={awaitSort === col} dir={awaitDir} /></span>
+              </th>
+            );
+            return data.awaitingList.length === 0 ? (
+              <div className="py-10 text-center"><CheckCircle2 size={32} className="mx-auto text-emerald-500 mb-3" /><p className="text-gray-400 text-sm">No forms awaiting approval — all clear!</p></div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead><tr className="border-b border-gray-800">
+                      <Th col="number" label="SWMS #" />
+                      <Th col="jobNumber" label="Job #" />
+                      <Th col="location" label="Location" />
+                      <Th col="assignedContact" label="Assigned To" />
+                      <Th col="createdAt" label="Created" />
+                      <Th col="daysPending" label="Days Pending" />
+                    </tr></thead>
+                    <tbody>
+                      {paged.map((item, i) => {
+                        const urgency = item.daysPending >= 7 ? 'text-red-400' : item.daysPending >= 3 ? 'text-amber-400' : 'text-emerald-400';
+                        return (
+                          <tr key={item.id} className={`border-b border-gray-900 ${i % 2 === 0 ? '' : 'bg-white/[0.02]'} hover:bg-white/5 transition-colors`}>
+                            <td className="py-2.5 px-4 font-mono text-xs text-gray-300">{item.number || '—'}</td>
+                            <td className="py-2.5 px-4 text-xs">
+                              {item.primeUrl ? (
+                                <a href={item.primeUrl} target="_blank" rel="noopener noreferrer" className="text-red-400 hover:text-red-300 font-semibold underline underline-offset-2">
+                                  {item.jobNumber || item.jobId}
+                                </a>
+                              ) : <span className="text-gray-400">{item.jobNumber || item.jobId || '—'}</span>}
+                            </td>
+                            <td className="py-2.5 px-4 text-xs text-gray-400">{item.location || '—'}</td>
+                            <td className="py-2.5 px-4 text-xs text-gray-300">{item.assignedContact || '—'}</td>
+                            <td className="py-2.5 px-4 text-xs text-gray-400">{formatDate(item.createdAt)}</td>
+                            <td className={`py-2.5 px-4 text-xs font-bold ${urgency}`}>{item.daysPending}d</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-              ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-800">
-                      <th className="py-2.5 px-4 text-left text-xs text-gray-500 font-medium">SWMS #</th>
-                      <th className="py-2.5 px-4 text-left text-xs text-gray-500 font-medium">Job ID</th>
-                      <th className="py-2.5 px-4 text-left text-xs text-gray-500 font-medium">Assigned To</th>
-                      <th className="py-2.5 px-4 text-left text-xs text-gray-500 font-medium">Created</th>
-                      <th className="py-2.5 px-4 text-left text-xs text-gray-500 font-medium">Days Pending</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.awaitingList.map((item, i) => {
-                      const urgency =
-                        item.daysPending >= 7
-                          ? 'text-red-400'
-                          : item.daysPending >= 3
-                          ? 'text-amber-400'
-                          : 'text-emerald-400';
-                      return (
-                        <tr
-                          key={item.id}
-                          className={`border-b border-gray-900 ${
-                            i % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.02]'
-                          } hover:bg-white/5 transition-colors`}
-                        >
-                          <td className="py-2.5 px-4 font-mono text-xs text-gray-300">
-                            {item.number || '—'}
-                          </td>
-                          <td className="py-2.5 px-4 text-xs text-gray-400">{item.jobId || '—'}</td>
-                          <td className="py-2.5 px-4 text-xs text-gray-300">
-                            {item.assignedContact || '—'}
-                          </td>
-                          <td className="py-2.5 px-4 text-xs text-gray-400">
-                            {formatDate(item.createdAt)}
-                          </td>
-                          <td className={`py-2.5 px-4 text-xs font-bold ${urgency}`}>
-                            {item.daysPending}d
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-              {data.awaitingApproval > data.awaitingList.length && (
-                <p className="text-xs text-gray-600 px-4 py-2">
-                  Showing {data.awaitingList.length} of {data.awaitingApproval} forms
-                </p>
-              )}
-            </div>
-          )}
+                <Pagination page={awaitPage} total={sorted.length} pageSize={PAGE_SIZE} onChange={setAwaitPage} />
+              </>
+            );
+          })()}
 
-          {/* No SWMS jobs table */}
-          {tab === 'noswms' && (
-            <div className="overflow-x-auto">
-              {data.noSwmsList.length === 0 ? (
-                <div className="py-10 text-center">
-                  <ShieldCheck size={32} className="mx-auto text-emerald-500 mb-3" />
-                  <p className="text-gray-400 text-sm">All open jobs have a SWMS on file — great work!</p>
-                </div>
-              ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-800">
-                      <th className="py-2.5 px-4 text-left text-xs text-gray-500 font-medium">Job #</th>
-                      <th className="py-2.5 px-4 text-left text-xs text-gray-500 font-medium">Location</th>
-                      <th className="py-2.5 px-4 text-left text-xs text-gray-500 font-medium">Type</th>
-                      <th className="py-2.5 px-4 text-left text-xs text-gray-500 font-medium">Region</th>
-                      <th className="py-2.5 px-4 text-left text-xs text-gray-500 font-medium">Days Open</th>
+          {/* ── No SWMS jobs table ── */}
+          {tab === 'noswms' && (() => {
+            const sorted = [...data.noSwmsList].sort((a, b) => {
+              const av = a[noSwmsSort] ?? ''; const bv = b[noSwmsSort] ?? '';
+              const cmp = typeof av === 'number' && typeof bv === 'number' ? av - bv : String(av).localeCompare(String(bv), undefined, { numeric: true });
+              return noSwmsDir === 'asc' ? cmp : -cmp;
+            });
+            const paged = sorted.slice((noSwmsPage - 1) * PAGE_SIZE, noSwmsPage * PAGE_SIZE);
+            type NCol = keyof NoSwmsJob;
+            const Th = ({ col, label }: { col: NCol; label: string }) => (
+              <th onClick={() => handleNoSwmsSort(col)}
+                className="py-2.5 px-4 text-left text-xs text-gray-500 font-medium cursor-pointer select-none hover:text-white transition-colors whitespace-nowrap">
+                <span className="inline-flex items-center gap-1">{label}<SortIcon active={noSwmsSort === col} dir={noSwmsDir} /></span>
+              </th>
+            );
+            return data.noSwmsList.length === 0 ? (
+              <div className="py-10 text-center"><ShieldCheck size={32} className="mx-auto text-emerald-500 mb-3" /><p className="text-gray-400 text-sm">All open jobs have a SWMS on file — great work!</p></div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead><tr className="border-b border-gray-800">
+                      <Th col="jobNumber" label="Job #" />
+                      <Th col="location" label="Location" />
+                      <Th col="jobType" label="Type" />
+                      <Th col="region" label="Region" />
+                      <Th col="daysSinceCreated" label="Days Open" />
                       <th className="py-2.5 px-4 text-left text-xs text-gray-500 font-medium">Prime</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.noSwmsList.map((job, i) => {
-                      const urgency =
-                        job.daysSinceCreated >= 14
-                          ? 'text-red-400'
-                          : job.daysSinceCreated >= 7
-                          ? 'text-amber-400'
-                          : 'text-gray-300';
-                      return (
-                        <tr
-                          key={job.id}
-                          className={`border-b border-gray-900 ${
-                            i % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.02]'
-                          } hover:bg-white/5 transition-colors`}
-                        >
-                          <td className="py-2.5 px-4 font-mono text-xs font-semibold text-white">
-                            {job.jobNumber || '—'}
-                          </td>
-                          <td className="py-2.5 px-4 text-xs text-gray-400">{job.location || '—'}</td>
-                          <td className="py-2.5 px-4 text-xs text-gray-400">{job.jobType || '—'}</td>
-                          <td className="py-2.5 px-4 text-xs text-gray-400">{job.region || '—'}</td>
-                          <td className={`py-2.5 px-4 text-xs font-bold ${urgency}`}>
-                            {job.daysSinceCreated}d
-                          </td>
-                          <td className="py-2.5 px-4">
-                            {job.primeUrl ? (
-                              <a
-                                href={job.primeUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-gray-500 hover:text-red-400 transition-colors"
-                              >
-                                <ExternalLink size={13} />
-                              </a>
-                            ) : (
-                              <span className="text-gray-700">—</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-              {data.openJobsNoSwms > data.noSwmsList.length && (
-                <p className="text-xs text-gray-600 px-4 py-2">
-                  Showing {data.noSwmsList.length} of {data.openJobsNoSwms} jobs (oldest first)
-                </p>
-              )}
-            </div>
-          )}
+                    </tr></thead>
+                    <tbody>
+                      {paged.map((job, i) => {
+                        const urgency = job.daysSinceCreated >= 14 ? 'text-red-400' : job.daysSinceCreated >= 7 ? 'text-amber-400' : 'text-gray-300';
+                        return (
+                          <tr key={job.id} className={`border-b border-gray-900 ${i % 2 === 0 ? '' : 'bg-white/[0.02]'} hover:bg-white/5 transition-colors`}>
+                            <td className="py-2.5 px-4 text-xs">
+                              {job.primeUrl ? (
+                                <a href={job.primeUrl} target="_blank" rel="noopener noreferrer" className="text-red-400 hover:text-red-300 font-semibold font-mono underline underline-offset-2">
+                                  {job.jobNumber}
+                                </a>
+                              ) : <span className="font-mono font-semibold text-white">{job.jobNumber || '—'}</span>}
+                            </td>
+                            <td className="py-2.5 px-4 text-xs text-gray-400">{job.location || '—'}</td>
+                            <td className="py-2.5 px-4 text-xs text-gray-400">{job.jobType || '—'}</td>
+                            <td className="py-2.5 px-4 text-xs text-gray-400">{job.region || '—'}</td>
+                            <td className={`py-2.5 px-4 text-xs font-bold ${urgency}`}>{job.daysSinceCreated}d</td>
+                            <td className="py-2.5 px-4">
+                              {job.primeUrl ? (
+                                <a href={job.primeUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-red-400 transition-colors"><ExternalLink size={13} /></a>
+                              ) : <span className="text-gray-700">—</span>}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <Pagination page={noSwmsPage} total={sorted.length} pageSize={PAGE_SIZE} onChange={setNoSwmsPage} />
+              </>
+            );
+          })()}
         </div>
 
         {/* ── Info footer ── */}
