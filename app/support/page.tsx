@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { PageHeader } from '@/components/ui/PageHeader';
 import {
   LayoutDashboard,
@@ -161,18 +162,18 @@ export default function SupportPage() {
           </h2>
           <div className="space-y-3">
             {sections.map((s) => (
-              <div key={s.href} className="bg-[#111111] rounded-xl border border-gray-800 p-4 flex gap-4">
-                <div className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <s.icon size={15} className="text-gray-400" />
+              <Link key={s.href} href={s.href} className="group bg-[#111111] rounded-xl border border-gray-800 hover:border-gray-600 p-4 flex gap-4 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-gray-800 group-hover:bg-gray-700 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors">
+                  <s.icon size={15} className="text-gray-400 group-hover:text-white transition-colors" />
                 </div>
                 <div className="space-y-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-white">{s.name}</span>
+                    <span className="text-sm font-semibold text-white group-hover:text-red-400 transition-colors">{s.name}</span>
                     <span className="text-xs text-gray-600 font-mono">{s.href}</span>
                   </div>
                   <p className="text-sm text-gray-400 leading-relaxed">{s.description}</p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
