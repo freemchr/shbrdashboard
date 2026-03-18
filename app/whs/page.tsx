@@ -214,14 +214,30 @@ export default function WHSPage() {
             title="WHS — Safety Compliance"
             subtitle={`SWMS / TMP site forms · Last 180 days · ${data.total} total forms`}
           />
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-600">
-              Updated {new Date(data.asOf).toLocaleString('en-AU', {
-                day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+          <DataRefreshButton />
+        </div>
+
+        {/* Data freshness banner */}
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300">
+          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>
+            Data last refreshed:{' '}
+            <strong className="text-blue-200">
+              {new Date(data.asOf).toLocaleString('en-AU', {
+                weekday: 'short',
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZoneName: 'short',
+                timeZone: 'Australia/Sydney',
               })}
-            </span>
-            <DataRefreshButton />
-          </div>
+            </strong>
+            {' '}· Cached daily. Use the Refresh button to fetch latest data from Prime.
+          </span>
         </div>
 
         {/* ── Traffic Light KPI Row ── */}
