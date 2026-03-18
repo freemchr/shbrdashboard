@@ -199,8 +199,8 @@ export default function WHSPage() {
         </div>
         <h2 className="text-white text-lg font-semibold">WHS data not yet built</h2>
         <p className="text-gray-400 text-sm leading-relaxed">
-          The WHS dataset is built nightly at <strong className="text-gray-300">3am AEDT</strong> by a scheduled job.
-          It hasn&apos;t run yet — ask an admin to trigger a manual refresh, or check back after the first nightly run.
+          The WHS dataset is a <strong className="text-gray-300">weekly snapshot</strong> rebuilt every Monday morning.
+          It hasn&apos;t been built yet — contact your administrator to run the first refresh.
         </p>
         <p className="text-gray-600 text-xs">Admin: POST to <code className="text-gray-500">/api/prime/whs/refresh</code> with the CRON_SECRET header.</p>
       </div>
@@ -237,11 +237,13 @@ export default function WHSPage() {
 
         {/* Data freshness banner */}
         <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300">
-          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="w-3.5 h-3.5 flex-shrink-0 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span>
-            Data last refreshed:{' '}
+            <strong className="text-blue-200">Weekly snapshot</strong>
+            {' '}— data refreshed every <strong className="text-blue-200">Monday morning</strong>.
+            {' '}Last updated:{' '}
             <strong className="text-blue-200">
               {new Date(data.asOf).toLocaleString('en-AU', {
                 weekday: 'short',
@@ -254,7 +256,6 @@ export default function WHSPage() {
                 timeZone: 'Australia/Sydney',
               })}
             </strong>
-            {' '}· Cached daily. Use the Refresh button to fetch latest data from Prime.
           </span>
         </div>
 
