@@ -62,7 +62,7 @@ export async function getAllOpenJobs(): Promise<unknown[]> {
     }
   }
 
-  await setCached(cacheKey, allJobs, 30 * 60 * 1000); // 30 min
+  await setCached(cacheKey, allJobs, 4 * 60 * 60 * 1000); // 30 min
   return allJobs;
 }
 

@@ -222,7 +222,7 @@ export async function GET() {
       noSwmsList,
     };
 
-    await setCached(cacheKey, result, 30 * 60 * 1000); // 30 min cache
+    await setCached(cacheKey, result, 4 * 60 * 60 * 1000); // 30 min cache
     return NextResponse.json(result);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';

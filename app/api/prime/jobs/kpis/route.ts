@@ -46,7 +46,7 @@ export async function GET() {
       stuckOver7Days,
     };
 
-    await setCached(cacheKey, result, 30 * 60 * 1000);
+    await setCached(cacheKey, result, 4 * 60 * 60 * 1000);
     return NextResponse.json(result);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';

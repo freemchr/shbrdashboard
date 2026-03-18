@@ -208,7 +208,7 @@ export async function GET() {
       submittedJobs,
     };
 
-    await setCached(CACHE_KEY, result, 30 * 60 * 1000);
+    await setCached(CACHE_KEY, result, 4 * 60 * 60 * 1000);
     return NextResponse.json(result);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
