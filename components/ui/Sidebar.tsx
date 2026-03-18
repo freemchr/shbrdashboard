@@ -280,9 +280,14 @@ export function Sidebar() {
         <div className="p-4 border-t border-gray-800 space-y-3">
           {/* User info */}
           {userName && (
-            <div className="flex items-center gap-2 px-2 py-1">
+            <div className="flex items-center gap-2 px-2 py-1" title={userName}>
               <User size={14} className="text-gray-500 flex-shrink-0" />
-              <span className="text-xs text-gray-400 truncate">{userName}</span>
+              <span className="text-xs text-gray-400 truncate">
+                {userName.includes('@') ? userName.split('@')[0] : userName}
+              </span>
+              {userName.includes('@') && (
+                <span className="text-xs text-gray-600 truncate">@{userName.split('@')[1]}</span>
+              )}
             </div>
           )}
 
