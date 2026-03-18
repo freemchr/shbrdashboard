@@ -202,7 +202,7 @@ export default function WHSPage() {
           The WHS dataset is a <strong className="text-gray-300">weekly snapshot</strong> rebuilt every Monday morning.
           It hasn&apos;t been built yet — contact your administrator to run the first refresh.
         </p>
-        <p className="text-gray-600 text-xs">Admin: POST to <code className="text-gray-500">/api/prime/whs/refresh</code> with the CRON_SECRET header.</p>
+
       </div>
     </div>
   );
