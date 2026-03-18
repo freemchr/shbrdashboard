@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { BarChartComponent } from '@/components/charts/BarChartComponent';
 import { ErrorMessage, LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatCurrency, formatDate } from '@/lib/prime-helpers';
-import { ExternalLink, X, Download } from 'lucide-react';
+import { ExternalLink, X, Download, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { downloadCSV } from '@/lib/export-csv';
 
 interface StatusCount { status: string; count: number; statusType: string; }
@@ -31,6 +31,14 @@ function PipelineContent() {
   const [regionFilter, setRegionFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [search, setSearch] = useState('');
+  type SortKey = 'jobNumber' | 'address' | 'clientReference' | 'status' | 'jobType' | 'region' | 'authorisedTotal' | 'updatedAt';
+  const [sortKey, setSortKey] = useState<SortKey>('updatedAt');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir('asc'); }
+  };
 
   useEffect(() => {
     Promise.all([
@@ -45,7 +53,11 @@ function PipelineContent() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Filter jobs
+  // Filter + sort jobs
+  const SortIcon = ({ col }: { col: SortKey }) => sortKey !== col
+    ? <ChevronsUpDown size={11} className="text-gray-700" />
+    : sortDir === 'asc' ? <ChevronUp size={11} className="text-red-400" /> : <ChevronDown size={11} className="text-red-400" />;
+
   const filtered = allJobs.filter(j => {
     if (statusFilter && j.status !== statusFilter) return false;
     if (regionFilter && j.region !== regionFilter) return false;
@@ -57,6 +69,13 @@ function PipelineContent() {
         j.clientReference.toLowerCase().includes(q);
     }
     return true;
+  }).sort((a, b) => {
+    const av = a[sortKey] ?? '';
+    const bv = b[sortKey] ?? '';
+    const cmp = typeof av === 'number' && typeof bv === 'number'
+      ? av - bv
+      : String(av).localeCompare(String(bv), undefined, { numeric: true });
+    return sortDir === 'asc' ? cmp : -cmp;
   });
 
   const regions = Array.from(new Set(allJobs.map(j => j.region).filter(r => r && r !== '—'))).sort();
@@ -147,19 +166,23 @@ function PipelineContent() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-800 bg-gray-900">
-                {[
-                  { label: 'Job #', className: '' },
-                  { label: 'Address', className: '' },
-                  { label: 'Client Ref', className: 'hidden md:table-cell' },
-                  { label: 'Status', className: '' },
-                  { label: 'Type', className: 'hidden sm:table-cell' },
-                  { label: 'Region', className: 'hidden md:table-cell' },
-                  { label: 'Auth. Total', className: 'hidden sm:table-cell text-right' },
-                  { label: 'Updated', className: 'hidden lg:table-cell' },
-                  { label: '', className: '' },
-                ].map(h => (
-                  <th key={h.label} className={`py-3 px-3 text-xs text-gray-400 font-medium whitespace-nowrap text-left ${h.className}`}>{h.label}</th>
+                {([
+                  { label: 'Job #',      col: 'jobNumber',        cls: '' },
+                  { label: 'Address',    col: 'address',          cls: '' },
+                  { label: 'Client Ref', col: 'clientReference',  cls: 'hidden md:table-cell' },
+                  { label: 'Status',     col: 'status',           cls: '' },
+                  { label: 'Type',       col: 'jobType',          cls: 'hidden sm:table-cell' },
+                  { label: 'Region',     col: 'region',           cls: 'hidden md:table-cell' },
+                  { label: 'Auth. Total',col: 'authorisedTotal',  cls: 'hidden sm:table-cell' },
+                  { label: 'Updated',    col: 'updatedAt',        cls: 'hidden lg:table-cell' },
+                ] as { label: string; col: SortKey; cls: string }[]).map(h => (
+                  <th key={h.col}
+                    onClick={() => handleSort(h.col)}
+                    className={`py-3 px-3 text-xs text-gray-400 font-medium whitespace-nowrap text-left cursor-pointer select-none hover:text-white transition-colors ${h.cls}`}>
+                    <span className="inline-flex items-center gap-1">{h.label}<SortIcon col={h.col} /></span>
+                  </th>
                 ))}
+                <th className="py-3 px-3" />
               </tr>
             </thead>
             <tbody>
