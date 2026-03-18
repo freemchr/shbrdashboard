@@ -48,37 +48,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    // Fetch user name from Prime
-    // Fall back to deriving a friendly name from the email if Prime returns something generic
-    const genericNames = ['prime admin', 'admin', 'administrator', 'user', 'prime user'];
-    const friendlyNameFromEmail = (e: string): string => {
-      const local = e.split('@')[0] || e;
-      return local.split(/[._-]/).map((p: string) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
-    };
-
-    let userName = friendlyNameFromEmail(email);
-    try {
-      const encodedEmail = encodeURIComponent(email);
-      const userResponse = await fetch(`${primeBaseUrl}/users?filter[email]=${encodedEmail}`, {
-        headers: {
-          'Authorization': `Bearer ${access_token}`,
-          'Accept': 'application/vnd.api.v2+json',
-        },
-      });
-      if (userResponse.ok) {
-        const userData = await userResponse.json();
-        const user = userData?.data?.[0];
-        if (user) {
-          const primeName: string = user.attributes?.name || user.attributes?.fullName || '';
-          // Use Prime name only if it's not a generic placeholder
-          userName = primeName && !genericNames.includes(primeName.toLowerCase().trim())
-            ? primeName
-            : friendlyNameFromEmail(email);
-        }
-      }
-    } catch (err) {
-      console.warn('Could not fetch user name:', err);
-    }
+    // Use email address as the display name — reliable across all Prime accounts
+    const userName = email;
 
     // Store session
     const session = await getSession();
