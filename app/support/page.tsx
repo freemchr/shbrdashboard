@@ -147,9 +147,17 @@ export default function SupportPage() {
           <div className="space-y-1">
             <p className="text-sm text-blue-200 font-medium">Data sourced from Prime</p>
             <p className="text-sm text-gray-400 leading-relaxed">
-              This platform pulls all job, team, financial, and compliance data directly from <strong className="text-gray-300">Prime</strong>.
-              The accuracy of everything you see here depends on the accuracy of data entered in Prime.
-              If a job, report, or form looks incorrect — check Prime first. Garbage in, garbage out.
+              This platform pulls all job, team, financial, and compliance data directly from{' '}
+              <a
+                href="https://www.primeeco.tech/login?redirectTo=%2F"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-300 hover:text-blue-200 underline underline-offset-2 transition-colors"
+              >
+                Prime
+              </a>.
+              {' '}The accuracy of everything displayed here is dependent on the accuracy of data entered and maintained in Prime.
+              If something looks incorrect, please verify the information in Prime first.
             </p>
           </div>
         </div>
