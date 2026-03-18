@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { LoadingSpinner, ErrorMessage } from '@/components/ui/LoadingSpinner';
-import { DataRefreshButton } from '@/components/ui/DataRefreshButton';
 import { formatDate } from '@/lib/prime-helpers';
 import {
   BarChart,
@@ -297,7 +296,6 @@ export default function WHSPage() {
             title="WHS — Safety Compliance"
             subtitle={`SWMS / TMP site forms · Last 180 days · ${data.total} total forms`}
           />
-          <DataRefreshButton />
         </div>
 
         {/* Data freshness banner */}
