@@ -20,9 +20,58 @@ interface TeamMember {
   updatedThisWeek: number;
   updatedThisMonth: number;
   regions: string[];
+  noReportCount: number;
+  slaBreachCount: number;
+  criticalSlaCount: number;
+  avgDaysOpen: number;
+  oldestJobDays: number;
 }
 
-type SortKey = 'name' | 'roles' | 'openJobs' | 'totalAuthorisedValue' | 'updatedThisWeek' | 'updatedThisMonth' | 'status';
+type SortKey =
+  | 'name'
+  | 'roles'
+  | 'openJobs'
+  | 'totalAuthorisedValue'
+  | 'updatedThisWeek'
+  | 'updatedThisMonth'
+  | 'status'
+  | 'noReportCount'
+  | 'slaBreachCount'
+  | 'avgDaysOpen'
+  | 'oldestJobDays';
+
+/** Compute a 0–2 health score: 0 = green, 1 = amber, 2 = red */
+function healthScore(m: TeamMember): number {
+  // Red conditions
+  if (
+    m.noReportCount > 2 ||
+    m.slaBreachCount > 3 ||
+    m.avgDaysOpen > 30 ||
+    m.criticalSlaCount > 0
+  ) return 2;
+  // Amber conditions
+  if (
+    m.noReportCount > 0 ||
+    (m.slaBreachCount >= 1 && m.slaBreachCount <= 2) ||
+    (m.avgDaysOpen >= 14 && m.avgDaysOpen <= 30)
+  ) return 1;
+  // Green
+  return 0;
+}
+
+function TrafficLight({ m }: { m: TeamMember }) {
+  const score = healthScore(m);
+  if (m.openJobs === 0) {
+    return <span className="inline-block w-2.5 h-2.5 rounded-full bg-gray-700" title="No open jobs" />;
+  }
+  if (score === 2) {
+    return <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-500" title="Red: performance issues" />;
+  }
+  if (score === 1) {
+    return <span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-400" title="Amber: some concerns" />;
+  }
+  return <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500" title="Green: all good" />;
+}
 
 export default function TeamPage() {
   const [team, setTeam] = useState<TeamMember[]>([]);
@@ -49,7 +98,7 @@ export default function TeamPage() {
       let bv: string | number;
       if (sortKey === 'roles') { av = a.roles.join(', '); bv = b.roles.join(', '); }
       else if (sortKey === 'status') { av = a.status; bv = b.status; }
-      else { av = a[sortKey] ?? 0; bv = b[sortKey] ?? 0; }
+      else { av = (a as unknown as Record<string, number>)[sortKey] ?? 0; bv = (b as unknown as Record<string, number>)[sortKey] ?? 0; }
       const cmp = typeof av === 'number' && typeof bv === 'number'
         ? av - bv : String(av).localeCompare(String(bv));
       return sortDir === 'asc' ? cmp : -cmp;
@@ -81,8 +130,11 @@ export default function TeamPage() {
   const handleExport = () => {
     downloadCSV(
       `team-workload-${new Date().toISOString().split('T')[0]}.csv`,
-      ['Name', 'Email', 'Role', 'Status', 'Open Jobs', 'Auth. Value', 'This Week', 'This Month', 'Regions'],
-      displayed.map(m => [m.name, m.email, m.roles.join(', '), m.status, m.openJobs, m.totalAuthorisedValue, m.updatedThisWeek, m.updatedThisMonth, m.regions.join(', ')])
+      ['Health', 'Name', 'Email', 'Role', 'Status', 'Open Jobs', 'No Report', 'SLA Breaches', 'Avg Age (days)', 'Oldest (days)', 'Auth. Value', 'This Week', 'This Month', 'Regions'],
+      displayed.map(m => {
+        const score = m.openJobs === 0 ? 'N/A' : healthScore(m) === 2 ? 'Red' : healthScore(m) === 1 ? 'Amber' : 'Green';
+        return [score, m.name, m.email, m.roles.join(', '), m.status, m.openJobs, m.noReportCount, m.slaBreachCount, m.avgDaysOpen, m.oldestJobDays, m.totalAuthorisedValue, m.updatedThisWeek, m.updatedThisMonth, m.regions.join(', ')];
+      })
     );
   };
 
@@ -90,7 +142,7 @@ export default function TeamPage() {
     <div>
       <PageHeader
         title="Team"
-        subtitle="Active users and their current open job workload"
+        subtitle="Workload, SLA compliance and report status by team member"
         actions={
           <button onClick={handleExport}
             className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-sm px-4 py-2 rounded-lg transition-colors">
@@ -124,9 +176,14 @@ export default function TeamPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-800">
-                <SortTh col="name" label="Name" className="pl-5" />
+                <th className="px-3 py-2.5 pl-5 text-left text-xs text-gray-500 font-medium whitespace-nowrap w-8" title="Performance health">●</th>
+                <SortTh col="name" label="Name" />
                 <SortTh col="roles" label="Role" />
                 <SortTh col="openJobs" label="Open" />
+                <SortTh col="noReportCount" label="No Report" />
+                <SortTh col="slaBreachCount" label="SLA Breaches" />
+                <SortTh col="avgDaysOpen" label="Avg Age" />
+                <SortTh col="oldestJobDays" label="Oldest" />
                 <SortTh col="totalAuthorisedValue" label="Auth. Value" />
                 <SortTh col="updatedThisWeek" label="Week" />
                 <SortTh col="updatedThisMonth" label="Month" />
@@ -137,7 +194,10 @@ export default function TeamPage() {
             <tbody>
               {displayed.map(m => (
                 <tr key={m.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
-                  <td className="px-4 py-2.5 pl-5 whitespace-nowrap">
+                  <td className="px-3 py-2.5 pl-5 whitespace-nowrap">
+                    <TrafficLight m={m} />
+                  </td>
+                  <td className="px-4 py-2.5 whitespace-nowrap">
                     <div className="font-medium text-white text-sm">{m.name}</div>
                     {m.email && <div className="text-xs text-gray-500 mt-0.5 hidden sm:block">{m.email}</div>}
                   </td>
@@ -160,6 +220,38 @@ export default function TeamPage() {
                       m.openJobs > 0  ? 'text-green-400' : 'text-gray-600'
                     }`}>
                       {m.openJobs > 0 ? m.openJobs : '—'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 whitespace-nowrap">
+                    <span className={`font-mono text-xs ${
+                      m.noReportCount > 0 ? 'text-red-400' : 'text-gray-600'
+                    }`}>
+                      {m.openJobs > 0 ? (m.noReportCount > 0 ? m.noReportCount : '—') : '—'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 whitespace-nowrap">
+                    <span className={`font-mono text-xs ${
+                      m.slaBreachCount > 2 ? 'text-red-400' :
+                      m.slaBreachCount > 0 ? 'text-amber-400' : 'text-gray-600'
+                    }`}>
+                      {m.openJobs > 0 ? (m.slaBreachCount > 0 ? m.slaBreachCount : '—') : '—'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 whitespace-nowrap">
+                    <span className={`font-mono text-xs ${
+                      m.avgDaysOpen > 30 ? 'text-red-400' :
+                      m.avgDaysOpen >= 14 ? 'text-amber-400' :
+                      m.avgDaysOpen > 0  ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      {m.openJobs > 0 ? (m.avgDaysOpen > 0 ? `${m.avgDaysOpen}d` : '—') : '—'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 whitespace-nowrap">
+                    <span className={`font-mono text-xs ${
+                      m.oldestJobDays > 60 ? 'text-red-400' :
+                      m.oldestJobDays > 0  ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      {m.openJobs > 0 ? (m.oldestJobDays > 0 ? `${m.oldestJobDays}d` : '—') : '—'}
                     </span>
                   </td>
                   <td className="px-4 py-2.5 text-xs text-gray-300 font-mono whitespace-nowrap">
@@ -190,10 +282,27 @@ export default function TeamPage() {
                 </tr>
               ))}
               {displayed.length === 0 && (
-                <tr><td colSpan={8} className="px-4 py-10 text-center text-gray-500 text-sm">No team members found.</td></tr>
+                <tr><td colSpan={13} className="px-4 py-10 text-center text-gray-500 text-sm">No team members found.</td></tr>
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Traffic light legend */}
+        <div className="px-5 py-3 border-t border-gray-800 flex flex-wrap gap-x-6 gap-y-2">
+          <span className="text-xs text-gray-500 font-medium mr-1">Performance:</span>
+          <span className="flex items-center gap-1.5 text-xs text-gray-400">
+            <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500" />
+            Green — no issues, avg age &lt;14d
+          </span>
+          <span className="flex items-center gap-1.5 text-xs text-gray-400">
+            <span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-400" />
+            Amber — 1–2 concerns or avg age 14–30d
+          </span>
+          <span className="flex items-center gap-1.5 text-xs text-gray-400">
+            <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-500" />
+            Red — no-report &gt;2, SLA breaches &gt;3, avg age &gt;30d, or critical SLA
+          </span>
         </div>
       </div>
     </div>
