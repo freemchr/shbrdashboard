@@ -16,6 +16,9 @@ import {
   RotateCcw,
   Info,
   AlertTriangle,
+  ClipboardCheck,
+  Loader2,
+  XCircle,
 } from 'lucide-react';
 
 interface Section {
@@ -32,7 +35,93 @@ interface PolishResult {
   wordCount: number;
 }
 
+interface ScoreCriterion {
+  name: string;
+  passed: boolean;
+  comment: string;
+}
+
+interface ScoreResult {
+  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  score: number;
+  criteria: ScoreCriterion[];
+  fixes: string[];
+  summary: string;
+}
+
 type Step = 'upload' | 'polishing' | 'review' | 'generate';
+
+// ─── Score Panel Component ────────────────────────────────────────────────────
+function ScorePanel({ result }: { result: ScoreResult }) {
+  const gradeColors: Record<string, string> = {
+    A: 'bg-green-600 text-white border-green-500',
+    B: 'bg-blue-600 text-white border-blue-500',
+    C: 'bg-amber-500 text-white border-amber-400',
+    D: 'bg-red-600 text-white border-red-500',
+    F: 'bg-red-800 text-white border-red-700',
+  };
+  const gradeColor = gradeColors[result.grade] || gradeColors.F;
+
+  return (
+    <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden mt-4">
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-gray-800 flex items-center gap-3">
+        <ClipboardCheck size={18} className="text-blue-400" />
+        <h3 className="text-white font-semibold text-base">Report Quality Score</h3>
+      </div>
+
+      <div className="p-5 space-y-5">
+        {/* Grade badge + score */}
+        <div className="flex items-center gap-5">
+          <div className={`w-20 h-20 rounded-2xl border-2 flex flex-col items-center justify-center flex-shrink-0 ${gradeColor}`}>
+            <span className="text-4xl font-black leading-none">{result.grade}</span>
+          </div>
+          <div>
+            <p className="text-3xl font-bold text-white">{result.score}<span className="text-lg text-gray-400 font-normal">/100</span></p>
+            <p className="text-sm text-gray-400 mt-1 leading-relaxed">{result.summary}</p>
+          </div>
+        </div>
+
+        {/* Criteria checklist */}
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Criteria Checklist</p>
+          {result.criteria.map((c, i) => (
+            <div key={i} className="flex items-start gap-3 py-1.5 border-b border-gray-800 last:border-0">
+              <div className="flex-shrink-0 mt-0.5">
+                {c.passed
+                  ? <CheckCircle size={15} className="text-green-500" />
+                  : <XCircle size={15} className="text-red-500" />
+                }
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className={`text-xs font-semibold ${c.passed ? 'text-green-300' : 'text-red-300'}`}>{c.name}</span>
+                {c.comment && <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{c.comment}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Fix This list */}
+        {result.fixes.length > 0 && (
+          <div className="rounded-lg border border-red-800/50 bg-red-950/20 overflow-hidden">
+            <div className="px-4 py-2 border-b border-red-800/40 flex items-center gap-2">
+              <AlertTriangle size={14} className="text-red-400" />
+              <span className="text-xs font-semibold text-red-300">Fix This</span>
+            </div>
+            <ul className="px-4 py-3 space-y-1.5">
+              {result.fixes.map((fix, i) => (
+                <li key={i} className="text-xs text-red-300/90 flex items-start gap-2">
+                  <span className="text-red-500 mt-0.5 flex-shrink-0">→</span>
+                  {fix}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function ReportPolisherPage() {
   const [step, setStep] = useState<Step>('upload');
@@ -46,6 +135,9 @@ export default function ReportPolisherPage() {
   const [generating, setGenerating] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [scoring, setScoring] = useState(false);
+  const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
+  const [scoreError, setScoreError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const MAX_SIZE = 10 * 1024 * 1024;
@@ -105,6 +197,47 @@ export default function ReportPolisherPage() {
       setStep('upload');
     } finally {
       setPolishing(false);
+    }
+  };
+
+  const handleScore = async (sectionsToScore?: Section[]) => {
+    const source = sectionsToScore || result?.sections;
+    if (!source && !file) return;
+
+    setScoring(true);
+    setScoreError(null);
+    setScoreResult(null);
+
+    try {
+      let reportText = '';
+
+      if (source) {
+        // Score from polished sections
+        reportText = source
+          .map(s => `## ${s.title}\n${s.accepted !== false ? s.polished : s.original}`)
+          .join('\n\n');
+      } else if (file) {
+        // Score from raw uploaded file (Score Only flow)
+        const formData = new FormData();
+        formData.append('file', file);
+        const extractRes = await fetch('/api/report-assist/polish', { method: 'POST', body: formData });
+        const extractData = await extractRes.json();
+        if (!extractRes.ok) throw new Error(extractData.error || 'Failed to extract PDF text');
+        reportText = extractData.sections.map((s: Section) => `## ${s.title}\n${s.original}`).join('\n\n');
+      }
+
+      const res = await fetch('/api/report-assist/score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportText }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Scoring failed');
+      setScoreResult(data as ScoreResult);
+    } catch (err) {
+      setScoreError(err instanceof Error ? err.message : 'Scoring failed');
+    } finally {
+      setScoring(false);
     }
   };
 
@@ -177,6 +310,8 @@ export default function ReportPolisherPage() {
     setPdfUrl(null);
     setPolishError(null);
     setFileError(null);
+    setScoreResult(null);
+    setScoreError(null);
     setStep('upload');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -337,23 +472,53 @@ export default function ReportPolisherPage() {
           )}
 
           {file && (
-            <button
-              onClick={() => setShowConfirm(true)}
-              disabled={polishing}
-              className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold py-4 rounded-xl transition-colors text-base"
-            >
-              {polishing ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Polishing with AI… this may take up to 30 seconds
-                </>
-              ) : (
-                <>
-                  <Sparkles size={20} />
-                  ✨ Polish Report
-                </>
-              )}
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => setShowConfirm(true)}
+                disabled={polishing || scoring}
+                className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold py-4 rounded-xl transition-colors text-base"
+              >
+                {polishing ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Polishing with AI… this may take up to 30 seconds
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={20} />
+                    ✨ Polish Report
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => handleScore()}
+                disabled={scoring || polishing}
+                className="flex items-center justify-center gap-2 bg-blue-700 hover:bg-blue-600 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold py-4 px-6 rounded-xl transition-colors text-base"
+              >
+                {scoring ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Scoring…
+                  </>
+                ) : (
+                  <>
+                    <ClipboardCheck size={18} />
+                    Score Only
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Score Only result (upload step) */}
+          {scoreResult && step === 'upload' && (
+            <ScorePanel result={scoreResult} />
+          )}
+          {scoreError && step === 'upload' && (
+            <div className="flex items-center gap-2 text-red-400 text-sm bg-red-950/30 border border-red-800/40 rounded-xl px-4 py-3">
+              <AlertCircle size={16} />
+              {scoreError}
+            </div>
           )}
         </div>
       )}
@@ -463,8 +628,17 @@ export default function ReportPolisherPage() {
             ))}
           </div>
 
+          {/* Quality Score panel */}
+          {scoreResult && <ScorePanel result={scoreResult} />}
+          {scoreError && (
+            <div className="flex items-center gap-2 text-red-400 text-sm bg-red-950/30 border border-red-800/40 rounded-xl px-4 py-3">
+              <AlertCircle size={16} />
+              {scoreError}
+            </div>
+          )}
+
           {/* Generate PDF button */}
-          <div className="flex items-center gap-3 pt-2">
+          <div className="flex flex-wrap items-center gap-3 pt-2">
             <button
               onClick={handleGeneratePdf}
               disabled={generating}
@@ -479,6 +653,23 @@ export default function ReportPolisherPage() {
                 <>
                   <FileText size={18} />
                   Generate Polished PDF
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => handleScore(result?.sections)}
+              disabled={scoring}
+              className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
+            >
+              {scoring ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Scoring…
+                </>
+              ) : (
+                <>
+                  <ClipboardCheck size={16} />
+                  Score Quality
                 </>
               )}
             </button>

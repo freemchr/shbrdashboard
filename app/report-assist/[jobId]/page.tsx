@@ -315,6 +315,52 @@ function FormRow({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
+// ─── AI Caption button ────────────────────────────────────────────────────────
+function AICaptionButton({
+  photo,
+  onCaption,
+}: {
+  photo: PhotoEntry;
+  onCaption: (caption: string) => void;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  const handleClick = async () => {
+    setLoading(true);
+    try {
+      // Strip data URL prefix for transmission
+      const base64Data = photo.base64.includes(',') ? photo.base64.split(',')[1] : photo.base64;
+      const res = await fetch('/api/report-assist/caption', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: base64Data,
+          mimeType: photo.mimeType || 'image/jpeg',
+        }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      onCaption(data.caption);
+    } catch (err) {
+      console.error('Caption error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={loading}
+      title="Generate AI caption"
+      className="flex items-center gap-1 bg-purple-900/40 hover:bg-purple-800/60 border border-purple-700/50 text-purple-300 text-xs px-2 py-1.5 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+    >
+      {loading ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+      {loading ? '' : 'AI'}
+    </button>
+  );
+}
+
 // ─── Photo upload section ─────────────────────────────────────────────────────
 function PhotoUploader({
   label,
@@ -387,6 +433,7 @@ function PhotoUploader({
                 placeholder="Caption (optional)"
                 className="flex-1 bg-gray-800 border border-gray-700 text-white text-xs rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-red-500"
               />
+              <AICaptionButton photo={photo} onCaption={cap => onCaptionChange?.(cap)} />
               <button onClick={onRemove} className="text-gray-500 hover:text-red-400 transition-colors">
                 <Trash2 size={14} />
               </button>
@@ -423,6 +470,7 @@ function PhotoUploader({
               placeholder="Caption (optional)"
               className="flex-1 bg-gray-800 border border-gray-700 text-white text-xs rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-red-500"
             />
+            <AICaptionButton photo={p} onCaption={cap => onCaptionChangeMultiple?.(p.id, cap)} />
             <button onClick={() => onRemoveMultiple?.(p.id)} className="text-gray-500 hover:text-red-400 transition-colors">
               <Trash2 size={14} />
             </button>
