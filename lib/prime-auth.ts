@@ -38,8 +38,10 @@ export async function getPrimeToken(): Promise<string> {
   });
 
   if (!res.ok) {
+    // ── #7 FIX: Log internally, throw generic message ─────────────────────────
     const text = await res.text();
-    throw new Error(`Auth failed: ${res.status} ${text}`);
+    console.error('[prime-auth] Token request failed:', res.status, text);
+    throw new Error(`Prime authentication failed`);
   }
 
   const data = await res.json();
@@ -82,19 +84,24 @@ export async function primeGet(path: string, retries = 3): Promise<unknown> {
         },
         cache: 'no-store',
       });
-      if (!retryRes.ok) throw new Error(`Prime API error: ${retryRes.status}`);
+      if (!retryRes.ok) {
+        console.error('[prime-auth] Retry after 401 failed:', retryRes.status);
+        throw new Error(`Prime API request failed after token refresh`);
+      }
       return retryRes.json();
     }
 
     if (!res.ok) {
+      // ── #7 FIX: Log internally, throw generic message ─────────────────────
       const text = await res.text();
-      throw new Error(`Prime API error: ${res.status} ${text}`);
+      console.error('[prime-auth] API error:', res.status, text.slice(0, 500));
+      throw new Error(`Prime API request failed (${res.status})`);
     }
 
     return res.json();
   }
 
-  throw new Error('Max retries exceeded');
+  throw new Error('Prime API unavailable — max retries exceeded');
 }
 
 export async function primeGetAllPages(

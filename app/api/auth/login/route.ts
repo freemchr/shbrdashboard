@@ -1,10 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
 import { appendAuditLog } from '@/lib/audit';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  // ── #3 FIX: Brute-force protection ──────────────────────────────────────────
+  // 10 attempts per 15 minutes per IP
+  const ip =
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip') ||
+    'unknown';
+
+  const rateCheck = checkRateLimit(`login:${ip}`, 10, 15 * 60 * 1000);
+  if (!rateCheck.allowed) {
+    // Add a small delay to frustrate automated tooling
+    await new Promise(r => setTimeout(r, 1500));
+    return NextResponse.json(
+      { error: 'Too many login attempts. Please try again later.' },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(Math.ceil((rateCheck.resetAt - Date.now()) / 1000)),
+        },
+      }
+    );
+  }
+
   try {
     const { email, password } = await req.json();
 
@@ -36,8 +59,11 @@ export async function POST(req: NextRequest) {
     });
 
     if (!tokenResponse.ok) {
+      // ── #7 FIX: Log internally, return generic message to client ─────────────
       const errorText = await tokenResponse.text();
       console.error('Prime OAuth error:', tokenResponse.status, errorText);
+      // Add delay on failure to slow down credential stuffing
+      await new Promise(r => setTimeout(r, 1000));
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
@@ -48,8 +74,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    // Use email address as the display name — reliable across all Prime accounts
-    const userName = email;
+    // Normalise email — always lowercase + trimmed so admin checks are reliable
+    const normalisedEmail = email.trim().toLowerCase();
+    const userName = normalisedEmail;
 
     // Store session
     const session = await getSession();
@@ -57,10 +84,10 @@ export async function POST(req: NextRequest) {
     session.refreshToken = refresh_token || '';
     session.expiresAt = Date.now() + (expires_in || 28800) * 1000;
     session.userName = userName;
-    session.userEmail = email;
+    session.userEmail = normalisedEmail;
     await session.save();
 
-    // Log login event — must await before response or Vercel will kill the function
+    // Log login event
     await appendAuditLog({
       email: email.trim().toLowerCase(),
       name: userName,

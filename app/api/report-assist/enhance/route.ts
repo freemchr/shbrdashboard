@@ -3,6 +3,10 @@ import OpenAI from 'openai';
 
 export const runtime = 'nodejs';
 
+// ── #5 FIX: Input size limits ─────────────────────────────────────────────────
+const MAX_TEXT_LENGTH    = 20_000; // characters
+const MAX_CONTEXT_LENGTH = 500;    // per context field
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -15,14 +19,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No text provided to enhance' }, { status: 400 });
     }
 
+    // ── #5 FIX: Reject oversized text before sending to OpenAI ────────────────
+    if (currentText.length > MAX_TEXT_LENGTH) {
+      return NextResponse.json(
+        { error: `Text too long. Maximum ${MAX_TEXT_LENGTH.toLocaleString()} characters.` },
+        { status: 400 }
+      );
+    }
+
+    // Truncate context fields to prevent prompt injection via oversized context
+    const safeTrim = (s: unknown) =>
+      typeof s === 'string' ? s.slice(0, MAX_CONTEXT_LENGTH) : String(s ?? 'N/A').slice(0, MAX_CONTEXT_LENGTH);
+
     const contextSummary = jobContext
       ? `Job Context:
-- Job Number: ${jobContext.jobNumber || 'N/A'}
-- Insurer: ${jobContext.insurer || 'N/A'}
-- Address: ${jobContext.address || 'N/A'}
-- Event Type: ${jobContext.eventType || 'N/A'}
-- Date of Loss: ${jobContext.incidentDate || 'N/A'}
-- Claim Number: ${jobContext.claimNumber || 'N/A'}`
+- Job Number: ${safeTrim(jobContext.jobNumber)}
+- Insurer: ${safeTrim(jobContext.insurer)}
+- Address: ${safeTrim(jobContext.address)}
+- Event Type: ${safeTrim(jobContext.eventType)}
+- Date of Loss: ${safeTrim(jobContext.incidentDate)}
+- Claim Number: ${safeTrim(jobContext.claimNumber)}`
       : '';
 
     const completion = await openai.chat.completions.create({
@@ -37,7 +53,7 @@ Fix grammar, spelling, capitalisation.
 Expand terse notes into proper professional paragraphs. 
 Do not invent facts not present in the original. 
 Use third person, past tense for observations. 
-Section being enhanced: "${section}"
+Section being enhanced: "${typeof section === 'string' ? section.slice(0, 100) : 'General'}"
 ${contextSummary}
 Return JSON: { "enhanced": string, "changes": string[] }`,
         },
@@ -61,7 +77,8 @@ Return JSON: { "enhanced": string, "changes": string[] }`,
       changes: parsed.changes || [],
     });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error('[enhance] Error:', err);
+    // ── #7 FIX: Generic error to client ─────────────────────────────────────
+    return NextResponse.json({ error: 'Enhancement failed' }, { status: 500 });
   }
 }

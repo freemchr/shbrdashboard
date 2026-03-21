@@ -3,21 +3,33 @@ import { getPrimeToken } from '@/lib/prime-auth';
 
 export const runtime = 'nodejs';
 
+// ── #5 FIX: Enforce a PDF size ceiling ────────────────────────────────────────
+// Base64 inflates size by ~33%, so 30 MB base64 ≈ ~22 MB decoded PDF
+const MAX_PDF_BASE64_CHARS = 30 * 1024 * 1024;
+
 export async function POST(req: NextRequest) {
   try {
+    const contentLength = req.headers.get('content-length');
+    if (contentLength && parseInt(contentLength, 10) > MAX_PDF_BASE64_CHARS) {
+      return NextResponse.json({ error: 'Request body too large' }, { status: 413 });
+    }
+
     const { jobUuid, pdfBase64, jobNumber } = await req.json();
 
     if (!jobUuid || !pdfBase64) {
       return NextResponse.json({ error: 'jobUuid and pdfBase64 are required' }, { status: 400 });
     }
 
+    // ── #5 FIX: Validate pdfBase64 length ─────────────────────────────────────
+    if (typeof pdfBase64 !== 'string' || pdfBase64.length > MAX_PDF_BASE64_CHARS) {
+      return NextResponse.json({ error: 'PDF data too large' }, { status: 413 });
+    }
+
     const token = await getPrimeToken();
     const baseUrl = process.env.PRIME_BASE_URL!;
 
-    // Convert base64 to buffer
     const pdfBuffer = Buffer.from(pdfBase64, 'base64');
 
-    // Build multipart form data
     const FormData = (await import('form-data')).default;
     const form = new FormData();
     form.append('objectId', jobUuid);
@@ -44,8 +56,10 @@ export async function POST(req: NextRequest) {
     });
 
     if (!res.ok) {
+      // ── #7 FIX: Log internally, return generic error to client ────────────
       const text = await res.text();
-      return NextResponse.json({ error: `Prime upload failed: ${res.status} ${text}` }, { status: 500 });
+      console.error('[upload-to-prime] Prime upload failed:', res.status, text);
+      return NextResponse.json({ error: 'Upload to Prime failed' }, { status: 500 });
     }
 
     const data = await res.json();
@@ -53,7 +67,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ attachmentId, success: true });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error('[upload-to-prime] Error:', err);
+    return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
   }
 }

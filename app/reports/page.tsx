@@ -39,6 +39,7 @@ interface ReportSummary {
 type Tab = 'no_report' | 'in_progress' | 'submitted';
 type SortKey = 'jobNumber' | 'jobType' | 'region' | 'status' | 'daysSinceCreated' | 'daysSinceUpdated' | 'authorisedTotal' | 'updatedBy';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function JobTable({ jobs, sortKey, sortDir, onSort, showAge = 'created', showAssistButton = false }: {
   jobs: ReportJob[];
   sortKey: SortKey;

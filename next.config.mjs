@@ -1,8 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Disable ESLint during build (we'll lint separately)
+  // ── #10 FIX: ESLint re-enabled in builds ──────────────────────────────────
+  // Catches real issues; only disable temporarily if absolutely needed.
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   // Disable TypeScript build errors for rapid iteration
   typescript: {

@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Shield, RefreshCw, Download } from 'lucide-react';
 import type { AuditEntry } from '@/lib/audit';
 
-const ADMIN_EMAIL = 'chris.freeman@techgurus.com.au';
-
 type ActionFilter = 'all' | 'login' | 'logout';
 type RangeFilter = 'all' | 'today' | 'week';
 
@@ -62,7 +60,6 @@ function exportCSV(entries: AuditEntry[]) {
 
 export default function AuditPage() {
   const router = useRouter();
-  const [checking, setChecking] = useState(true);
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,10 +76,8 @@ export default function AuditPage() {
       if (rangeFilter !== 'all') params.set('range', rangeFilter);
 
       const res = await fetch(`/api/audit/entries?${params}`);
-      if (res.status === 404) {
-        router.replace('/');
-        return;
-      }
+      if (res.status === 401) { router.replace('/login'); return; }
+      if (res.status === 404) { router.replace('/'); return; }
       if (!res.ok) throw new Error('Failed to fetch entries');
       const data = await res.json();
       setEntries(data.entries || []);
@@ -91,39 +86,21 @@ export default function AuditPage() {
     } finally {
       setLoading(false);
     }
-  }, [actionFilter, rangeFilter]);
-
-  // Check session first — silently redirect non-admins
-  useEffect(() => {
-    fetch('/api/auth/session')
-      .then(res => res.ok ? res.json() : null)
-      .then(data => {
-        if (!data?.userEmail || data.userEmail.toLowerCase() !== ADMIN_EMAIL) {
-          router.replace('/');
-          return;
-        }
-        setChecking(false);
-      })
-      .catch(() => {
-        router.replace('/');
-      });
-  }, [router]);
+  }, [actionFilter, rangeFilter, router]);
 
   useEffect(() => {
-    if (checking) return;
     fetchEntries();
-  }, [checking, fetchEntries]);
+  }, [fetchEntries]);
 
   // Auto-refresh every 60 seconds
   useEffect(() => {
-    if (checking) return;
     intervalRef.current = setInterval(fetchEntries, 60_000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [checking, fetchEntries]);
+  }, [fetchEntries]);
 
-  if (checking) {
+  if (loading && entries.length === 0) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />

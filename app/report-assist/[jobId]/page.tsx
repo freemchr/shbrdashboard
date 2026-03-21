@@ -6,8 +6,8 @@ import Link from 'next/link';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { LoadingSpinner, ErrorMessage } from '@/components/ui/LoadingSpinner';
 import {
-  ArrowLeft, CheckCircle, ChevronDown, ChevronUp, AlertCircle,
-  Sparkles, Check, Edit3, X, Upload, Loader2, FileDown, Send,
+  ArrowLeft, CheckCircle, ChevronDown, ChevronUp,
+  Sparkles, Check, Edit3, X, Loader2, FileDown, Send,
   Image as ImageIcon, Trash2, Plus, ExternalLink,
 } from 'lucide-react';
 

@@ -36,14 +36,23 @@ function memSet(key: string, data: unknown, ttlMs: number, staleMs: number) {
 }
 
 const BLOB_PREFIX = 'shbr-cache/';
-const BLOB_BASE = 'https://4sgwpkfrmhyjifry.private.blob.vercel-storage.com';
+
+// ── #8 FIX: Blob base URL moved to env var — not hardcoded in source ──────────
+// Set BLOB_CACHE_BASE_URL in your Vercel environment variables.
+// Value: your private Vercel Blob store URL (e.g. https://xxxx.private.blob.vercel-storage.com)
+function getBlobBase(): string {
+  const base = process.env.BLOB_CACHE_BASE_URL || '';
+  return base.replace(/\/$/, ''); // strip trailing slash
+}
 
 function blobFilename(key: string) {
   return `${BLOB_PREFIX}${key.replace(/[^a-z0-9-_]/gi, '_')}.json`;
 }
 
 function blobDirectUrl(key: string) {
-  return `${BLOB_BASE}/${blobFilename(key)}`;
+  const base = getBlobBase();
+  if (!base) return ''; // will cause a cache miss — safe fallback
+  return `${base}/${blobFilename(key)}`;
 }
 
 interface BlobMeta { expiresAt: number; staleAt: number; data: unknown }

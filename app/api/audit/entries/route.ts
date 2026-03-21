@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (session.userEmail.toLowerCase() !== ADMIN_EMAIL) {
+    if (session.userEmail.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 

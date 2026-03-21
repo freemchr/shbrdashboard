@@ -3,8 +3,14 @@ import { PDFDocument, rgb, StandardFonts, PDFPage, PDFFont, PDFImage } from 'pdf
 import { put } from '@vercel/blob';
 import fs from 'fs';
 import path from 'path';
+import { sanitizeJobNumber } from '@/lib/sanitize';
 
 export const runtime = 'nodejs';
+
+// ── #5 FIX: Input size limits ─────────────────────────────────────────────────
+const MAX_BODY_BYTES   = 20 * 1024 * 1024; // 20 MB absolute ceiling
+const MAX_PHOTOS       = 30;               // prevents memory exhaustion
+const MAX_TEXT_LENGTH  = 50_000;           // characters per narrative field
 
 // ─── Colours ──────────────────────────────────────────────────────────────────
 const C_RED    = rgb(0.831, 0.125, 0.153); // #D42027
@@ -13,24 +19,21 @@ const C_LGRAY  = rgb(0.933, 0.933, 0.933); // #EEEEEE
 const C_BORDER = rgb(0.867, 0.867, 0.867); // #DDDDDD
 const C_LINE   = rgb(0.8,   0.8,   0.8);   // #CCCCCC
 const C_BLACK  = rgb(0,     0,     0);
-const C_WHITE  = rgb(1,     1,     1);
+// C_WHITE removed (unused)
 const C_MID    = rgb(0.5,   0.5,   0.5);
 
 // ─── Page geometry ─────────────────────────────────────────────────────────────
-const PW = 595;     // A4 width
-const PH = 842;     // A4 height
-const ML = 50;      // left margin
-const MR = 50;      // right margin
-const CW = PW - ML - MR;   // 495 content width
-// Header occupies top 130pt from top (logo y=20 to y=120 from top + padding)
-// Content starts at y=140 from top → from bottom: PH - 140 = 702
-const CONTENT_TOP    = PH - 140;  // 702 from bottom
-const FOOTER_TOP     = 82;        // footer divider line y from bottom
-const FOOTER_BOTTOM  = 5;         // absolute floor
+const PW = 595;
+const PH = 842;
+const ML = 50;
+const MR = 50;
+const CW = PW - ML - MR;
+const CONTENT_TOP    = PH - 140;
+const FOOTER_TOP     = 82;
+const FOOTER_BOTTOM  = 5;
 
 // ─── Column widths for 4-col claim table ──────────────────────────────────────
 const C1W = 109; const C2W = 139; const C3W = 109; const C4W = 139;
-// x starts
 const C1X = ML;
 const C2X = ML + C1W;
 const C3X = ML + C1W + C2W;
@@ -42,11 +45,9 @@ function sw(font: PDFFont, text: string, size: number): number {
   catch { return (text || '').length * size * 0.5; }
 }
 
-/** Wrap text to lines that fit within maxWidth */
 function wrap(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
   if (!text) return [];
   const lines: string[] = [];
-  // Split on existing newlines first
   const paras = text.replace(/\r\n/g, '\n').split('\n');
   for (const para of paras) {
     if (!para.trim()) { lines.push(''); continue; }
@@ -85,35 +86,24 @@ async function loadImages(pdfDoc: PDFDocument): Promise<PageImages> {
   };
 }
 
-// ─── Header (every page) ──────────────────────────────────────────────────────
-// Spec: logo x=30 y=20 (from top) w=190 h=100
-//       Right-aligned contact bold 9pt
-//       Header ends at y=130 from top
+// ─── Header ──────────────────────────────────────────────────────────────────
 function drawHeader(page: PDFPage, imgs: PageImages, fonts: { bold: PDFFont; reg: PDFFont }) {
-  const { bold, reg } = fonts;
-  const logoY = PH - 20 - 100; // 722 from bottom (bottom-left of image)
+  const { bold } = fonts;
+  const logoY = PH - 20 - 100;
   page.drawImage(imgs.shbrLogo, { x: 30, y: logoY, width: 190, height: 100 });
 
-  // Right-aligned contact block (bold 9pt)
   const contactLines = [
     'Level 2, 24 Hickson Road',
     'MILLERS POINT NSW 2000',
     '1300 313 509',
     'claims@shbr.com.au',
   ];
-  const rightX = PW - MR; // 545
+  const rightX = PW - MR;
   contactLines.forEach((line, i) => {
     const lw = sw(bold, line, 9);
-    page.drawText(line, {
-      x: rightX - lw,
-      y: PH - 40 - i * 14,
-      size: 9,
-      font: bold,
-      color: C_DGRAY,
-    });
+    page.drawText(line, { x: rightX - lw, y: PH - 40 - i * 14, size: 9, font: bold, color: C_DGRAY });
   });
 
-  // Thin separator line at y = PH - 130 from bottom = 712
   page.drawLine({
     start: { x: ML, y: PH - 130 },
     end:   { x: PW - MR, y: PH - 130 },
@@ -122,8 +112,7 @@ function drawHeader(page: PDFPage, imgs: PageImages, fonts: { bold: PDFFont; reg
   });
 }
 
-// ─── Footer (every page) ──────────────────────────────────────────────────────
-// Two lines at FOOTER_TOP, logos below, centred text between logos
+// ─── Footer ───────────────────────────────────────────────────────────────────
 function drawFooter(
   page: PDFPage,
   imgs: PageImages,
@@ -132,7 +121,6 @@ function drawFooter(
 ) {
   const { bold, reg } = fonts;
 
-  // Two thin lines
   for (const dy of [0, 2]) {
     page.drawLine({
       start: { x: ML, y: FOOTER_TOP + dy },
@@ -142,15 +130,12 @@ function drawFooter(
     });
   }
 
-  // master-builders logo: left, w=60 h=55, bottom at FOOTER_BOTTOM+4
   const mbY = FOOTER_BOTTOM + 4;
   page.drawImage(imgs.mbLogo, { x: ML, y: mbY, width: 60, height: 55 });
 
-  // cm3 logo: right, w=55 h=35, vertically centered in footer zone
   const cm3Y = FOOTER_BOTTOM + 14;
   page.drawImage(imgs.cm3Logo, { x: PW - MR - 55, y: cm3Y, width: 55, height: 35 });
 
-  // Centred text between logos
   const textLeftEdge  = ML + 60 + 8;
   const textRightEdge = PW - MR - 55 - 8;
   const textW = textRightEdge - textLeftEdge;
@@ -160,17 +145,15 @@ function drawFooter(
   const line2 = 'SHBR Group Pty Ltd  |  NSW Lic 107756C  |  Qld Lic 1156078  |  ACT Lic 2014359  |  ACN 085 591 699  |  ABN 76 085 591 699';
 
   const l1w = sw(bold, line1, 7.5);
-  const l2w = sw(reg,  line2, 6.5);
+  // l2w unused - removed
 
   page.drawText(line1, { x: textCentreX - l1w / 2, y: FOOTER_BOTTOM + 42, size: 7.5, font: bold, color: C_RED });
-  // Wrap line2 if it overflows
   const line2Wrapped = wrap(line2, reg, 6.5, textW);
   line2Wrapped.forEach((l, i) => {
     const lw = sw(reg, l, 6.5);
     page.drawText(l, { x: textCentreX - lw / 2, y: FOOTER_BOTTOM + 28 - i * 9, size: 6.5, font: reg, color: C_DGRAY });
   });
 
-  // Page number (right of footer)
   const pn = `Page ${pageNum}`;
   const pnW = sw(reg, pn, 7);
   page.drawText(pn, { x: PW - MR - pnW, y: FOOTER_TOP + 4, size: 7, font: reg, color: C_MID });
@@ -191,8 +174,6 @@ function addPage(
 }
 
 // ─── Drawing primitives ───────────────────────────────────────────────────────
-
-/** Full-width #EEEEEE section header bar, text regular 10pt #333 */
 function sectionHeader(page: PDFPage, title: string, y: number, fonts: { bold: PDFFont; reg: PDFFont }): number {
   const h = 26;
   page.drawRectangle({ x: ML, y: y - h, width: CW, height: h, color: C_LGRAY });
@@ -200,7 +181,6 @@ function sectionHeader(page: PDFPage, title: string, y: number, fonts: { bold: P
   return y - h;
 }
 
-/** 2-col row: 30% label / 70% value, border #DDDDDD */
 function twoColRow(
   page: PDFPage,
   label: string,
@@ -211,11 +191,10 @@ function twoColRow(
   opts: { altBg?: boolean; valueLines?: string[] } = {},
 ): number {
   const lColW = Math.round(CW * 0.3);
-  const vColW = CW - lColW;
+  // vColW unused - removed
   if (opts.altBg) {
     page.drawRectangle({ x: ML, y: y - rowH, width: CW, height: rowH, color: C_LGRAY });
   }
-  // borders
   page.drawRectangle({ x: ML, y: y - rowH, width: CW, height: rowH, borderColor: C_BORDER, borderWidth: 0.5, color: undefined });
   page.drawLine({ start: { x: ML + lColW, y: y - rowH }, end: { x: ML + lColW, y }, thickness: 0.5, color: C_BORDER });
 
@@ -232,7 +211,6 @@ function twoColRow(
   return y - rowH;
 }
 
-/** Paragraph text block, returns new y and any overflow text */
 function textBlock(
   page: PDFPage,
   text: string,
@@ -261,71 +239,84 @@ export interface ReportPhoto {
 }
 
 export interface ReportData {
-  jobNumber?:       string;
-  claimNumber?:     string;
-  insurer?:         string;
-  insuredName?:     string;
-  propertyAddress?: string;
-  inspectedBy?:     string;
-  eventType?:       string;
-  incidentDate?:    string;
-  propertyNotes?:   string;
-  reportRef?:       string; // e.g. "1"
-
-  // Property Details
-  buildingType?:       string;
-  buildingDescription?: string;
-  wallCladding?:       string;
-  roofCladding?:       string;
-  internalLinings?:    string;
-  foundation?:         string;
-  outbuildings?:       string;
-  constructionAge?:    string;
-
-  // Inspection Details
-  propertyCategory?:   string;
-  altAccommodation?:   string;
-  hazmat?:             string;
-  makeSafeRequired?:   string;
-  makeSafeCompleted?:  string;
-  hailDamage?:         string;
-
-  // Inspection sub
-  inspectionDate?:     string;
-  inspectionTime?:     string;
-  metOnSite?:          string;
-
-  // Narrative sections
-  circumstancesOfLoss?: string;
-  damageAssessment?:    string;
-  damageConsistent?:    string;
-  contentsDamaged?:     string;
-
-  causeOfDamage?:       string;
-  causeStoppedY?:       string;
-  specialistRequired?:  string;
-  specialistType?:      string;
-  suddenGradual?:       string;
-
-  maintenanceRepairs?:  string;
-
-  conclusion?:          string;
-  canWarrant?:          string;
-  allocationType?:      string;
-  insuredAware?:        string;
-  repairLeadTime?:      string;
-  repairTimeframe?:     string;
+  jobNumber?:            string;
+  claimNumber?:          string;
+  insurer?:              string;
+  insuredName?:          string;
+  propertyAddress?:      string;
+  inspectedBy?:          string;
+  eventType?:            string;
+  incidentDate?:         string;
+  propertyNotes?:        string;
+  reportRef?:            string;
+  buildingType?:         string;
+  buildingDescription?:  string;
+  wallCladding?:         string;
+  roofCladding?:         string;
+  internalLinings?:      string;
+  foundation?:           string;
+  outbuildings?:         string;
+  constructionAge?:      string;
+  propertyCategory?:     string;
+  altAccommodation?:     string;
+  hazmat?:               string;
+  makeSafeRequired?:     string;
+  makeSafeCompleted?:    string;
+  hailDamage?:           string;
+  inspectionDate?:       string;
+  inspectionTime?:       string;
+  metOnSite?:            string;
+  circumstancesOfLoss?:  string;
+  damageAssessment?:     string;
+  damageConsistent?:     string;
+  contentsDamaged?:      string;
+  causeOfDamage?:        string;
+  causeStoppedY?:        string;
+  specialistRequired?:   string;
+  specialistType?:       string;
+  suddenGradual?:        string;
+  maintenanceRepairs?:   string;
+  conclusion?:           string;
+  canWarrant?:           string;
+  allocationType?:       string;
+  insuredAware?:         string;
+  repairLeadTime?:       string;
+  repairTimeframe?:      string;
   allExternalInspected?: string;
-
-  // Photos
-  frontElevationPhoto?: ReportPhoto;
-  photos?:              ReportPhoto[];
+  frontElevationPhoto?:  ReportPhoto;
+  photos?:               ReportPhoto[];
 }
 
 // ─── Main handler ─────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
+    // ── #5 FIX: Enforce content-length ceiling before parsing body ─────────────
+    const contentLength = req.headers.get('content-length');
+    if (contentLength && parseInt(contentLength, 10) > MAX_BODY_BYTES) {
+      return NextResponse.json({ error: 'Request body too large' }, { status: 413 });
+    }
+
     const d: ReportData = await req.json();
+
+    // ── #5 FIX: Cap photo count and text field lengths ─────────────────────────
+    if (d.photos && d.photos.length > MAX_PHOTOS) {
+      return NextResponse.json({ error: `Maximum ${MAX_PHOTOS} photos allowed` }, { status: 400 });
+    }
+
+    const longTextFields: (keyof ReportData)[] = [
+      'circumstancesOfLoss', 'damageAssessment', 'causeOfDamage',
+      'maintenanceRepairs', 'conclusion',
+    ];
+    for (const field of longTextFields) {
+      const val = d[field];
+      if (typeof val === 'string' && val.length > MAX_TEXT_LENGTH) {
+        return NextResponse.json({ error: `Field "${field}" exceeds maximum length` }, { status: 400 });
+      }
+    }
+
+    // ── #2 FIX: Sanitise jobNumber used in blob path ───────────────────────────
+    const rawJobNumber = d.jobNumber || 'unknown';
+    const safeJobNumber = sanitizeJobNumber(rawJobNumber) || 'unknown';
 
     const pdfDoc  = await PDFDocument.create();
     const boldF   = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -351,27 +342,25 @@ export async function POST(req: NextRequest) {
     y -= bannerH + 20;
 
     // ── 2. 4-col Claim / Builder table ────────────────────────────────────────
-    // Header row (bg #EEEEEE, 28pt)
     const tblHeaderH = 28;
     page.drawRectangle({ x: ML, y: y - tblHeaderH, width: CW, height: tblHeaderH, color: C_LGRAY });
     page.drawRectangle({ x: ML, y: y - tblHeaderH, width: CW, height: tblHeaderH, borderColor: C_BORDER, borderWidth: 0.5, color: undefined });
-    // Merged col spans: "INSURER/CLIENT DETAILS" cols 1-2, "BUILDER DETAILS" cols 3-4
-    const mergeW1 = C1W + C2W; // 248
-    const mergeW2 = C3W + C4W; // 248
+    const mergeW1 = C1W + C2W;
+    const mergeW2 = C3W + C4W;
     const h1Text  = 'INSURER / CLIENT DETAILS';
     const h2Text  = 'BUILDER DETAILS';
-    const h1W = sw(boldF, h1Text, 9); const h2W = sw(boldF, h2Text, 9);
+    const h1W = sw(boldF, h1Text, 9);
     page.drawText(h1Text, { x: C1X + (mergeW1 - h1W) / 2, y: y - 18, size: 9, font: boldF, color: C_DGRAY });
     page.drawLine({ start: { x: C3X, y: y - tblHeaderH }, end: { x: C3X, y }, thickness: 0.5, color: C_BORDER });
+    const h2W = sw(boldF, h2Text, 9);
     page.drawText(h2Text, { x: C3X + (mergeW2 - h2W) / 2, y: y - 18, size: 9, font: boldF, color: C_DGRAY });
     y -= tblHeaderH;
 
-    // Data rows — standard rows h=22, row 4 (address/licence) h=~60
     interface TableRow { l1: string; v1: string; l2: string; v2: string; rowH: number }
     const tableRows: TableRow[] = [
       { l1: 'Insurer:',      v1: d.insurer      || '—', l2: 'Builder:',  v2: 'SHBR Group Pty Ltd',   rowH: 22 },
       { l1: 'Claim Number:', v1: d.claimNumber  || '—', l2: 'ABN:',      v2: '76 085 591 699',        rowH: 22 },
-      { l1: 'Job Number:',   v1: d.jobNumber    || '—', l2: 'Licences:', v2: 'NSW 107756C  |  ACT 2014359  |  QLD 1156078',  rowH: 22 },
+      { l1: 'Job Number:',   v1: d.jobNumber    || '—', l2: 'Licences:', v2: 'NSW 107756C  |  ACT 2014359  |  QLD 1156078', rowH: 22 },
       { l1: 'Insured Name:', v1: d.insuredName  || '—', l2: '',          v2: 'NT 264467CU',            rowH: 22 },
       { l1: 'Address:',      v1: (d.propertyAddress || '—'), l2: 'Address:', v2: 'Level 2, 24 Hickson Road\nMILLERS POINT NSW 2000', rowH: 56 },
     ];
@@ -385,7 +374,6 @@ export async function POST(req: NextRequest) {
 
       const midY = y - rH + (rH - 9) / 2;
       page.drawText(row.l1, { x: C1X + 4, y: midY, size: 9, font: boldF, color: C_DGRAY });
-      // Value 1 — wrap if address
       const v1Lines = wrap(row.v1, regF, 9, C2W - 8);
       v1Lines.forEach((l, i) => page.drawText(l, { x: C2X + 4, y: y - 14 - i * 12, size: 9, font: regF, color: C_BLACK }));
 
@@ -405,7 +393,7 @@ export async function POST(req: NextRequest) {
     page.drawText(reportTitle, { x: ML, y, size: 13, font: boldF, color: C_DGRAY });
     y -= 20;
 
-    // ── 4. Claim Details sub-table ────────────────────────────────────────────
+    // ── 4. Claim Details ──────────────────────────────────────────────────────
     ensureSpace(26 + 4 * 22);
     y = sectionHeader(page, 'Claim Details', y, fonts);
     const claimSubRows: [string, string][] = [
@@ -437,7 +425,6 @@ export async function POST(req: NextRequest) {
         ensureSpace(ih + 20);
         page.drawImage(pdfImg, { x: ML + (CW - iw) / 2, y: y - ih, width: iw, height: ih });
         y -= ih + 4;
-        // Caption
         if (d.frontElevationPhoto.caption) {
           const capW = sw(regF, d.frontElevationPhoto.caption, 9);
           page.drawText(d.frontElevationPhoto.caption, { x: ML + (CW - capW) / 2, y, size: 9, font: regF, color: C_MID });
@@ -447,10 +434,6 @@ export async function POST(req: NextRequest) {
     }
 
     y -= 10;
-
-    // ══════════════════════════════════════════════════════════════════════════
-    // SUBSEQUENT SECTIONS
-    // ══════════════════════════════════════════════════════════════════════════
 
     // ── Property Details ──────────────────────────────────────────────────────
     ensureSpace(26 + 8 * 22);
@@ -478,14 +461,14 @@ export async function POST(req: NextRequest) {
     if (y - (26 + 8 * 22) < FOOTER_TOP + 6) newPage();
     y = sectionHeader(page, '3. Inspection Details', y, fonts);
     const inspRows: [string, string][] = [
-      ['Event Type:',         d.eventType          || '—'],
-      ['Date of Loss:',       d.incidentDate        || '—'],
-      ['Property Category:',  d.propertyCategory   || '—'],
-      ['Alt. Accommodation:', d.altAccommodation    || '—'],
-      ['Hazmat Present:',     d.hazmat              || '—'],
-      ['Make Safe Required:', d.makeSafeRequired    || '—'],
-      ['Make Safe Completed:',d.makeSafeCompleted   || '—'],
-      ['Hail Damage:',        d.hailDamage          || '—'],
+      ['Event Type:',          d.eventType          || '—'],
+      ['Date of Loss:',        d.incidentDate        || '—'],
+      ['Property Category:',   d.propertyCategory   || '—'],
+      ['Alt. Accommodation:',  d.altAccommodation    || '—'],
+      ['Hazmat Present:',      d.hazmat              || '—'],
+      ['Make Safe Required:',  d.makeSafeRequired    || '—'],
+      ['Make Safe Completed:', d.makeSafeCompleted   || '—'],
+      ['Hail Damage:',         d.hailDamage          || '—'],
     ];
     inspRows.forEach(([l, v], i) => {
       if (y - 22 < FOOTER_TOP + 6) newPage();
@@ -500,11 +483,7 @@ export async function POST(req: NextRequest) {
     if (d.circumstancesOfLoss) {
       let r = textBlock(page, d.circumstancesOfLoss, y, regF, FOOTER_TOP + 6);
       y = r.y;
-      while (r.overflow) {
-        newPage();
-        r = textBlock(page, r.overflow, y, regF, FOOTER_TOP + 6);
-        y = r.y;
-      }
+      while (r.overflow) { newPage(); r = textBlock(page, r.overflow, y, regF, FOOTER_TOP + 6); y = r.y; }
     } else {
       page.drawText('Not provided.', { x: ML + 4, y: y - 13, size: 9, font: regF, color: C_MID });
       y -= 13;
@@ -534,10 +513,10 @@ export async function POST(req: NextRequest) {
     if (y - 60 < FOOTER_TOP + 6) newPage();
     y = sectionHeader(page, '6. Cause of Damage', y, fonts);
     const causeRows: [string, string][] = [
-      ['Cause Stopped:',     d.causeStoppedY     || '—'],
-      ['Specialist Required:',d.specialistRequired|| '—'],
-      ['Specialist Type:',   d.specialistType    || '—'],
-      ['Sudden / Gradual:',  d.suddenGradual     || '—'],
+      ['Cause Stopped:',      d.causeStoppedY     || '—'],
+      ['Specialist Required:', d.specialistRequired|| '—'],
+      ['Specialist Type:',    d.specialistType    || '—'],
+      ['Sudden / Gradual:',   d.suddenGradual     || '—'],
     ];
     causeRows.forEach(([l, v], i) => {
       if (y - 22 < FOOTER_TOP + 6) newPage();
@@ -569,12 +548,12 @@ export async function POST(req: NextRequest) {
     if (y - 100 < FOOTER_TOP + 6) newPage();
     y = sectionHeader(page, '8. Conclusion', y, fonts);
     const concRows: [string, string][] = [
-      ['Can Warrant:',          d.canWarrant          || '—'],
-      ['Allocation Type:',      d.allocationType      || '—'],
-      ['Insured Aware:',        d.insuredAware        || '—'],
-      ['Repair Lead Time:',     d.repairLeadTime      || '—'],
-      ['Repair Timeframe:',     d.repairTimeframe     || '—'],
-      ['All External Inspected:',d.allExternalInspected|| '—'],
+      ['Can Warrant:',           d.canWarrant           || '—'],
+      ['Allocation Type:',       d.allocationType       || '—'],
+      ['Insured Aware:',         d.insuredAware         || '—'],
+      ['Repair Lead Time:',      d.repairLeadTime       || '—'],
+      ['Repair Timeframe:',      d.repairTimeframe      || '—'],
+      ['All External Inspected:', d.allExternalInspected || '—'],
     ];
     concRows.forEach(([l, v], i) => {
       if (y - 22 < FOOTER_TOP + 6) newPage();
@@ -602,7 +581,6 @@ export async function POST(req: NextRequest) {
       newPage();
       y = sectionHeader(page, 'Photograph Schedule', y, fonts);
       y -= 6;
-      // "General photographs:" bold subheading
       page.drawText('General photographs:', { x: ML, y, size: 9, font: boldF, color: C_DGRAY });
       y -= 16;
 
@@ -634,16 +612,21 @@ export async function POST(req: NextRequest) {
     const pdfBuffer = Buffer.from(pdfBytes);
     const pdfBase64 = pdfBuffer.toString('base64');
 
-    const jobNumber = d.jobNumber || 'unknown';
     const ts = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
-    const blobPath = `reports/${jobNumber}/${ts}-assessment-report.pdf`;
+    const blobPath = `reports/${safeJobNumber}/${ts}-assessment-report.pdf`;
 
-    const blob = await put(blobPath, pdfBuffer, { access: 'public', contentType: 'application/pdf' });
+    // ── #1 FIX: PDFs stored as PRIVATE — they contain sensitive insurance data ─
+    await put(blobPath, pdfBuffer, {
+      access: 'private',           // was 'public' — critical fix
+      contentType: 'application/pdf',
+      allowOverwrite: true,
+    });
 
-    return NextResponse.json({ blobUrl: blob.url, pdfBase64, success: true });
+    // Return base64 for immediate client use; do NOT return a public blob URL
+    return NextResponse.json({ pdfBase64, blobPath, success: true });
   } catch (err: unknown) {
-    console.error('PDF generation error:', err);
-    const msg = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error('[generate-pdf] Error:', err);
+    // ── #7 FIX: Generic error to client ───────────────────────────────────────
+    return NextResponse.json({ error: 'PDF generation failed' }, { status: 500 });
   }
 }

@@ -53,12 +53,12 @@ async function nominatimGeocode(address: string): Promise<{ lat: number; lng: nu
 }
 
 export async function GET(req: NextRequest) {
-  // Verify cron secret (Vercel sends this automatically for cron jobs)
+  // ── #4 FIX: Header-only check — removed insecure query param fallback ────────
+  // Query params appear in server/proxy logs; secrets must only travel in headers.
   const authHeader = req.headers.get('authorization');
-  const secret = req.nextUrl.searchParams.get('secret');
   const cronSecret = process.env.CRON_SECRET;
 
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}` && secret !== cronSecret) {
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -80,11 +80,9 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    // Load existing geocode cache
     const prev = await getCached<{ jobs: GeocodedJob[] }>(CACHE_KEY);
     const existingMap = new Map<string, GeocodedJob>((prev?.jobs ?? []).map(g => [g.id, g]));
 
-    // Find jobs not yet geocoded
     const pending = jobs.filter(j => {
       const ex = existingMap.get(j.id);
       return !ex || (ex.lat === null && ex.failed !== true);
@@ -94,7 +92,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: 'All jobs already geocoded', total: jobs.length });
     }
 
-    // Process up to 50 per run (50 * 1.1s = 55s, safe under 60s limit)
     const toProcess = pending.slice(0, 50);
     let mapped = 0, failed = 0;
 
@@ -109,7 +106,6 @@ export async function GET(req: NextRequest) {
       existingMap.set(job.id, { ...job, lat, lng, failed: isFailed });
     }
 
-    // Merge all jobs with their geocoded results
     const allGeocoded = jobs.map(j => existingMap.get(j.id) ?? { ...j, lat: null, lng: null, failed: false });
     const complete = allGeocoded.every(j => j.lat !== null || j.failed === true);
     const totalMapped = allGeocoded.filter(j => j.lat !== null).length;
@@ -125,7 +121,8 @@ export async function GET(req: NextRequest) {
       complete,
     });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error('[geocode-auto] Error:', err);
+    // ── #7 FIX: Generic error to client ─────────────────────────────────────
+    return NextResponse.json({ error: 'Geocoding task failed' }, { status: 500 });
   }
 }

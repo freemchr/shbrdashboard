@@ -17,7 +17,6 @@ import {
   Menu,
   X,
   LogOut,
-  User,
   Cloud,
   Shield,
   BarChart2,
@@ -28,6 +27,7 @@ import {
   Activity,
   ShieldCheck,
   HelpCircle,
+  GitCommit,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -47,6 +47,7 @@ const navItems = [
 
 const reportsSubItems = [
   { href: '/reports', label: 'Overview', icon: BarChart2, alert: true },
+  { href: '/sla', label: 'SLA Tracker', icon: AlertTriangle, alert: true },
   { href: '/report-assist', label: 'Report Assist', icon: FileEdit, alert: true },
   { href: '/report-assist/polish', label: 'Report Polisher', icon: Sparkles },
 ];
@@ -87,11 +88,11 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [userName, setUserName] = useState<string | null>(null);
+
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const isInReports = pathname.startsWith('/reports') || pathname.startsWith('/report-assist');
+  const isInReports = pathname.startsWith('/reports') || pathname.startsWith('/report-assist') || pathname.startsWith('/sla');
   const [reportsOpen, setReportsOpen] = useState(isInReports);
 
   const isInEstimators = pathname.startsWith('/estimators') || pathname.startsWith('/timeline');
@@ -110,7 +111,7 @@ export function Sidebar() {
     fetch('/api/auth/session')
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
-        if (data?.userName) setUserName(data.userName);
+
         if (data?.userEmail) setUserEmail(data.userEmail);
       })
       .catch(() => {});
@@ -198,7 +199,7 @@ export function Sidebar() {
               />
             </button>
 
-            <div className={`overflow-hidden transition-all duration-200 ${reportsOpen ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
+            <div className={`overflow-hidden transition-all duration-200 ${reportsOpen ? 'max-h-56 opacity-100' : 'max-h-0 opacity-0'}`}>
               <div className="mt-0.5 space-y-0.5">
                 {reportsSubItems.map((item) => (
                   <Link
@@ -268,26 +269,24 @@ export function Sidebar() {
           ))}
 
           {userEmail?.toLowerCase() === ADMIN_EMAIL && (
-            <NavItem
-              href="/audit"
-              label="Audit Log"
-              icon={Shield}
-              active={isActive('/audit')}
-            />
+            <>
+              <NavItem
+                href="/audit"
+                label="Audit Log"
+                icon={Shield}
+                active={isActive('/audit')}
+              />
+              <NavItem
+                href="/changelog"
+                label="Changelog"
+                icon={GitCommit}
+                active={isActive('/changelog')}
+              />
+            </>
           )}
         </nav>
 
         <div className="p-4 border-t border-gray-800 space-y-3">
-          {/* User info */}
-          {userName && (
-            <div className="flex items-center gap-2 px-2 py-1" title={userName}>
-              <User size={14} className="text-gray-500 flex-shrink-0" />
-              <span className="text-xs text-gray-400 truncate">
-                {userName.includes('@') ? userName.split('@')[0] : userName}
-              </span>
-            </div>
-          )}
-
           {/* Logout button */}
           <button
             onClick={handleLogout}

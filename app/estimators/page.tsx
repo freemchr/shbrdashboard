@@ -687,6 +687,87 @@ export default function EstimatorsPage() {
           </div>
         </div>
       </div>
+
+      {/* Glossary */}
+      <div className="mt-8 bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+        <div className="px-5 py-3 border-b border-gray-800">
+          <h2 className="text-sm font-semibold text-white">Glossary</h2>
+          <p className="text-xs text-gray-500 mt-0.5">What do the abbreviations and indicators on this page mean?</p>
+        </div>
+        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-xs text-gray-400">
+
+          {/* Approval Categories */}
+          <div>
+            <h3 className="text-gray-300 font-semibold mb-2 uppercase tracking-wider text-[10px]">Approval Categories</h3>
+            <ul className="space-y-2">
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-green-900/50 text-green-300 border border-green-800 whitespace-nowrap flex-shrink-0">ATP</span>
+                <span><strong className="text-gray-300">Authority to Proceed</strong> — the insurer has approved the works and the job is active.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-900/50 text-amber-300 border border-amber-800 whitespace-nowrap flex-shrink-0">AWAITING</span>
+                <span><strong className="text-gray-300">Awaiting Approval</strong> — report or quote has been submitted; waiting on insurer or client to approve. The ball is not in SHBR&apos;s court.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-900/50 text-blue-300 border border-blue-800 whitespace-nowrap flex-shrink-0">ASSESSING</span>
+                <span><strong className="text-gray-300">Assessing / Quoting</strong> — job is being scoped, inspected or quoted by the estimator. Report not yet submitted.</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Aging Traffic Lights */}
+          <div>
+            <h3 className="text-gray-300 font-semibold mb-2 uppercase tracking-wider text-[10px]">Aging (Days Open)</h3>
+            <ul className="space-y-2">
+              <li className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0" />
+                <span><strong className="text-gray-300">Green — under 30 days.</strong> Job is within normal timeframe.</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-amber-500 flex-shrink-0" />
+                <span><strong className="text-gray-300">Amber — 30 to 59 days.</strong> Starting to age; worth monitoring.</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
+                <span><strong className="text-gray-300">Red — 60 to 89 days.</strong> Overdue; follow-up required.</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-red-900 border border-red-600 flex-shrink-0" />
+                <span><strong className="text-gray-300">Dark Red — 90+ days.</strong> Critically overdue; urgent action needed.</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Report Pipeline & Other */}
+          <div>
+            <h3 className="text-gray-300 font-semibold mb-2 uppercase tracking-wider text-[10px]">Report Pipeline &amp; Other</h3>
+            <ul className="space-y-2">
+              <li className="flex items-start gap-2">
+                <span className="flex-shrink-0 text-base leading-none">✍️</span>
+                <span><strong className="text-gray-300">Reports in progress</strong> — report is being written by the estimator.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="flex-shrink-0 text-base leading-none">📤</span>
+                <span><strong className="text-gray-300">Ready to submit</strong> — report is complete and ready to be sent to the insurer.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="flex-shrink-0 text-base leading-none">🔍</span>
+                <span><strong className="text-gray-300">Quality review</strong> — report is under internal peer review before submission.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="flex-shrink-0 font-mono text-gray-300 whitespace-nowrap">Auth. Value</span>
+                <span><strong className="text-gray-300">Authorised Total Value</strong> — the total dollar value approved by the insurer for works on that job.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="flex-shrink-0 font-mono text-gray-300 whitespace-nowrap">Avg Wait</span>
+                <span><strong className="text-gray-300">Average Wait (days)</strong> — average number of days jobs in the &quot;Awaiting&quot; category have been sitting without movement.</span>
+              </li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
     </div>
   );
 }

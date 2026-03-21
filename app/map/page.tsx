@@ -121,7 +121,7 @@ export default function MapPage() {
 
           if (!done) await new Promise(r => setTimeout(r, 2000));
 
-        } catch (fetchErr) {
+        } catch {
           consecutiveErrors++;
           if (consecutiveErrors >= MAX_ERRORS) {
             setError('Network error during geocoding. Showing cached results.');

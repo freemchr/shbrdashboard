@@ -17,7 +17,9 @@ import {
   Tv2,
   Maximize2,
   Minimize2,
+  ShieldAlert,
 } from 'lucide-react';
+import Link from 'next/link';
 import type { WeatherForecastResponse, CityForecast } from '@/app/api/weather/forecast/route';
 import type { TrendsResult } from '@/app/api/prime/jobs/trends/route';
 
@@ -37,6 +39,13 @@ interface StatusCount {
   status: string;
   count: number;
   statusType: string;
+}
+
+interface SlaSummary {
+  totalBreaches: number;
+  critical: number;
+  warning: number;
+  atRisk: number;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -517,21 +526,24 @@ function CommandCentreInner() {
   const [trends, setTrends] = useState<TrendsResult | null>(null);
   const [counts, setCounts] = useState<StatusCount[]>([]);
   const [weather, setWeather] = useState<WeatherForecastResponse | null>(null);
+  const [sla, setSla] = useState<SlaSummary | null>(null);
   const [loadingKpis, setLoadingKpis] = useState(true);
   const [loadingTrends, setLoadingTrends] = useState(true);
   const [loadingCounts, setLoadingCounts] = useState(true);
   const [loadingWeather, setLoadingWeather] = useState(true);
+  const [loadingSla, setLoadingSla] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [kpiRes, trendsRes, countsRes, weatherRes] = await Promise.all([
+      const [kpiRes, trendsRes, countsRes, weatherRes, slaRes] = await Promise.all([
         fetch('/api/prime/jobs/kpis'),
         fetch('/api/prime/jobs/trends'),
         fetch('/api/prime/jobs/counts-by-status'),
         fetch('/api/weather/forecast'),
+        fetch('/api/prime/jobs/sla'),
       ]);
 
       if (kpiRes.ok) setKpis(await kpiRes.json());
@@ -541,12 +553,17 @@ function CommandCentreInner() {
         setCounts(Array.isArray(d) ? d.filter(s => s.statusType === 'Open') : []);
       }
       if (weatherRes.ok) setWeather(await weatherRes.json());
+      if (slaRes.ok) {
+        const slaData = await slaRes.json();
+        setSla(slaData.summary ?? null);
+      }
     } catch {
       // silently fail — will retry on next cycle
     } finally {
       setLoadingKpis(false);
       setLoadingTrends(false);
       setLoadingCounts(false);
+      setLoadingSla(false);
       setLoadingWeather(false);
       setLastRefresh(new Date());
     }
@@ -655,6 +672,53 @@ function CommandCentreInner() {
             </div>
           </div>
         )}
+
+        {/* SLA breach summary */}
+        <Link href="/sla" className="block">
+          <div className={`rounded-2xl border px-5 py-4 flex items-center gap-4 transition-all hover:brightness-110 ${
+            (sla?.critical ?? 0) > 0
+              ? 'bg-red-950/40 border-red-700/60 shadow-lg shadow-red-950/40'
+              : (sla?.warning ?? 0) > 0
+              ? 'bg-amber-950/20 border-amber-700/40'
+              : 'bg-gray-900 border-gray-800'
+          }`}>
+            <ShieldAlert size={28} className={
+              (sla?.critical ?? 0) > 0 ? 'text-red-400 flex-shrink-0' :
+              (sla?.warning  ?? 0) > 0 ? 'text-amber-400 flex-shrink-0' :
+              'text-gray-500 flex-shrink-0'
+            } />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">SLA Breaches</p>
+              {loadingSla ? (
+                <div className="flex gap-3">
+                  <div className="h-8 w-12 bg-gray-800 animate-pulse rounded" />
+                  <div className="h-8 w-16 bg-gray-800 animate-pulse rounded" />
+                </div>
+              ) : sla ? (
+                <div className="flex items-center gap-4">
+                  <span className="text-3xl font-bold text-white tabular-nums">{sla.totalBreaches}</span>
+                  <div className="flex flex-col gap-0.5">
+                    {sla.critical > 0 && (
+                      <span className="text-xs font-semibold text-red-400">{sla.critical} critical</span>
+                    )}
+                    {sla.warning > 0 && (
+                      <span className="text-xs font-semibold text-amber-400">{sla.warning} warning</span>
+                    )}
+                    {sla.atRisk > 0 && (
+                      <span className="text-xs font-semibold text-yellow-400">{sla.atRisk} at risk</span>
+                    )}
+                    {sla.totalBreaches === 0 && (
+                      <span className="text-xs text-emerald-400 font-medium">All clear ✓</span>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <span className="text-gray-500 text-sm">Unavailable</span>
+              )}
+            </div>
+            <AlertTriangle size={14} className="text-gray-700 flex-shrink-0" />
+          </div>
+        </Link>
 
         {/* Big KPI row */}
         <div className="grid grid-cols-5 gap-4">

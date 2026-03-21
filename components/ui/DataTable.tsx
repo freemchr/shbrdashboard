@@ -48,7 +48,7 @@ export function DataTable<T = any>({
     setPage(0);
   };
 
-  let sorted = [...data];
+  const sorted = [...data];
   if (sortKey) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     sorted.sort((a: any, b: any) => {

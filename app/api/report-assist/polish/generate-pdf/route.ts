@@ -14,7 +14,7 @@ const C_BORDER = rgb(0.867, 0.867, 0.867);
 const C_LINE   = rgb(0.8,   0.8,   0.8);
 const C_BLACK  = rgb(0,     0,     0);
 const C_MID    = rgb(0.5,   0.5,   0.5);
-const C_WHITE  = rgb(1,     1,     1);
+// C_WHITE removed (unused)
 
 // ─── Page geometry ─────────────────────────────────────────────────────────────
 const PW = 595;

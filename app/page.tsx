@@ -5,7 +5,7 @@ import { KpiCard } from '@/components/ui/KpiCard';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ErrorMessage, LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatDate, formatCurrency } from '@/lib/prime-helpers';
-import { ExternalLink, Briefcase, AlertTriangle, Calendar, Hash, X, ChevronRight, FileText, LayoutGrid, List, ChevronLeft } from 'lucide-react';
+import { ExternalLink, Briefcase, AlertTriangle, Calendar, Hash, X, ChevronRight, FileText, LayoutGrid, List, ChevronLeft, ChevronsUpDown, ChevronDown, ChevronUp } from 'lucide-react';
 import Link from 'next/link';
 import { DataRefreshButton } from '@/components/ui/DataRefreshButton';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, LabelList } from 'recharts';
@@ -101,17 +101,23 @@ function JobListRow({ job }: { job: FlatJob }) {
               className="font-mono text-red-400 hover:text-red-300 underline underline-offset-2 font-semibold">{job.jobNumber}</a>
           : <span className="font-mono text-red-400 font-semibold">{job.jobNumber}</span>}
       </div>
-      <div className="flex-1 min-w-0 text-gray-300 truncate">{job.address}</div>
-      <div className="w-32 flex-shrink-0 text-gray-500 truncate hidden md:block">{job.jobType}</div>
-      <div className="w-36 flex-shrink-0 text-gray-500 truncate hidden lg:block">{job.region}</div>
+      <div className="flex-1 min-w-0 max-w-[280px] text-gray-300 truncate">{job.address}</div>
+      <div className="w-36 flex-shrink-0 text-gray-500 truncate hidden md:block">{job.jobType || '—'}</div>
+      <div className="w-36 flex-shrink-0 text-gray-500 truncate hidden lg:block">{job.region || '—'}</div>
       <div className="w-28 flex-shrink-0 text-gray-600 hidden xl:block">{formatDate(job.updatedAt)}</div>
       <div className="w-24 flex-shrink-0 text-gray-500 truncate hidden xl:block">{job.updatedBy || '—'}</div>
-      {job.authorisedTotal > 0 && <div className="w-24 flex-shrink-0 text-gray-400 font-mono text-right hidden lg:block">{formatCurrency(job.authorisedTotal)}</div>}
-      {job.primeUrl && (
-        <a href={job.primeUrl} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-red-400 flex-shrink-0">
-          <ExternalLink size={13} />
-        </a>
-      )}
+      <div className="w-24 flex-shrink-0 text-gray-400 font-mono text-right hidden lg:block">
+        {job.authorisedTotal > 0 ? formatCurrency(job.authorisedTotal) : '—'}
+      </div>
+      <div className="ml-auto flex-shrink-0 pl-3">
+        {job.primeUrl
+          ? <a href={job.primeUrl} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1 text-gray-500 hover:text-red-400 transition-colors font-medium whitespace-nowrap">
+              Prime <ExternalLink size={12} />
+            </a>
+          : <span className="text-gray-700 text-xs">—</span>
+        }
+      </div>
     </div>
   );
 }
@@ -128,6 +134,26 @@ export default function OverviewPage() {
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [kpiPanel, setKpiPanel] = useState<'open' | 'stuck' | 'week' | 'month' | null>(null);
   const [viewMode, setViewMode] = useState<'tile' | 'list'>('tile');
+  type SortKey = 'job' | 'type' | 'region' | 'value' | 'updated';
+  const [sortKey, setSortKey]   = useState<SortKey>('updated');
+  const [sortDir, setSortDir]   = useState<'asc' | 'desc'>('desc');
+
+  const handleDrillSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir(key === 'value' ? 'desc' : 'asc'); }
+  };
+
+  const sortJobs = (jobs: FlatJob[]) => [...jobs].sort((a, b) => {
+    let cmp = 0;
+    switch (sortKey) {
+      case 'job':     cmp = a.jobNumber.localeCompare(b.jobNumber, undefined, { numeric: true }); break;
+      case 'type':    cmp = (a.jobType || '').localeCompare(b.jobType || ''); break;
+      case 'region':  cmp = (a.region  || '').localeCompare(b.region  || ''); break;
+      case 'value':   cmp = a.authorisedTotal - b.authorisedTotal; break;
+      case 'updated': cmp = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(); break;
+    }
+    return sortDir === 'asc' ? cmp : -cmp;
+  });
   const [noReportCount, setNoReportCount] = useState<number | null>(null);
   const drilldownRef = useRef<HTMLDivElement>(null);
   const chartScrollRef = useRef<HTMLDivElement>(null);
@@ -396,12 +422,29 @@ export default function OverviewPage() {
         const isKpi = !!kpiPanel;
         const panel = isKpi ? kpiPanelData[kpiPanel!] : null;
         const title = isKpi ? panel!.title : selectedStatus!;
-        const jobs  = isKpi ? panel!.jobs : drilledJobs;
+        const rawJobs = isKpi ? panel!.jobs : drilledJobs;
+        const jobs  = sortJobs(rawJobs);
         const close = isKpi ? () => setKpiPanel(null) : () => setSelectedStatus(null);
+
+        const SortIcon = ({ col }: { col: SortKey }) => {
+          if (sortKey !== col) return <ChevronsUpDown size={11} className="text-gray-700" />;
+          return sortDir === 'asc'
+            ? <ChevronUp size={11} className="text-red-400" />
+            : <ChevronDown size={11} className="text-red-400" />;
+        };
+
+        const SortBtn = ({ col, label, cls = '' }: { col: SortKey; label: string; cls?: string }) => (
+          <button
+            onClick={() => handleDrillSort(col)}
+            className={`flex items-center gap-1 hover:text-white transition-colors select-none cursor-pointer ${sortKey === col ? 'text-red-400' : 'text-gray-500'} ${cls}`}
+          >
+            {label}<SortIcon col={col} />
+          </button>
+        );
 
         return (
           <div ref={drilldownRef} className="bg-gray-900 rounded-xl border border-red-900/40 p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-2">
                 <ChevronRight size={16} className="text-red-400 flex-shrink-0" />
                 <div>
@@ -430,6 +473,16 @@ export default function OverviewPage() {
               </div>
             </div>
 
+            {/* Sort controls */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-4 text-xs font-medium">
+              <span className="text-gray-600">Sort:</span>
+              <SortBtn col="job"     label="Job #" />
+              <SortBtn col="type"    label="Type" />
+              <SortBtn col="region"  label="Region" />
+              <SortBtn col="value"   label="Value" />
+              <SortBtn col="updated" label="Updated" />
+            </div>
+
             {loadingJobs ? (
               <LoadingSpinner message="Loading jobs…" />
             ) : jobs.length === 0 ? (
@@ -448,15 +501,15 @@ export default function OverviewPage() {
             ) : (
               <>
                 {/* List view header */}
-                <div className="flex items-center gap-3 px-3 py-1.5 text-xs text-gray-600 font-medium border-b border-gray-800 mb-1">
-                  <div className="w-28 flex-shrink-0">Job #</div>
-                  <div className="flex-1">Address</div>
-                  <div className="w-32 flex-shrink-0 hidden md:block">Type</div>
-                  <div className="w-36 flex-shrink-0 hidden lg:block">Region</div>
-                  <div className="w-28 flex-shrink-0 hidden xl:block">Updated</div>
-                  <div className="w-24 flex-shrink-0 hidden xl:block">By</div>
-                  <div className="w-24 flex-shrink-0 hidden lg:block text-right">Value</div>
-                  <div className="w-4 flex-shrink-0"></div>
+                <div className="flex items-center gap-3 px-3 py-1.5 text-xs font-medium border-b border-gray-800 mb-1">
+                  <div className="w-28 flex-shrink-0"><SortBtn col="job" label="Job #" /></div>
+                  <div className="flex-1 min-w-0 max-w-[280px] text-gray-500">Address</div>
+                  <div className="w-36 flex-shrink-0 hidden md:block"><SortBtn col="type" label="Type" /></div>
+                  <div className="w-36 flex-shrink-0 hidden lg:block"><SortBtn col="region" label="Region" /></div>
+                  <div className="w-28 flex-shrink-0 hidden xl:block"><SortBtn col="updated" label="Updated" /></div>
+                  <div className="w-24 flex-shrink-0 hidden xl:block text-gray-500">By</div>
+                  <div className="w-24 flex-shrink-0 hidden lg:block text-right"><SortBtn col="value" label="Value" /></div>
+                  <div className="ml-auto flex-shrink-0 pl-3 text-gray-600">Link</div>
                 </div>
                 <div className="rounded-lg border border-gray-800 overflow-hidden">
                   {jobs.slice(0, 200).map(job => <JobListRow key={job.id} job={job} />)}

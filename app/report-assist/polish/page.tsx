@@ -111,7 +111,7 @@ export default function ReportPolisherPage() {
   const toggleSection = (idx: number) => {
     setExpandedSections(prev => {
       const next = new Set(prev);
-      next.has(idx) ? next.delete(idx) : next.add(idx);
+      if (next.has(idx)) { next.delete(idx); } else { next.add(idx); }
       return next;
     });
   };
@@ -132,15 +132,6 @@ export default function ReportPolisherPage() {
     setGenerating(true);
 
     try {
-      // Build the combined polished text
-      const polishedText = result.sections
-        .map(s => {
-          const usePolished = s.accepted !== false; // use polished unless explicitly rejected
-          const text = usePolished ? s.polished : s.original;
-          return s.title !== 'General' ? `${s.title}\n\n${text}` : text;
-        })
-        .join('\n\n---\n\n');
-
       // Generate a simple formatted PDF using pdf-lib via our own endpoint
       const res = await fetch('/api/report-assist/polish/generate-pdf', {
         method: 'POST',
