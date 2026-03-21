@@ -19,13 +19,15 @@ import {
   ClipboardCheck,
   Loader2,
   XCircle,
+  ShieldCheck,
 } from 'lucide-react';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
 interface Section {
   title: string;
   original: string;
   polished: string;
-  accepted?: boolean; // undefined = pending, true = accepted, false = rejected
+  accepted?: boolean;
 }
 
 interface PolishResult {
@@ -49,7 +51,55 @@ interface ScoreResult {
   summary: string;
 }
 
+interface ScopeLineItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  unitRate: number;
+  total: number;
+  category: string;
+  notes: string;
+}
+
+interface ScopeResult {
+  jobNumber: string;
+  jobUuid: string;
+  lineItems: ScopeLineItem[];
+  scopeTotal: number;
+  source: 'work-orders' | 'scopes' | 'estimates' | 'none';
+}
+
+interface ValidationIssue {
+  type: 'missing_in_scope' | 'missing_in_report' | 'pc_sum_flag' | 'rate_concern' | 'description_poor';
+  severity: 'critical' | 'warning' | 'info';
+  description: string;
+  lineItem?: string | null;
+}
+
+interface ValidationResult {
+  score: number;
+  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  summary: string;
+  issues: ValidationIssue[];
+  suggestions: string[];
+}
+
 type Step = 'upload' | 'polishing' | 'review' | 'generate';
+
+// ─── AI credit disclaimer ─────────────────────────────────────────────────────
+const AIDisclaimer = () => (
+  <p className="text-xs text-gray-500 mt-1">⚡ This feature uses AI API credits.</p>
+);
+
+// ─── Issue type label map ─────────────────────────────────────────────────────
+const ISSUE_TYPE_LABELS: Record<string, string> = {
+  missing_in_scope: 'Missing in Scope',
+  missing_in_report: 'Missing in Report',
+  pc_sum_flag: 'PC Sum Flag',
+  rate_concern: 'Rate Concern',
+  description_poor: 'Poor Description',
+};
 
 // ─── Score Panel Component ────────────────────────────────────────────────────
 function ScorePanel({ result }: { result: ScoreResult }) {
@@ -64,14 +114,12 @@ function ScorePanel({ result }: { result: ScoreResult }) {
 
   return (
     <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden mt-4">
-      {/* Header */}
       <div className="px-5 py-4 border-b border-gray-800 flex items-center gap-3">
         <ClipboardCheck size={18} className="text-blue-400" />
         <h3 className="text-white font-semibold text-base">Report Quality Score</h3>
       </div>
 
       <div className="p-5 space-y-5">
-        {/* Grade badge + score */}
         <div className="flex items-center gap-5">
           <div className={`w-20 h-20 rounded-2xl border-2 flex flex-col items-center justify-center flex-shrink-0 ${gradeColor}`}>
             <span className="text-4xl font-black leading-none">{result.grade}</span>
@@ -82,7 +130,6 @@ function ScorePanel({ result }: { result: ScoreResult }) {
           </div>
         </div>
 
-        {/* Criteria checklist */}
         <div className="space-y-2">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Criteria Checklist</p>
           {result.criteria.map((c, i) => (
@@ -101,7 +148,6 @@ function ScorePanel({ result }: { result: ScoreResult }) {
           ))}
         </div>
 
-        {/* Fix This list */}
         {result.fixes.length > 0 && (
           <div className="rounded-lg border border-red-800/50 bg-red-950/20 overflow-hidden">
             <div className="px-4 py-2 border-b border-red-800/40 flex items-center gap-2">
@@ -123,6 +169,292 @@ function ScorePanel({ result }: { result: ScoreResult }) {
   );
 }
 
+// ─── Validation Panel Component ───────────────────────────────────────────────
+function ValidationPanel({ result }: { result: ValidationResult }) {
+  const gradeColors: Record<string, string> = {
+    A: 'bg-green-600 text-white border-green-500',
+    B: 'bg-blue-600 text-white border-blue-500',
+    C: 'bg-amber-500 text-white border-amber-400',
+    D: 'bg-red-600 text-white border-red-500',
+    F: 'bg-red-800 text-white border-red-700',
+  };
+  const gradeColor = gradeColors[result.grade] || gradeColors.F;
+
+  const severityConfig = {
+    critical: { bar: 'bg-red-500', text: 'text-red-300', bg: 'bg-red-950/30 border-red-800/40', icon: <AlertCircle size={13} className="text-red-400 flex-shrink-0 mt-0.5" /> },
+    warning:  { bar: 'bg-amber-400', text: 'text-amber-300', bg: 'bg-amber-950/30 border-amber-700/40', icon: <AlertTriangle size={13} className="text-amber-400 flex-shrink-0 mt-0.5" /> },
+    info:     { bar: 'bg-blue-500', text: 'text-blue-300', bg: 'bg-blue-950/30 border-blue-700/40', icon: <Info size={13} className="text-blue-400 flex-shrink-0 mt-0.5" /> },
+  };
+
+  return (
+    <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden mt-4">
+      <div className="px-5 py-4 border-b border-gray-800 flex items-center gap-3">
+        <ShieldCheck size={18} className="text-emerald-400" />
+        <h3 className="text-white font-semibold text-base">Scope Validation Result</h3>
+      </div>
+
+      <div className="p-5 space-y-5">
+        <div className="flex items-center gap-5">
+          <div className={`w-20 h-20 rounded-2xl border-2 flex flex-col items-center justify-center flex-shrink-0 ${gradeColor}`}>
+            <span className="text-4xl font-black leading-none">{result.grade}</span>
+          </div>
+          <div>
+            <p className="text-3xl font-bold text-white">{result.score}<span className="text-lg text-gray-400 font-normal">/100</span></p>
+            <p className="text-sm text-gray-400 mt-1 leading-relaxed">{result.summary}</p>
+          </div>
+        </div>
+
+        {result.issues.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Issues Found</p>
+            {result.issues.map((issue, i) => {
+              const cfg = severityConfig[issue.severity] ?? severityConfig.info;
+              return (
+                <div key={i} className={`flex items-start gap-2 rounded-lg border px-3 py-2.5 ${cfg.bg}`}>
+                  <div className={`w-1 rounded-full self-stretch flex-shrink-0 ${cfg.bar}`} />
+                  {cfg.icon}
+                  <div className="flex-1 min-w-0">
+                    <span className={`text-xs font-semibold ${cfg.text}`}>
+                      {ISSUE_TYPE_LABELS[issue.type] ?? issue.type}
+                    </span>
+                    {issue.lineItem && (
+                      <span className="text-xs text-gray-500 ml-1.5">— {issue.lineItem}</span>
+                    )}
+                    <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{issue.description}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {result.issues.length === 0 && (
+          <div className="flex items-center gap-2 text-green-300 text-sm bg-green-950/30 border border-green-700/40 rounded-lg px-4 py-3">
+            <CheckCircle size={15} />
+            No issues found — report and scope are well aligned.
+          </div>
+        )}
+
+        {result.suggestions.length > 0 && (
+          <div className="rounded-lg border border-blue-800/40 bg-blue-950/20 overflow-hidden">
+            <div className="px-4 py-2 border-b border-blue-800/30 flex items-center gap-2">
+              <Info size={13} className="text-blue-400" />
+              <span className="text-xs font-semibold text-blue-300">Suggestions</span>
+            </div>
+            <ul className="px-4 py-3 space-y-1.5">
+              {result.suggestions.map((s, i) => (
+                <li key={i} className="text-xs text-blue-300/90 flex items-start gap-2">
+                  <span className="text-blue-500 mt-0.5 flex-shrink-0">→</span>
+                  {s}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Scope Validator section (polisher) ───────────────────────────────────────
+function ScopeValidatorSection({ reportText }: { reportText: string }) {
+  const [jobNumber, setJobNumber] = useState('');
+  const [fetchingScope, setFetchingScope] = useState(false);
+  const [scopeResult, setScopeResult] = useState<ScopeResult | null>(null);
+  const [scopeError, setScopeError] = useState<string | null>(null);
+  const [scopeExpanded, setScopeExpanded] = useState(false);
+  const [validating, setValidating] = useState(false);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const fetchScope = async () => {
+    if (!jobNumber.trim()) return;
+    setFetchingScope(true);
+    setScopeError(null);
+    setScopeResult(null);
+    setValidationResult(null);
+    setValidationError(null);
+    try {
+      const res = await fetch(`/api/report-assist/scope?jobNumber=${encodeURIComponent(jobNumber.trim())}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch scope');
+      setScopeResult(data as ScopeResult);
+    } catch (e) {
+      setScopeError(e instanceof Error ? e.message : 'Failed to fetch scope');
+    } finally {
+      setFetchingScope(false);
+    }
+  };
+
+  const handleValidate = async () => {
+    if (!scopeResult || !reportText.trim()) return;
+    setValidating(true);
+    setValidationError(null);
+    setValidationResult(null);
+    try {
+      const lineItems = scopeResult.lineItems.map(li => ({
+        description: li.description,
+        total: li.total,
+        category: li.category,
+      }));
+      const res = await fetch('/api/report-assist/validate-scope', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportSections: { reportText },
+          lineItems,
+          jobContext: {
+            jobNumber: jobNumber.trim(),
+            insurer: '',
+            eventType: '',
+            authorisedTotal: 0,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Validation failed');
+      setValidationResult(data as ValidationResult);
+    } catch (e) {
+      setValidationError(e instanceof Error ? e.message : 'Validation failed');
+    } finally {
+      setValidating(false);
+    }
+  };
+
+  return (
+    <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden mt-4">
+      <div className="px-5 py-4 border-b border-gray-800 flex items-center gap-3">
+        <ShieldCheck size={18} className="text-emerald-400" />
+        <div>
+          <h3 className="text-white font-semibold text-base">Validate Against Scope</h3>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Enter the job number to fetch scope line items from Prime and validate this report against them.
+          </p>
+        </div>
+      </div>
+
+      <div className="p-5 space-y-4">
+        {/* Job number input */}
+        <div className="flex items-start gap-3">
+          <input
+            type="text"
+            value={jobNumber}
+            onChange={e => setJobNumber(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && fetchScope()}
+            placeholder="e.g. YOU0009300"
+            className="flex-1 bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder:text-gray-600"
+          />
+          <div className="flex flex-col items-end flex-shrink-0">
+            <button
+              onClick={fetchScope}
+              disabled={fetchingScope || !jobNumber.trim()}
+              className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium px-4 py-2.5 rounded-lg transition-colors text-sm whitespace-nowrap"
+            >
+              {fetchingScope
+                ? <><Loader2 size={14} className="animate-spin" />Fetching…</>
+                : <>Fetch Scope</>
+              }
+            </button>
+          </div>
+        </div>
+
+        {scopeError && (
+          <div className="flex items-center gap-2 text-red-400 text-xs bg-red-950/30 border border-red-800/40 rounded-lg px-3 py-2">
+            <AlertCircle size={13} /> {scopeError}
+          </div>
+        )}
+
+        {/* Line items collapsible */}
+        {scopeResult && (
+          <div className="rounded-lg border border-gray-700 overflow-hidden">
+            <button
+              onClick={() => setScopeExpanded(e => !e)}
+              className="w-full flex items-center justify-between px-4 py-3 bg-gray-800/60 hover:bg-gray-800 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-white">
+                  {scopeResult.lineItems.length === 0
+                    ? 'No line items found'
+                    : `${scopeResult.lineItems.length} line item${scopeResult.lineItems.length !== 1 ? 's' : ''}`}
+                </span>
+                {scopeResult.source !== 'none' && (
+                  <span className="text-xs text-gray-500 bg-gray-700 px-2 py-0.5 rounded-full">
+                    via {scopeResult.source}
+                  </span>
+                )}
+                {scopeResult.scopeTotal > 0 && (
+                  <span className="text-xs font-semibold text-emerald-400">
+                    ${scopeResult.scopeTotal.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                )}
+              </div>
+              {scopeResult.lineItems.length > 0 && (
+                scopeExpanded ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />
+              )}
+            </button>
+
+            {scopeResult.lineItems.length === 0 ? (
+              <div className="px-4 py-5 text-center">
+                <p className="text-sm text-gray-400">No scope items found in Prime yet for this job.</p>
+                <p className="text-xs text-gray-600 mt-1">Add line items to Prime first, then validate.</p>
+              </div>
+            ) : scopeExpanded ? (
+              <div className="divide-y divide-gray-800">
+                {scopeResult.lineItems.map((li, i) => (
+                  <div key={li.id || i} className="px-4 py-2.5 flex items-start gap-3">
+                    <span className="text-xs text-gray-600 w-5 flex-shrink-0 pt-0.5">{i + 1}.</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-white leading-relaxed">{li.description || <em className="text-gray-600">No description</em>}</p>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {li.category && <span className="text-xs text-gray-500">{li.category}</span>}
+                        {li.quantity > 0 && li.unit && (
+                          <span className="text-xs text-gray-500">{li.quantity} {li.unit}</span>
+                        )}
+                        {li.notes && <span className="text-xs text-gray-600 italic">{li.notes}</span>}
+                      </div>
+                    </div>
+                    {li.total > 0 && (
+                      <span className="text-xs font-medium text-gray-300 flex-shrink-0">
+                        ${li.total.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {/* Validate button */}
+        {scopeResult && scopeResult.lineItems.length > 0 && (
+          <div>
+            <button
+              onClick={handleValidate}
+              disabled={validating || !reportText.trim()}
+              className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-5 py-2.5 rounded-lg transition-colors text-sm"
+            >
+              {validating
+                ? <><Loader2 size={15} className="animate-spin" />Validating with AI…</>
+                : <><ShieldCheck size={15} />Validate Against Scope</>
+              }
+            </button>
+            <AIDisclaimer />
+          </div>
+        )}
+
+        {validationError && (
+          <div className="flex items-center gap-2 text-red-400 text-xs bg-red-950/30 border border-red-800/40 rounded-lg px-3 py-2">
+            <AlertCircle size={13} /> {validationError}
+          </div>
+        )}
+
+        {validationResult && <ValidationPanel result={validationResult} />}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
 export default function ReportPolisherPage() {
   const [step, setStep] = useState<Step>('upload');
   const [dragging, setDragging] = useState(false);
@@ -139,6 +471,13 @@ export default function ReportPolisherPage() {
   const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
   const [scoreError, setScoreError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Derived report text for scope validation (polished or original)
+  const polishedReportText = result
+    ? result.sections
+        .map(s => `## ${s.title}\n${s.accepted !== false ? s.polished : s.original}`)
+        .join('\n\n')
+    : '';
 
   const MAX_SIZE = 10 * 1024 * 1024;
 
@@ -212,12 +551,10 @@ export default function ReportPolisherPage() {
       let reportText = '';
 
       if (source) {
-        // Score from polished sections
         reportText = source
           .map(s => `## ${s.title}\n${s.accepted !== false ? s.polished : s.original}`)
           .join('\n\n');
       } else if (file) {
-        // Score from raw uploaded file (Score Only flow)
         const formData = new FormData();
         formData.append('file', file);
         const extractRes = await fetch('/api/report-assist/polish', { method: 'POST', body: formData });
@@ -265,7 +602,6 @@ export default function ReportPolisherPage() {
     setGenerating(true);
 
     try {
-      // Generate a simple formatted PDF using pdf-lib via our own endpoint
       const res = await fetch('/api/report-assist/polish/generate-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -282,7 +618,6 @@ export default function ReportPolisherPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to generate PDF');
 
-      // Convert base64 to blob URL for download
       const bytes = Uint8Array.from(atob(data.pdfBase64), c => c.charCodeAt(0));
       const blob = new Blob([bytes], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
@@ -407,7 +742,6 @@ export default function ReportPolisherPage() {
       {/* ── Step 1: Upload ── */}
       {(step === 'upload' || step === 'polishing') && (
         <div className="space-y-6">
-          {/* Drop zone */}
           <div
             onDrop={onDrop}
             onDragOver={onDragOver}
@@ -472,48 +806,54 @@ export default function ReportPolisherPage() {
           )}
 
           {file && (
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={() => setShowConfirm(true)}
-                disabled={polishing || scoring}
-                className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold py-4 rounded-xl transition-colors text-base"
-              >
-                {polishing ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Polishing with AI… this may take up to 30 seconds
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={20} />
-                    ✨ Polish Report
-                  </>
-                )}
-              </button>
-              <button
-                onClick={() => handleScore()}
-                disabled={scoring || polishing}
-                className="flex items-center justify-center gap-2 bg-blue-700 hover:bg-blue-600 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold py-4 px-6 rounded-xl transition-colors text-base"
-              >
-                {scoring ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    Scoring…
-                  </>
-                ) : (
-                  <>
-                    <ClipboardCheck size={18} />
-                    Score Only
-                  </>
-                )}
-              </button>
+            <div className="flex flex-col sm:flex-row gap-3 items-start">
+              {/* Polish button + disclaimer */}
+              <div>
+                <button
+                  onClick={() => setShowConfirm(true)}
+                  disabled={polishing || scoring}
+                  className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold py-4 px-6 rounded-xl transition-colors text-base"
+                >
+                  {polishing ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Polishing with AI… this may take up to 30 seconds
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={20} />
+                      ✨ Polish Report
+                    </>
+                  )}
+                </button>
+                <AIDisclaimer />
+              </div>
+
+              {/* Score Only button + disclaimer */}
+              <div>
+                <button
+                  onClick={() => handleScore()}
+                  disabled={scoring || polishing}
+                  className="flex items-center justify-center gap-2 bg-blue-700 hover:bg-blue-600 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold py-4 px-6 rounded-xl transition-colors text-base"
+                >
+                  {scoring ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      Scoring…
+                    </>
+                  ) : (
+                    <>
+                      <ClipboardCheck size={18} />
+                      Score Only
+                    </>
+                  )}
+                </button>
+                <AIDisclaimer />
+              </div>
             </div>
           )}
 
-          {/* Score Only result (upload step) */}
-          {scoreResult && step === 'upload' && (
-            <ScorePanel result={scoreResult} />
-          )}
+          {scoreResult && step === 'upload' && <ScorePanel result={scoreResult} />}
           {scoreError && step === 'upload' && (
             <div className="flex items-center gap-2 text-red-400 text-sm bg-red-950/30 border border-red-800/40 rounded-xl px-4 py-3">
               <AlertCircle size={16} />
@@ -550,7 +890,6 @@ export default function ReportPolisherPage() {
             </div>
           </div>
 
-          {/* Accept/reject status */}
           {result.sections.length > 1 && (
             <div className="flex items-center gap-4 text-xs text-gray-500">
               <span className="text-green-400 font-medium">{acceptedCount} accepted</span>
@@ -572,7 +911,6 @@ export default function ReportPolisherPage() {
                     : 'border-gray-800'
                   }`}
               >
-                {/* Section header */}
                 <div
                   className="flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-gray-800/40 transition-colors"
                   onClick={() => toggleSection(idx)}
@@ -609,15 +947,12 @@ export default function ReportPolisherPage() {
                   }
                 </div>
 
-                {/* Expanded comparison */}
                 {expandedSections.has(idx) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-0 border-t border-gray-800">
-                    {/* Original */}
                     <div className="p-5 bg-gray-950/50 border-b md:border-b-0 md:border-r border-gray-800">
                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Original</p>
                       <p className="text-gray-400 text-sm leading-relaxed whitespace-pre-wrap">{section.original}</p>
                     </div>
-                    {/* Polished */}
                     <div className={`p-5 ${section.accepted === false ? 'opacity-50' : 'bg-green-950/10'}`}>
                       <p className="text-xs font-semibold text-green-600 uppercase tracking-wider mb-3">Polished</p>
                       <p className="text-green-100/90 text-sm leading-relaxed whitespace-pre-wrap">{section.polished}</p>
@@ -637,42 +972,50 @@ export default function ReportPolisherPage() {
             </div>
           )}
 
-          {/* Generate PDF button */}
-          <div className="flex flex-wrap items-center gap-3 pt-2">
-            <button
-              onClick={handleGeneratePdf}
-              disabled={generating}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
-            >
-              {generating ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Generating PDF…
-                </>
-              ) : (
-                <>
-                  <FileText size={18} />
-                  Generate Polished PDF
-                </>
-              )}
-            </button>
-            <button
-              onClick={() => handleScore(result?.sections)}
-              disabled={scoring}
-              className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
-            >
-              {scoring ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  Scoring…
-                </>
-              ) : (
-                <>
-                  <ClipboardCheck size={16} />
-                  Score Quality
-                </>
-              )}
-            </button>
+          {/* Scope Validator */}
+          <ScopeValidatorSection reportText={polishedReportText} />
+
+          {/* Action buttons */}
+          <div className="flex flex-wrap items-start gap-4 pt-2">
+            <div>
+              <button
+                onClick={handleGeneratePdf}
+                disabled={generating}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
+              >
+                {generating ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Generating PDF…
+                  </>
+                ) : (
+                  <>
+                    <FileText size={18} />
+                    Generate Polished PDF
+                  </>
+                )}
+              </button>
+            </div>
+            <div>
+              <button
+                onClick={() => handleScore(result?.sections)}
+                disabled={scoring}
+                className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
+              >
+                {scoring ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Scoring…
+                  </>
+                ) : (
+                  <>
+                    <ClipboardCheck size={16} />
+                    Score Quality
+                  </>
+                )}
+              </button>
+              <AIDisclaimer />
+            </div>
             <button
               onClick={reset}
               className="flex items-center gap-2 text-sm text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 px-4 py-3 rounded-xl transition-colors"

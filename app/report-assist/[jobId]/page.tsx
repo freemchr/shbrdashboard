@@ -9,6 +9,7 @@ import {
   ArrowLeft, CheckCircle, ChevronDown, ChevronUp,
   Sparkles, Check, Edit3, X, Loader2, FileDown, Send,
   Image as ImageIcon, Trash2, Plus, ExternalLink,
+  ShieldCheck, AlertTriangle, AlertCircle, Info,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -30,7 +31,6 @@ interface PhotoEntry {
 }
 
 interface ReportData {
-  // Claim info (from Prime)
   jobNumber: string;
   jobUuid: string;
   claimNumber: string;
@@ -42,13 +42,9 @@ interface ReportData {
   incidentDate: string;
   propertyNotes: string;
   reportRef: string;
-
-  // Inspection sub-fields
   inspectionDate: string;
   inspectionTime: string;
   metOnSite: string;
-
-  // Property Details
   buildingType: string;
   buildingDescription: string;
   wallCladding: string;
@@ -57,16 +53,12 @@ interface ReportData {
   foundation: string;
   outbuildings: string;
   constructionAge: string;
-
-  // Inspection Details
   propertyCategory: string;
   altAccommodation: string;
   hazmat: string;
   makeSafeRequired: string;
   makeSafeCompleted: string;
   hailDamage: string;
-
-  // Narratives
   circumstancesOfLoss: string;
   damageAssessment: string;
   damageConsistent: string;
@@ -84,10 +76,42 @@ interface ReportData {
   repairLeadTime: string;
   repairTimeframe: string;
   allExternalInspected: string;
-
-  // Photos
   frontElevationPhoto: PhotoEntry | null;
   photos: PhotoEntry[];
+}
+
+interface ScopeLineItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  unitRate: number;
+  total: number;
+  category: string;
+  notes: string;
+}
+
+interface ScopeResult {
+  jobNumber: string;
+  jobUuid: string;
+  lineItems: ScopeLineItem[];
+  scopeTotal: number;
+  source: 'work-orders' | 'scopes' | 'estimates' | 'none';
+}
+
+interface ValidationIssue {
+  type: 'missing_in_scope' | 'missing_in_report' | 'pc_sum_flag' | 'rate_concern' | 'description_poor';
+  severity: 'critical' | 'warning' | 'info';
+  description: string;
+  lineItem?: string | null;
+}
+
+interface ValidationResult {
+  score: number;
+  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  summary: string;
+  issues: ValidationIssue[];
+  suggestions: string[];
 }
 
 const EMPTY_REPORT: ReportData = {
@@ -112,6 +136,112 @@ const YES_NO = ['', 'Yes', 'No', 'N/A'];
 const YESNO_OPTS = YES_NO.map(v => <option key={v} value={v}>{v || '— select —'}</option>);
 const CAT_OPTS = ['', 'CAT-A', 'CAT-B', 'CAT-C', 'CAT-D'].map(v => <option key={v} value={v}>{v || '— select —'}</option>);
 const ALLOC_OPTS = ['', 'Scope of Works', 'Cash Settlement', 'Denial', 'Partial'].map(v => <option key={v} value={v}>{v || '— select —'}</option>);
+
+// ─── AI credit disclaimer ─────────────────────────────────────────────────────
+const AIDisclaimer = () => (
+  <p className="text-xs text-gray-500 mt-1">⚡ This feature uses AI API credits.</p>
+);
+
+// ─── Issue type label map ─────────────────────────────────────────────────────
+const ISSUE_TYPE_LABELS: Record<string, string> = {
+  missing_in_scope: 'Missing in Scope',
+  missing_in_report: 'Missing in Report',
+  pc_sum_flag: 'PC Sum Flag',
+  rate_concern: 'Rate Concern',
+  description_poor: 'Poor Description',
+};
+
+// ─── Validation result panel ──────────────────────────────────────────────────
+function ValidationPanel({ result }: { result: ValidationResult }) {
+  const gradeColors: Record<string, string> = {
+    A: 'bg-green-600 text-white border-green-500',
+    B: 'bg-blue-600 text-white border-blue-500',
+    C: 'bg-amber-500 text-white border-amber-400',
+    D: 'bg-red-600 text-white border-red-500',
+    F: 'bg-red-800 text-white border-red-700',
+  };
+  const gradeColor = gradeColors[result.grade] || gradeColors.F;
+
+  const severityConfig = {
+    critical: { bar: 'bg-red-500', text: 'text-red-300', bg: 'bg-red-950/30 border-red-800/40', icon: <AlertCircle size={13} className="text-red-400 flex-shrink-0 mt-0.5" /> },
+    warning:  { bar: 'bg-amber-400', text: 'text-amber-300', bg: 'bg-amber-950/30 border-amber-700/40', icon: <AlertTriangle size={13} className="text-amber-400 flex-shrink-0 mt-0.5" /> },
+    info:     { bar: 'bg-blue-500', text: 'text-blue-300', bg: 'bg-blue-950/30 border-blue-700/40', icon: <Info size={13} className="text-blue-400 flex-shrink-0 mt-0.5" /> },
+  };
+
+  return (
+    <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden mt-4">
+      <div className="px-5 py-4 border-b border-gray-800 flex items-center gap-3">
+        <ShieldCheck size={18} className="text-emerald-400" />
+        <h3 className="text-white font-semibold text-base">Scope Validation Result</h3>
+      </div>
+
+      <div className="p-5 space-y-5">
+        {/* Grade + score */}
+        <div className="flex items-center gap-5">
+          <div className={`w-20 h-20 rounded-2xl border-2 flex flex-col items-center justify-center flex-shrink-0 ${gradeColor}`}>
+            <span className="text-4xl font-black leading-none">{result.grade}</span>
+          </div>
+          <div>
+            <p className="text-3xl font-bold text-white">
+              {result.score}<span className="text-lg text-gray-400 font-normal">/100</span>
+            </p>
+            <p className="text-sm text-gray-400 mt-1 leading-relaxed">{result.summary}</p>
+          </div>
+        </div>
+
+        {/* Issues list */}
+        {result.issues.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Issues Found</p>
+            {result.issues.map((issue, i) => {
+              const cfg = severityConfig[issue.severity] ?? severityConfig.info;
+              return (
+                <div key={i} className={`flex items-start gap-2 rounded-lg border px-3 py-2.5 ${cfg.bg}`}>
+                  <div className={`w-1 rounded-full self-stretch flex-shrink-0 ${cfg.bar}`} />
+                  {cfg.icon}
+                  <div className="flex-1 min-w-0">
+                    <span className={`text-xs font-semibold ${cfg.text}`}>
+                      {ISSUE_TYPE_LABELS[issue.type] ?? issue.type}
+                    </span>
+                    {issue.lineItem && (
+                      <span className="text-xs text-gray-500 ml-1.5">— {issue.lineItem}</span>
+                    )}
+                    <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{issue.description}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {result.issues.length === 0 && (
+          <div className="flex items-center gap-2 text-green-300 text-sm bg-green-950/30 border border-green-700/40 rounded-lg px-4 py-3">
+            <CheckCircle size={15} />
+            No issues found — report and scope are well aligned.
+          </div>
+        )}
+
+        {/* Suggestions */}
+        {result.suggestions.length > 0 && (
+          <div className="rounded-lg border border-blue-800/40 bg-blue-950/20 overflow-hidden">
+            <div className="px-4 py-2 border-b border-blue-800/30 flex items-center gap-2">
+              <Info size={13} className="text-blue-400" />
+              <span className="text-xs font-semibold text-blue-300">Suggestions</span>
+            </div>
+            <ul className="px-4 py-3 space-y-1.5">
+              {result.suggestions.map((s, i) => (
+                <li key={i} className="text-xs text-blue-300/90 flex items-start gap-2">
+                  <span className="text-blue-500 mt-0.5 flex-shrink-0">→</span>
+                  {s}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ─── Section wrapper component ────────────────────────────────────────────────
 function Section({
@@ -190,7 +320,6 @@ function Section({
 
   return (
     <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-      {/* Header */}
       <div
         className="flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-gray-800/40 transition-colors"
         onClick={() => setOpen(o => !o)}
@@ -201,25 +330,26 @@ function Section({
         </div>
         <div className="flex items-center gap-2">
           {canEnhance && open && (
-            <button
-              onClick={e => { e.stopPropagation(); handleEnhance(); }}
-              disabled={enhance.loading || !currentText.trim()}
-              className="flex items-center gap-1.5 bg-purple-900/40 hover:bg-purple-800/60 border border-purple-700/50 text-purple-300 text-xs px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {enhance.loading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-              Enhance with AI
-            </button>
+            <div className="flex flex-col items-end" onClick={e => e.stopPropagation()}>
+              <button
+                onClick={handleEnhance}
+                disabled={enhance.loading || !currentText.trim()}
+                className="flex items-center gap-1.5 bg-purple-900/40 hover:bg-purple-800/60 border border-purple-700/50 text-purple-300 text-xs px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {enhance.loading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                Enhance with AI
+              </button>
+              <AIDisclaimer />
+            </div>
           )}
           {open ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
         </div>
       </div>
 
-      {/* Body */}
       {open && (
         <div className="px-5 pb-5 pt-1">
           {children}
 
-          {/* AI enhancement result */}
           {enhance.visible && enhance.enhanced && (
             <div className="mt-4 rounded-lg border border-green-700/50 bg-green-950/20 overflow-hidden">
               <div className="px-4 py-2 border-b border-green-700/30 flex items-center gap-2">
@@ -316,27 +446,17 @@ function FormRow({ label, children }: { label: string; children: React.ReactNode
 }
 
 // ─── AI Caption button ────────────────────────────────────────────────────────
-function AICaptionButton({
-  photo,
-  onCaption,
-}: {
-  photo: PhotoEntry;
-  onCaption: (caption: string) => void;
-}) {
+function AICaptionButton({ photo, onCaption }: { photo: PhotoEntry; onCaption: (caption: string) => void }) {
   const [loading, setLoading] = useState(false);
 
   const handleClick = async () => {
     setLoading(true);
     try {
-      // Strip data URL prefix for transmission
       const base64Data = photo.base64.includes(',') ? photo.base64.split(',')[1] : photo.base64;
       const res = await fetch('/api/report-assist/caption', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageBase64: base64Data,
-          mimeType: photo.mimeType || 'image/jpeg',
-        }),
+        body: JSON.stringify({ imageBase64: base64Data, mimeType: photo.mimeType || 'image/jpeg' }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -349,30 +469,25 @@ function AICaptionButton({
   };
 
   return (
-    <button
-      onClick={handleClick}
-      disabled={loading}
-      title="Generate AI caption"
-      className="flex items-center gap-1 bg-purple-900/40 hover:bg-purple-800/60 border border-purple-700/50 text-purple-300 text-xs px-2 py-1.5 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-    >
-      {loading ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
-      {loading ? '' : 'AI'}
-    </button>
+    <div className="flex flex-col items-end flex-shrink-0">
+      <button
+        onClick={handleClick}
+        disabled={loading}
+        title="Generate AI caption"
+        className="flex items-center gap-1 bg-purple-900/40 hover:bg-purple-800/60 border border-purple-700/50 text-purple-300 text-xs px-2 py-1.5 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {loading ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+        {loading ? '' : 'AI'}
+      </button>
+      <AIDisclaimer />
+    </div>
   );
 }
 
 // ─── Photo upload section ─────────────────────────────────────────────────────
 function PhotoUploader({
-  label,
-  photo,
-  onAdd,
-  onRemove,
-  onCaptionChange,
-  multiple = false,
-  photos,
-  onAddMultiple,
-  onRemoveMultiple,
-  onCaptionChangeMultiple,
+  label, photo, onAdd, onRemove, onCaptionChange,
+  multiple = false, photos, onAddMultiple, onRemoveMultiple, onCaptionChangeMultiple,
 }: {
   label: string;
   photo?: PhotoEntry | null;
@@ -394,10 +509,7 @@ function PhotoUploader({
       const base64 = e.target?.result as string;
       callback({
         id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        base64,
-        caption: '',
-        mimeType: file.type,
-        previewUrl: base64,
+        base64, caption: '', mimeType: file.type, previewUrl: base64,
       });
     };
     reader.readAsDataURL(file);
@@ -407,11 +519,8 @@ function PhotoUploader({
     if (!files) return;
     Array.from(files).forEach(file => {
       if (!file.type.startsWith('image/')) return;
-      if (multiple && onAddMultiple) {
-        processFile(file, onAddMultiple);
-      } else if (onAdd) {
-        processFile(file, onAdd);
-      }
+      if (multiple && onAddMultiple) processFile(file, onAddMultiple);
+      else if (onAdd) processFile(file, onAdd);
     });
   };
 
@@ -426,7 +535,7 @@ function PhotoUploader({
         {photo ? (
           <div className="rounded-lg border border-gray-700 overflow-hidden">
             <img src={photo.previewUrl} alt="preview" className="w-full max-h-48 object-contain bg-gray-800" />
-            <div className="p-3 flex items-center gap-2">
+            <div className="p-3 flex items-start gap-2">
               <input
                 value={photo.caption}
                 onChange={e => onCaptionChange?.(e.target.value)}
@@ -434,7 +543,7 @@ function PhotoUploader({
                 className="flex-1 bg-gray-800 border border-gray-700 text-white text-xs rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-red-500"
               />
               <AICaptionButton photo={photo} onCaption={cap => onCaptionChange?.(cap)} />
-              <button onClick={onRemove} className="text-gray-500 hover:text-red-400 transition-colors">
+              <button onClick={onRemove} className="text-gray-500 hover:text-red-400 transition-colors pt-1.5">
                 <Trash2 size={14} />
               </button>
             </div>
@@ -457,13 +566,12 @@ function PhotoUploader({
     );
   }
 
-  // Multiple photos
   return (
     <div className="space-y-3">
       {(photos || []).map(p => (
         <div key={p.id} className="rounded-lg border border-gray-700 overflow-hidden">
           <img src={p.previewUrl} alt="photo" className="w-full max-h-48 object-contain bg-gray-800" />
-          <div className="p-3 flex items-center gap-2">
+          <div className="p-3 flex items-start gap-2">
             <input
               value={p.caption}
               onChange={e => onCaptionChangeMultiple?.(p.id, e.target.value)}
@@ -471,7 +579,7 @@ function PhotoUploader({
               className="flex-1 bg-gray-800 border border-gray-700 text-white text-xs rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-red-500"
             />
             <AICaptionButton photo={p} onCaption={cap => onCaptionChangeMultiple?.(p.id, cap)} />
-            <button onClick={() => onRemoveMultiple?.(p.id)} className="text-gray-500 hover:text-red-400 transition-colors">
+            <button onClick={() => onRemoveMultiple?.(p.id)} className="text-gray-500 hover:text-red-400 transition-colors pt-1.5">
               <Trash2 size={14} />
             </button>
           </div>
@@ -499,7 +607,6 @@ function ReportHistoryItem({ url, jobUuid, jobNumber }: { url: string; jobUuid: 
   const [uploaded, setUploaded] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // Extract timestamp from URL
   const ts = url.split('/').pop()?.replace('-assessment-report.pdf', '').replace('T', ' ').replace(/-/g, (m, i) => i > 10 ? ':' : m) || '';
 
   const reUpload = async () => {
@@ -543,6 +650,198 @@ function ReportHistoryItem({ url, jobUuid, jobNumber }: { url: string; jobUuid: 
   );
 }
 
+// ─── Scope Validator Panel ────────────────────────────────────────────────────
+function ScopeValidatorPanel({ report }: { report: ReportData }) {
+  const [fetchingScope, setFetchingScope] = useState(false);
+  const [scopeResult, setScopeResult] = useState<ScopeResult | null>(null);
+  const [scopeError, setScopeError] = useState<string | null>(null);
+  const [scopeExpanded, setScopeExpanded] = useState(false);
+  const [validating, setValidating] = useState(false);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const fetchScope = async () => {
+    if (!report.jobNumber) return;
+    setFetchingScope(true);
+    setScopeError(null);
+    setScopeResult(null);
+    setValidationResult(null);
+    setValidationError(null);
+    try {
+      const res = await fetch(`/api/report-assist/scope?jobNumber=${encodeURIComponent(report.jobNumber)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch scope');
+      setScopeResult(data as ScopeResult);
+    } catch (e) {
+      setScopeError(e instanceof Error ? e.message : 'Failed to fetch scope');
+    } finally {
+      setFetchingScope(false);
+    }
+  };
+
+  const handleValidate = async () => {
+    if (!scopeResult) return;
+    setValidating(true);
+    setValidationError(null);
+    setValidationResult(null);
+    try {
+      const reportSections = {
+        damageAssessment: report.damageAssessment,
+        circumstancesOfLoss: report.circumstancesOfLoss,
+        causeOfDamage: report.causeOfDamage,
+        conclusion: report.conclusion,
+        maintenanceRepairs: report.maintenanceRepairs,
+      };
+      const lineItems = scopeResult.lineItems.map(li => ({
+        description: li.description,
+        total: li.total,
+        category: li.category,
+      }));
+      const res = await fetch('/api/report-assist/validate-scope', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportSections,
+          lineItems,
+          jobContext: {
+            jobNumber: report.jobNumber,
+            insurer: report.insurer,
+            eventType: report.eventType,
+            authorisedTotal: 0,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Validation failed');
+      setValidationResult(data as ValidationResult);
+    } catch (e) {
+      setValidationError(e instanceof Error ? e.message : 'Validation failed');
+    } finally {
+      setValidating(false);
+    }
+  };
+
+  return (
+    <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-gray-800 flex items-center gap-3">
+        <ShieldCheck size={18} className="text-emerald-400" />
+        <div>
+          <h3 className="text-sm font-semibold text-white">Scope Validator</h3>
+          <p className="text-xs text-gray-500 mt-0.5">Compare this report against the line items in Prime to check consistency.</p>
+        </div>
+      </div>
+
+      <div className="p-5 space-y-4">
+        {/* Step 1: Fetch scope */}
+        <div>
+          <button
+            onClick={fetchScope}
+            disabled={fetchingScope || !report.jobNumber}
+            className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium px-4 py-2.5 rounded-lg transition-colors text-sm"
+          >
+            {fetchingScope
+              ? <><Loader2 size={15} className="animate-spin" />Fetching from Prime…</>
+              : <><ShieldCheck size={15} />Fetch Scope from Prime</>
+            }
+          </button>
+          {scopeError && (
+            <div className="mt-2 flex items-center gap-2 text-red-400 text-xs bg-red-950/30 border border-red-800/40 rounded-lg px-3 py-2">
+              <AlertCircle size={13} /> {scopeError}
+            </div>
+          )}
+        </div>
+
+        {/* Scope line items */}
+        {scopeResult && (
+          <div className="rounded-lg border border-gray-700 overflow-hidden">
+            <button
+              onClick={() => setScopeExpanded(e => !e)}
+              className="w-full flex items-center justify-between px-4 py-3 bg-gray-800/60 hover:bg-gray-800 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-white">
+                  {scopeResult.lineItems.length === 0
+                    ? 'No line items found'
+                    : `${scopeResult.lineItems.length} line item${scopeResult.lineItems.length !== 1 ? 's' : ''}`}
+                </span>
+                {scopeResult.source !== 'none' && (
+                  <span className="text-xs text-gray-500 bg-gray-700 px-2 py-0.5 rounded-full">
+                    via {scopeResult.source}
+                  </span>
+                )}
+                {scopeResult.scopeTotal > 0 && (
+                  <span className="text-xs font-semibold text-emerald-400">
+                    ${scopeResult.scopeTotal.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                )}
+              </div>
+              {scopeResult.lineItems.length > 0 && (
+                scopeExpanded ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />
+              )}
+            </button>
+
+            {scopeResult.source === 'none' || scopeResult.lineItems.length === 0 ? (
+              <div className="px-4 py-5 text-center">
+                <p className="text-sm text-gray-400">No scope items found in Prime yet for this job.</p>
+                <p className="text-xs text-gray-600 mt-1">Add line items to Prime first, then validate.</p>
+              </div>
+            ) : scopeExpanded ? (
+              <div className="divide-y divide-gray-800">
+                {scopeResult.lineItems.map((li, i) => (
+                  <div key={li.id || i} className="px-4 py-2.5 flex items-start gap-3">
+                    <span className="text-xs text-gray-600 w-5 flex-shrink-0 pt-0.5">{i + 1}.</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-white leading-relaxed">{li.description || <em className="text-gray-600">No description</em>}</p>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {li.category && <span className="text-xs text-gray-500">{li.category}</span>}
+                        {li.quantity > 0 && li.unit && (
+                          <span className="text-xs text-gray-500">{li.quantity} {li.unit}</span>
+                        )}
+                        {li.notes && <span className="text-xs text-gray-600 italic">{li.notes}</span>}
+                      </div>
+                    </div>
+                    {li.total > 0 && (
+                      <span className="text-xs font-medium text-gray-300 flex-shrink-0">
+                        ${li.total.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {/* Step 2: Validate */}
+        {scopeResult && scopeResult.lineItems.length > 0 && (
+          <div>
+            <button
+              onClick={handleValidate}
+              disabled={validating}
+              className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-5 py-2.5 rounded-lg transition-colors text-sm"
+            >
+              {validating
+                ? <><Loader2 size={15} className="animate-spin" />Validating with AI…</>
+                : <><ShieldCheck size={15} />Validate Scope</>
+              }
+            </button>
+            <AIDisclaimer />
+          </div>
+        )}
+
+        {validationError && (
+          <div className="flex items-center gap-2 text-red-400 text-xs bg-red-950/30 border border-red-800/40 rounded-lg px-3 py-2">
+            <AlertCircle size={13} /> {validationError}
+          </div>
+        )}
+
+        {validationResult && <ValidationPanel result={validationResult} />}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main wizard page ─────────────────────────────────────────────────────────
 export default function ReportWizardPage() {
   const params = useParams();
@@ -563,12 +862,10 @@ export default function ReportWizardPage() {
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Load job from Prime ──────────────────────────────────────────────────────
   useEffect(() => {
     if (!jobId) return;
     (async () => {
       try {
-        // Try loading saved draft first
         const draftRes = await fetch(`/api/report-assist/load-report?jobNumber=${jobId}`);
         const draftData = await draftRes.json();
 
@@ -579,7 +876,6 @@ export default function ReportWizardPage() {
           return;
         }
 
-        // Otherwise load from Prime via report-assist/job endpoint
         const res = await fetch(`/api/report-assist/job?jobNumber=${encodeURIComponent(jobId)}`);
         if (!res.ok) {
           const errData = await res.json();
@@ -623,10 +919,8 @@ export default function ReportWizardPage() {
     }
   };
 
-  // ── Field change + debounced save ────────────────────────────────────────────
   const handleFieldChange = useCallback((key: string, val: string) => {
     setReport(prev => ({ ...prev, [key]: val }));
-    // Debounced auto-save (skip for photo fields — too large for frequent saves)
     if (!key.includes('Photo') && key !== 'photos') {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       saveTimerRef.current = setTimeout(() => {
@@ -644,7 +938,6 @@ export default function ReportWizardPage() {
     setSectionStatuses(prev => ({ ...prev, [key]: status }));
   }, []);
 
-  // Photo helpers
   const setFrontPhoto = (p: PhotoEntry) => setReport(prev => ({ ...prev, frontElevationPhoto: p }));
   const clearFrontPhoto = () => setReport(prev => ({ ...prev, frontElevationPhoto: null }));
   const setFrontCaption = (caption: string) =>
@@ -654,13 +947,11 @@ export default function ReportWizardPage() {
   const updatePhotoCaption = (id: string, caption: string) =>
     setReport(prev => ({ ...prev, photos: prev.photos.map(p => p.id === id ? { ...p, caption } : p) }));
 
-  // ── Generate PDF ──────────────────────────────────────────────────────────────
   const handleGenerate = async () => {
     setGenerating(true);
     setPdfResult(null);
     setUploadResult(null);
     try {
-      // Serialize photos with only necessary fields
       const payload = {
         ...report,
         frontElevationPhoto: report.frontElevationPhoto
@@ -676,7 +967,6 @@ export default function ReportWizardPage() {
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'PDF generation failed');
       setPdfResult(data);
-      // Refresh history
       loadHistory(jobId);
     } catch (e) {
       alert(`PDF generation failed: ${e instanceof Error ? e.message : String(e)}`);
@@ -685,7 +975,6 @@ export default function ReportWizardPage() {
     }
   };
 
-  // ── Upload to Prime ───────────────────────────────────────────────────────────
   const handleUpload = async () => {
     if (!pdfResult) return;
     setUploading(true);
@@ -732,7 +1021,6 @@ export default function ReportWizardPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Back + header */}
       <div className="mb-4">
         <Link href="/report-assist" className="flex items-center gap-2 text-gray-400 hover:text-white text-sm transition-colors w-fit">
           <ArrowLeft size={16} /> Back to Report Assist
@@ -757,7 +1045,7 @@ export default function ReportWizardPage() {
 
       <div className="space-y-4">
 
-        {/* ── 1. Claim Details (read-only) ─────────────────────────────────── */}
+        {/* ── 1. Claim Details ─────────────────────────────────────────────── */}
         <Section title="1. Claim Details" {...sectionProps('claimDetails')}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
             {[
@@ -986,6 +1274,9 @@ export default function ReportWizardPage() {
           />
         </Section>
 
+        {/* ── Scope Validator ──────────────────────────────────────────────── */}
+        <ScopeValidatorPanel report={report} />
+
         {/* ── Generate & Upload ────────────────────────────────────────────── */}
         <div className="bg-gray-900 rounded-xl border border-gray-800 p-6">
           <h3 className="text-base font-semibold text-white mb-4">Finalise Report</h3>
@@ -1055,12 +1346,7 @@ export default function ReportWizardPage() {
           ) : (
             <div>
               {history.map(url => (
-                <ReportHistoryItem
-                  key={url}
-                  url={url}
-                  jobUuid={report.jobUuid}
-                  jobNumber={report.jobNumber}
-                />
+                <ReportHistoryItem key={url} url={url} jobUuid={report.jobUuid} jobNumber={report.jobNumber} />
               ))}
             </div>
           )}
