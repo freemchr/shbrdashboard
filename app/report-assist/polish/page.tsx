@@ -49,6 +49,7 @@ interface ScoreResult {
   criteria: ScoreCriterion[];
   fixes: string[];
   summary: string;
+  cantWarrantFlag?: boolean;
 }
 
 interface ScopeLineItem {
@@ -100,6 +101,33 @@ const ISSUE_TYPE_LABELS: Record<string, string> = {
   rate_concern: 'Rate Concern',
   description_poor: 'Poor Description',
 };
+
+// ─── Can't Warrant Callout ────────────────────────────────────────────────────
+function CantWarrantCallout() {
+  return (
+    <div className="mb-4 flex items-start gap-3 bg-red-950/60 border-2 border-red-600/80 rounded-xl px-5 py-4 shadow-lg shadow-red-950/40">
+      <div className="flex-shrink-0 mt-0.5">
+        <AlertTriangle size={22} className="text-red-400" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-red-300 font-bold text-sm uppercase tracking-wide mb-1">
+          ⛔ CRITICAL: &quot;Can&apos;t Warrant Repairs&quot; Flag Detected
+        </p>
+        <p className="text-red-200/90 text-sm leading-relaxed">
+          This report contains &ldquo;Can&apos;t Warrant Repairs&rdquo; language without adequate justification.
+          <strong className="text-red-100"> Suncorp requires a full explanation of why repairs cannot be warranted AND evidence that alternatives were explored.</strong>
+        </p>
+        <p className="text-red-300/80 text-xs mt-2 leading-relaxed">
+          This report will be <strong>rejected</strong> by Suncorp without adequate justification. Please revise to include: (1) specific reasons why repairs cannot be warranted, (2) evidence of alternatives considered, and (3) a clear recommendation with supporting rationale.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="text-xs bg-red-900/60 border border-red-700/60 text-red-300 px-3 py-1 rounded-full font-medium">25 point penalty applied</span>
+          <span className="text-xs bg-red-900/60 border border-red-700/60 text-red-300 px-3 py-1 rounded-full font-medium">Suncorp KPI breach risk</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Score Panel Component ────────────────────────────────────────────────────
 function ScorePanel({ result }: { result: ScoreResult }) {
@@ -853,6 +881,7 @@ export default function ReportPolisherPage() {
             </div>
           )}
 
+          {scoreResult && step === 'upload' && scoreResult.cantWarrantFlag && <CantWarrantCallout />}
           {scoreResult && step === 'upload' && <ScorePanel result={scoreResult} />}
           {scoreError && step === 'upload' && (
             <div className="flex items-center gap-2 text-red-400 text-sm bg-red-950/30 border border-red-800/40 rounded-xl px-4 py-3">
@@ -964,6 +993,7 @@ export default function ReportPolisherPage() {
           </div>
 
           {/* Quality Score panel */}
+          {scoreResult && scoreResult.cantWarrantFlag && <CantWarrantCallout />}
           {scoreResult && <ScorePanel result={scoreResult} />}
           {scoreError && (
             <div className="flex items-center gap-2 text-red-400 text-sm bg-red-950/30 border border-red-800/40 rounded-xl px-4 py-3">

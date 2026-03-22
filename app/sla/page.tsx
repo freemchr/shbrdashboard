@@ -14,7 +14,31 @@ import {
   ChevronDown,
   ChevronsUpDown,
   ShieldAlert,
+  CalendarX,
 } from 'lucide-react';
+
+// ── Schedule Types ──────────────────────────────────────────────────────────
+interface ScheduleJobEntry {
+  id: string;
+  jobNumber: string;
+  address: string;
+  status: string;
+  assignee: string;
+  region: string;
+  daysSinceCreated: number;
+  businessDaysSinceAllocated: number;
+  allocatedDate: string;
+  startDate: string | null;
+  primeUrl: string;
+  missing: boolean;
+}
+
+interface SchedulesResponse {
+  total: number;
+  missing: ScheduleJobEntry[];
+  atRisk: ScheduleJobEntry[];
+  generatedAt: string;
+}
 
 interface SlaBreachJob {
   id: string;
@@ -90,6 +114,191 @@ function SortTh({
         )}
       </span>
     </th>
+  );
+}
+
+// ── Missing Schedules Section ────────────────────────────────────────────────
+function MissingSchedulesSection() {
+  const [data, setData] = useState<SchedulesResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/prime/jobs/schedules')
+      .then(r => r.ok ? r.json() : r.json().then((d: { error?: string }) => Promise.reject(d.error ?? 'Failed')))
+      .then(setData)
+      .catch(e => setError(String(e)))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return (
+    <div className="mt-6 bg-gray-900 rounded-xl border border-gray-800 p-6">
+      <div className="flex items-center gap-3 mb-4">
+        <CalendarX size={18} className="text-orange-400" />
+        <span className="text-sm font-semibold text-white">Missing Build Schedules — Suncorp KPI</span>
+      </div>
+      <div className="h-16 bg-gray-800 animate-pulse rounded-lg" />
+    </div>
+  );
+
+  if (error) return (
+    <div className="mt-6 bg-gray-900 rounded-xl border border-gray-800 p-4">
+      <p className="text-xs text-red-400">Failed to load schedule data: {error}</p>
+    </div>
+  );
+
+  const missingCount = data?.missing?.length ?? 0;
+  const atRiskCount = data?.atRisk?.length ?? 0;
+
+  return (
+    <div className="mt-6 bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+      {/* Header / toggle */}
+      <button
+        onClick={() => setExpanded(e => !e)}
+        className="w-full flex items-center gap-3 px-5 py-4 border-b border-gray-800 hover:bg-gray-800/40 transition-colors text-left"
+      >
+        <CalendarX size={18} className={missingCount > 0 ? 'text-orange-400' : 'text-gray-500'} />
+        <div className="flex-1">
+          <h2 className="text-sm font-semibold text-white">Missing Build Schedules — Suncorp KPI</h2>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Jobs in repair/build phase with no schedule submitted &gt;2 business days after allocation
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {missingCount > 0 && (
+            <span className="text-sm font-bold text-orange-400 bg-orange-500/10 border border-orange-500/30 px-3 py-1 rounded-full">
+              {missingCount} missing
+            </span>
+          )}
+          {atRiskCount > 0 && (
+            <span className="text-xs text-yellow-400 bg-yellow-500/10 border border-yellow-500/30 px-2 py-0.5 rounded-full">
+              {atRiskCount} at risk
+            </span>
+          )}
+          {missingCount === 0 && atRiskCount === 0 && (
+            <span className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">All clear ✓</span>
+          )}
+          {expanded ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
+        </div>
+      </button>
+
+      {expanded && (
+        <div>
+          {missingCount === 0 && atRiskCount === 0 ? (
+            <div className="py-12 text-center">
+              <div className="text-3xl mb-2">✅</div>
+              <p className="text-gray-300 font-medium text-sm">No missing schedules</p>
+              <p className="text-gray-500 text-xs mt-1">All repair-phase jobs have schedules submitted</p>
+            </div>
+          ) : (
+            <div>
+              {missingCount > 0 && (
+                <div>
+                  <div className="px-5 py-2 bg-orange-950/20 border-b border-orange-900/30">
+                    <span className="text-xs font-semibold text-orange-400 uppercase tracking-wide">⚠ Missing Schedules ({missingCount})</span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-800">
+                          <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium">Job #</th>
+                          <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium">Address</th>
+                          <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium">Assignee</th>
+                          <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium">Status</th>
+                          <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium">Days Since Allocated</th>
+                          <th className="py-2 px-3"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data!.missing.map(job => (
+                          <tr key={job.id} className="border-b border-orange-900/20 bg-orange-950/5 hover:brightness-110 transition-colors">
+                            <td className="py-2 px-3 font-mono text-xs text-orange-400 whitespace-nowrap">
+                              {job.primeUrl ? (
+                                <a href={job.primeUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-orange-300">
+                                  {job.jobNumber}
+                                </a>
+                              ) : job.jobNumber}
+                            </td>
+                            <td className="py-2 px-3 text-gray-300 text-xs max-w-[160px] truncate">{job.address}</td>
+                            <td className="py-2 px-3 text-xs text-gray-400 whitespace-nowrap">{job.assignee}</td>
+                            <td className="py-2 px-3 text-xs text-gray-400 max-w-[120px] truncate">{job.status}</td>
+                            <td className="py-2 px-3 text-xs font-mono font-bold text-orange-400 whitespace-nowrap">
+                              {job.businessDaysSinceAllocated}d (bus.)
+                            </td>
+                            <td className="py-2 px-3">
+                              {job.primeUrl && (
+                                <a href={job.primeUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-orange-400">
+                                  <ExternalLink size={14} />
+                                </a>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {atRiskCount > 0 && (
+                <div>
+                  <div className="px-5 py-2 bg-yellow-950/10 border-b border-yellow-900/20 border-t border-gray-800">
+                    <span className="text-xs font-semibold text-yellow-400 uppercase tracking-wide">At Risk — Due Soon ({atRiskCount})</span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-800">
+                          <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium">Job #</th>
+                          <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium">Address</th>
+                          <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium">Assignee</th>
+                          <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium">Status</th>
+                          <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium">Days Since Allocated</th>
+                          <th className="py-2 px-3"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data!.atRisk.map(job => (
+                          <tr key={job.id} className="border-b border-yellow-900/10 bg-yellow-950/5 hover:brightness-110 transition-colors">
+                            <td className="py-2 px-3 font-mono text-xs text-yellow-400 whitespace-nowrap">
+                              {job.primeUrl ? (
+                                <a href={job.primeUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-yellow-300">
+                                  {job.jobNumber}
+                                </a>
+                              ) : job.jobNumber}
+                            </td>
+                            <td className="py-2 px-3 text-gray-300 text-xs max-w-[160px] truncate">{job.address}</td>
+                            <td className="py-2 px-3 text-xs text-gray-400 whitespace-nowrap">{job.assignee}</td>
+                            <td className="py-2 px-3 text-xs text-gray-400 max-w-[120px] truncate">{job.status}</td>
+                            <td className="py-2 px-3 text-xs font-mono font-bold text-yellow-400 whitespace-nowrap">
+                              {job.businessDaysSinceAllocated}d (bus.)
+                            </td>
+                            <td className="py-2 px-3">
+                              {job.primeUrl && (
+                                <a href={job.primeUrl} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-yellow-400">
+                                  <ExternalLink size={14} />
+                                </a>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {data?.generatedAt && (
+                <div className="px-5 py-2 border-t border-gray-800">
+                  <span className="text-xs text-gray-600">Updated {formatDate(data.generatedAt)}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -445,6 +654,9 @@ export default function SlaPage() {
           </div>
         )}
       </div>
+
+      {/* Missing Build Schedules — Suncorp KPI */}
+      <MissingSchedulesSection />
     </div>
   );
 }

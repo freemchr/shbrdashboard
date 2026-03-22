@@ -28,6 +28,8 @@ import {
   ShieldCheck,
   HelpCircle,
   GitCommit,
+  Droplets,
+  UserCheck,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -50,6 +52,8 @@ const reportsSubItems = [
   { href: '/sla', label: 'SLA Tracker', icon: AlertTriangle, alert: true },
   { href: '/report-assist', label: 'Report Assist', icon: FileEdit, alert: true },
   { href: '/report-assist/polish', label: 'Report Polisher', icon: Sparkles },
+  { href: '/eol', label: 'EOL Portfolio', icon: Droplets },
+  { href: '/vulnerable', label: 'Vulnerable Customers', icon: UserCheck, alert: true },
 ];
 
 const estimatorsSubItems = [
@@ -92,7 +96,7 @@ export function Sidebar() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const isInReports = pathname.startsWith('/reports') || pathname.startsWith('/report-assist') || pathname.startsWith('/sla');
+  const isInReports = pathname.startsWith('/reports') || pathname.startsWith('/report-assist') || pathname.startsWith('/sla') || pathname.startsWith('/eol') || pathname.startsWith('/vulnerable');
   const [reportsOpen, setReportsOpen] = useState(isInReports);
 
   const isInEstimators = pathname.startsWith('/estimators') || pathname.startsWith('/timeline');
@@ -199,7 +203,7 @@ export function Sidebar() {
               />
             </button>
 
-            <div className={`overflow-hidden transition-all duration-200 ${reportsOpen ? 'max-h-56 opacity-100' : 'max-h-0 opacity-0'}`}>
+            <div className={`overflow-hidden transition-all duration-200 ${reportsOpen ? 'max-h-72 opacity-100' : 'max-h-0 opacity-0'}`}>
               <div className="mt-0.5 space-y-0.5">
                 {reportsSubItems.map((item) => (
                   <Link

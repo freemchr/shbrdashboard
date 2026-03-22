@@ -527,23 +527,26 @@ function CommandCentreInner() {
   const [counts, setCounts] = useState<StatusCount[]>([]);
   const [weather, setWeather] = useState<WeatherForecastResponse | null>(null);
   const [sla, setSla] = useState<SlaSummary | null>(null);
+  const [vulnerableCount, setVulnerableCount] = useState<number | null>(null);
   const [loadingKpis, setLoadingKpis] = useState(true);
   const [loadingTrends, setLoadingTrends] = useState(true);
   const [loadingCounts, setLoadingCounts] = useState(true);
   const [loadingWeather, setLoadingWeather] = useState(true);
   const [loadingSla, setLoadingSla] = useState(true);
+  const [loadingVulnerable, setLoadingVulnerable] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [kpiRes, trendsRes, countsRes, weatherRes, slaRes] = await Promise.all([
+      const [kpiRes, trendsRes, countsRes, weatherRes, slaRes, vulRes] = await Promise.all([
         fetch('/api/prime/jobs/kpis'),
         fetch('/api/prime/jobs/trends'),
         fetch('/api/prime/jobs/counts-by-status'),
         fetch('/api/weather/forecast'),
         fetch('/api/prime/jobs/sla'),
+        fetch('/api/prime/jobs/vulnerable'),
       ]);
 
       if (kpiRes.ok) setKpis(await kpiRes.json());
@@ -557,6 +560,10 @@ function CommandCentreInner() {
         const slaData = await slaRes.json();
         setSla(slaData.summary ?? null);
       }
+      if (vulRes.ok) {
+        const vulData = await vulRes.json();
+        setVulnerableCount(vulData.total ?? 0);
+      }
     } catch {
       // silently fail — will retry on next cycle
     } finally {
@@ -565,6 +572,7 @@ function CommandCentreInner() {
       setLoadingCounts(false);
       setLoadingSla(false);
       setLoadingWeather(false);
+      setLoadingVulnerable(false);
       setLastRefresh(new Date());
     }
   }, []);
@@ -719,6 +727,25 @@ function CommandCentreInner() {
             <AlertTriangle size={14} className="text-gray-700 flex-shrink-0" />
           </div>
         </Link>
+
+        {/* Vulnerable Customers alert card */}
+        {!loadingVulnerable && vulnerableCount !== null && vulnerableCount > 0 && (
+          <Link href="/vulnerable" className="block">
+            <div className="rounded-2xl border-2 border-red-600/70 px-5 py-4 flex items-center gap-4 bg-red-950/40 shadow-lg shadow-red-950/40 hover:brightness-110 transition-all">
+              <AlertTriangle size={28} className="text-red-400 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-red-300 uppercase tracking-wide mb-0.5">Vulnerable Customers</p>
+                <p className="text-white font-bold text-sm">
+                  ⚠️ {vulnerableCount} job{vulnerableCount !== 1 ? 's' : ''} may involve vulnerable customers — confirm Suncorp has been notified
+                </p>
+              </div>
+              <span className="text-xs bg-red-600 text-white font-bold px-3 py-1.5 rounded-lg flex-shrink-0">Review →</span>
+            </div>
+          </Link>
+        )}
+        {loadingVulnerable && (
+          <div className="h-16 bg-gray-900 border border-gray-800 rounded-2xl animate-pulse" />
+        )}
 
         {/* Big KPI row */}
         <div className="grid grid-cols-5 gap-4">
