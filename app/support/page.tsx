@@ -136,22 +136,29 @@ function SupportForm() {
   const [pageUrl,        setPageUrl]        = useState('');
   const [bugDescription, setBugDescription] = useState('');
   const [bugExpected,    setBugExpected]    = useState('');
-  const [bugActual,      setBugActual]      = useState('');
+  const [bugGoal,        setBugGoal]        = useState('');
+  const [bugFrequency,   setBugFrequency]   = useState('');
   const [bugSeverity,    setBugSeverity]    = useState('');
+  const [bugNotes,       setBugNotes]       = useState('');
 
   // Feature fields
   const [featureSummary,  setFeatureSummary]  = useState('');
-  const [featureDetail,   setFeatureDetail]   = useState('');
-  const [featurePage,     setFeaturePage]     = useState('');
+  const [featureGoal,     setFeatureGoal]     = useState('');
+  const [featureLocation, setFeatureLocation] = useState('');
+  const [featureVisual,   setFeatureVisual]   = useState('');
+  const [featureData,     setFeatureData]     = useState('');
   const [featureWho,      setFeatureWho]      = useState('');
   const [featurePriority, setFeaturePriority] = useState('');
 
   // Automation fields
   const [autoDescription, setAutoDescription] = useState('');
-  const [autoTrigger,     setAutoTrigger]     = useState('');
-  const [autoEmailTo,     setAutoEmailTo]     = useState('');
+  const [autoTriggerType, setAutoTriggerType] = useState('');
+  const [autoTriggerDetail, setAutoTriggerDetail] = useState('');
+  const [autoDataSource,  setAutoDataSource]  = useState('');
   const [autoOutput,      setAutoOutput]      = useState('');
+  const [autoRecipients,  setAutoRecipients]  = useState('');
   const [autoFrequency,   setAutoFrequency]   = useState('');
+  const [autoFormat,      setAutoFormat]      = useState('');
   const [autoNotes,       setAutoNotes]       = useState('');
 
   useEffect(() => {
@@ -165,9 +172,16 @@ function SupportForm() {
   }, []);
 
   const resetForm = () => {
-    setPageUrl(''); setBugDescription(''); setBugExpected(''); setBugActual(''); setBugSeverity('');
-    setFeatureSummary(''); setFeatureDetail(''); setFeaturePage(''); setFeatureWho(''); setFeaturePriority('');
-    setAutoDescription(''); setAutoTrigger(''); setAutoEmailTo(''); setAutoOutput(''); setAutoFrequency(''); setAutoNotes('');
+    // Bug
+    setPageUrl(''); setBugDescription(''); setBugExpected('');
+    setBugGoal(''); setBugFrequency(''); setBugSeverity(''); setBugNotes('');
+    // Feature
+    setFeatureSummary(''); setFeatureGoal(''); setFeatureLocation('');
+    setFeatureVisual(''); setFeatureData(''); setFeatureWho(''); setFeaturePriority('');
+    // Automation
+    setAutoDescription(''); setAutoTriggerType(''); setAutoTriggerDetail('');
+    setAutoDataSource(''); setAutoOutput(''); setAutoRecipients('');
+    setAutoFrequency(''); setAutoFormat(''); setAutoNotes('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -176,9 +190,13 @@ function SupportForm() {
 
     const payload: Record<string, string> = {
       type,
-      pageUrl, bugDescription, bugExpected, bugActual, bugSeverity,
-      featureSummary, featureDetail, featurePage, featureWho, featurePriority,
-      autoDescription, autoTrigger, autoEmailTo, autoOutput, autoFrequency, autoNotes,
+      // Bug
+      pageUrl, bugDescription, bugExpected, bugGoal, bugFrequency, bugSeverity, bugNotes,
+      // Feature
+      featureSummary, featureGoal, featureLocation, featureVisual, featureData, featureWho, featurePriority,
+      // Automation
+      autoDescription, autoTriggerType, autoTriggerDetail, autoDataSource,
+      autoOutput, autoRecipients, autoFrequency, autoFormat, autoNotes,
     };
 
     try {
@@ -264,55 +282,77 @@ function SupportForm() {
       {type === 'bug' && (
         <div className="space-y-4">
           <div>
-            <Label>Page URL or section with the problem</Label>
+            <Label>Page or section</Label>
             <TextInput
               value={pageUrl}
               onChange={setPageUrl}
-              placeholder="e.g. https://shbr-dashboard.vercel.app/estimators or 'Estimators page'"
+              placeholder="Which page or section of the dashboard is this about? e.g. SLA Tracker, Team page, Reports"
             />
           </div>
           <div>
-            <Label required>What is the problem?</Label>
+            <Label required>What is not working?</Label>
             <TextArea
               value={bugDescription}
               onChange={setBugDescription}
-              placeholder="Describe the issue as clearly as you can — what happened, when, and how often."
-              rows={4}
+              placeholder="Describe what is broken or wrong. Be specific — what did you click, what happened?"
+              rows={5}
               required
+            />
+          </div>
+          <div>
+            <Label>What should it do instead?</Label>
+            <TextArea
+              value={bugExpected}
+              onChange={setBugExpected}
+              placeholder="What did you expect to happen?"
+              rows={3}
+            />
+          </div>
+          <div>
+            <Label>What are you trying to achieve?</Label>
+            <TextArea
+              value={bugGoal}
+              onChange={setBugGoal}
+              placeholder="What is the end goal? What business problem are you solving?"
+              rows={3}
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <Label>What did you expect to happen?</Label>
-              <TextArea
-                value={bugExpected}
-                onChange={setBugExpected}
-                placeholder="What should it have done?"
-                rows={3}
+              <Label>How often does this happen?</Label>
+              <Select
+                value={bugFrequency}
+                onChange={setBugFrequency}
+                options={[
+                  { value: 'always',      label: 'Always' },
+                  { value: 'most-times',  label: 'Most of the time' },
+                  { value: 'sometimes',   label: 'Sometimes' },
+                  { value: 'once',        label: 'Only happened once' },
+                ]}
               />
             </div>
             <div>
-              <Label>What actually happened?</Label>
-              <TextArea
-                value={bugActual}
-                onChange={setBugActual}
-                placeholder="What did it do instead?"
-                rows={3}
+              <Label required>Severity</Label>
+              <Select
+                value={bugSeverity}
+                onChange={setBugSeverity}
+                required
+                options={[
+                  { value: 'low',      label: '🟢 Low — minor cosmetic issue' },
+                  { value: 'medium',   label: '🟡 Medium — affects my work but I can continue' },
+                  { value: 'high',     label: '🔴 High — a key feature is broken' },
+                  { value: 'blocking', label: '🚨 Blocking — I cannot use the platform' },
+                ]}
               />
             </div>
           </div>
-          <div className="max-w-xs">
-            <Label required>Severity</Label>
-            <Select
-              value={bugSeverity}
-              onChange={setBugSeverity}
-              required
-              options={[
-                { value: 'low',      label: '🟢 Low — minor cosmetic issue' },
-                { value: 'medium',   label: '🟡 Medium — affects my work but I can continue' },
-                { value: 'high',     label: '🔴 High — a key feature is broken' },
-                { value: 'blocking', label: '🚨 Blocking — I cannot use the platform' },
-              ]}
+          <div>
+            <Label>Screenshots or additional context</Label>
+            <TextArea
+              value={bugNotes}
+              onChange={setBugNotes}
+              placeholder="Any other details, error messages, or context that would help us understand the issue"
+              rows={3}
             />
           </div>
         </div>
@@ -322,33 +362,51 @@ function SupportForm() {
       {type === 'feature' && (
         <div className="space-y-4">
           <div>
-            <Label required>Summarise the feature in one line</Label>
+            <Label required>Feature summary</Label>
             <TextInput
               value={featureSummary}
               onChange={setFeatureSummary}
-              placeholder="e.g. 'Add a filter by insurer on the Bottlenecks page'"
+              placeholder="Summarise the feature in one sentence"
               required
             />
           </div>
           <div>
-            <Label required>What should it do? How should it work?</Label>
+            <Label required>What are you trying to achieve?</Label>
             <TextArea
-              value={featureDetail}
-              onChange={setFeatureDetail}
-              placeholder="Describe the feature in as much detail as you can — what it shows, how you interact with it, what problem it solves."
+              value={featureGoal}
+              onChange={setFeatureGoal}
+              placeholder="What problem does this solve? What business outcome do you need?"
               rows={5}
               required
             />
           </div>
+          <div>
+            <Label>Where do you want this?</Label>
+            <TextInput
+              value={featureLocation}
+              onChange={setFeatureLocation}
+              placeholder="Which page or section should this appear? e.g. Command Centre, SLA page, Team page, new page"
+            />
+          </div>
+          <div>
+            <Label>How should it look?</Label>
+            <TextArea
+              value={featureVisual}
+              onChange={setFeatureVisual}
+              placeholder="Describe visually how you want it to appear. e.g. A card at the top, a new column in the table, a button that opens a panel"
+              rows={3}
+            />
+          </div>
+          <div>
+            <Label>What data should it show or use?</Label>
+            <TextArea
+              value={featureData}
+              onChange={setFeatureData}
+              placeholder="What information should this feature display or work with? Where does that data come from?"
+              rows={3}
+            />
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label>Which page or section is it for?</Label>
-              <TextInput
-                value={featurePage}
-                onChange={setFeaturePage}
-                placeholder="e.g. Estimators, Dashboard, Reports…"
-              />
-            </div>
             <div>
               <Label>Who would use this?</Label>
               <TextInput
@@ -357,19 +415,19 @@ function SupportForm() {
                 placeholder="e.g. Estimators, managers, all staff…"
               />
             </div>
-          </div>
-          <div className="max-w-xs">
-            <Label>Priority</Label>
-            <Select
-              value={featurePriority}
-              onChange={setFeaturePriority}
-              options={[
-                { value: 'nice-to-have', label: '💡 Nice to have' },
-                { value: 'useful',       label: '👍 Useful — would use it regularly' },
-                { value: 'important',    label: '⭐ Important — would save significant time' },
-                { value: 'critical',     label: '🔥 Critical — needed for business operations' },
-              ]}
-            />
+            <div>
+              <Label>Priority</Label>
+              <Select
+                value={featurePriority}
+                onChange={setFeaturePriority}
+                options={[
+                  { value: 'nice-to-have', label: '💡 Nice to have' },
+                  { value: 'useful',       label: '👍 Would improve my workflow' },
+                  { value: 'important',    label: '⭐ Important' },
+                  { value: 'critical',     label: '🔥 Critical' },
+                ]}
+              />
+            </div>
           </div>
         </div>
       )}
@@ -378,58 +436,93 @@ function SupportForm() {
       {type === 'automation' && (
         <div className="space-y-4">
           <div>
-            <Label required>What should be automated?</Label>
+            <Label required>What do you want automated?</Label>
             <TextArea
               value={autoDescription}
               onChange={setAutoDescription}
-              placeholder="Describe what you want automated — e.g. 'A daily email report showing job counts by status, compared to yesterday'"
-              rows={4}
+              placeholder="Describe clearly what task or process you want automated. What currently happens manually?"
+              rows={5}
               required
             />
           </div>
           <div>
-            <Label>What data or trigger is needed?</Label>
+            <Label>What triggers it?</Label>
+            <Select
+              value={autoTriggerType}
+              onChange={setAutoTriggerType}
+              options={[
+                { value: 'schedule', label: 'On a schedule (daily/weekly/monthly)' },
+                { value: 'event',    label: 'When something happens (event-based)' },
+                { value: 'manual',   label: 'On demand (I trigger it manually)' },
+              ]}
+            />
+          </div>
+          {autoTriggerType && (
+            <div>
+              <Label>Describe the trigger in detail</Label>
+              <TextInput
+                value={autoTriggerDetail}
+                onChange={setAutoTriggerDetail}
+                placeholder="e.g. Every Monday at 8am / When a job status changes to X"
+              />
+            </div>
+          )}
+          <div>
+            <Label>Where should it get the data from?</Label>
             <TextArea
-              value={autoTrigger}
-              onChange={setAutoTrigger}
-              placeholder="e.g. 'Pulls from Prime every morning', 'Triggers when a job status changes', 'Date range: 1 July 2025 to today'…"
+              value={autoDataSource}
+              onChange={setAutoDataSource}
+              placeholder="What system or page has the data? e.g. Prime, the dashboard, a report"
               rows={3}
             />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label>Who should it email / notify?</Label>
-              <TextArea
-                value={autoEmailTo}
-                onChange={setAutoEmailTo}
-                placeholder="e.g. stella@shbr.com.au, the whole team, just managers…"
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label>What should the output look like?</Label>
-              <TextArea
-                value={autoOutput}
-                onChange={setAutoOutput}
-                placeholder="e.g. HTML email with a table, PDF attachment, Telegram message, dashboard notification…"
-                rows={3}
-              />
-            </div>
-          </div>
           <div>
-            <Label>How often should it run?</Label>
-            <TextInput
-              value={autoFrequency}
-              onChange={setAutoFrequency}
-              placeholder="e.g. Daily at 8am AEST, every Monday morning, once a month…"
+            <Label>What should it produce?</Label>
+            <TextArea
+              value={autoOutput}
+              onChange={setAutoOutput}
+              placeholder="What is the output? e.g. An email with a summary, a report PDF, a Telegram alert, an update in the dashboard"
+              rows={3}
             />
           </div>
           <div>
-            <Label>Anything else to know?</Label>
+            <Label>Who should receive it?</Label>
+            <TextArea
+              value={autoRecipients}
+              onChange={setAutoRecipients}
+              placeholder="Email addresses or names of who should get the output"
+              rows={2}
+            />
+          </div>
+          <div className="max-w-xs">
+            <Label>How often?</Label>
+            <Select
+              value={autoFrequency}
+              onChange={setAutoFrequency}
+              options={[
+                { value: 'daily',       label: 'Daily' },
+                { value: 'weekly',      label: 'Weekly' },
+                { value: 'monthly',     label: 'Monthly' },
+                { value: 'triggered',   label: 'When triggered' },
+                { value: 'other',       label: 'Other' },
+              ]}
+            />
+          </div>
+          <div>
+            <Label>Visual / format requirements</Label>
+            <TextArea
+              value={autoFormat}
+              onChange={setAutoFormat}
+              placeholder="How should the output look? e.g. White background, navy headings, include a table with columns X Y Z"
+              rows={3}
+            />
+          </div>
+          <div>
+            <Label>Additional notes</Label>
             <TextArea
               value={autoNotes}
               onChange={setAutoNotes}
-              placeholder="Any other context, examples of what you'd expect to see, or constraints…"
+              placeholder="Anything else that would help us build this correctly"
               rows={3}
             />
           </div>
@@ -472,8 +565,8 @@ export default function SupportPage() {
         {/* Header */}
         <div className="flex items-start justify-between flex-wrap gap-3">
           <PageHeader
-            title="Support & Platform Guide"
-            subtitle="What each section does, how to get help, and how the platform works"
+            title="Help & Support"
+            subtitle="Dashboard guide, frequently asked questions, and how to lodge a request"
           />
           <span className="text-xs text-gray-600 pt-1">Last updated: {LAST_UPDATED}</span>
         </div>
@@ -499,7 +592,7 @@ export default function SupportPage() {
         <div>
           <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-4 flex items-center gap-2">
             <Info size={14} className="text-gray-500" />
-            Dashboard Sections
+            Dashboard Guide — What Each Section Does
           </h2>
           <div className="space-y-3">
             {sections.map((s) => (
@@ -520,15 +613,43 @@ export default function SupportPage() {
           </div>
         </div>
 
+        {/* FAQ Section */}
+        <div>
+          <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+            <Info size={14} className="text-gray-500" />
+            Frequently Asked Questions
+          </h2>
+          <div className="space-y-2">
+            {[
+              { q: "How often does the data refresh?", a: "Most data refreshes every 30 minutes to 4 hours depending on the section. The timestamp at the top of each page shows when it was last updated." },
+              { q: "Why is a job not showing up?", a: "The dashboard only shows open jobs. If a job has been closed or moved to a completed status in Prime, it will no longer appear. Check Prime directly for closed jobs." },
+              { q: "Can I export data?", a: "Yes — most pages have an Export CSV button in the top right corner." },
+              { q: "Who do I contact if something is urgent?", a: "Lodge a request below and mark it as Blocking — Gizmo will be notified immediately." },
+              { q: "Why does a page show No data?", a: "This usually means there are no jobs matching that criteria right now (e.g. no vulnerable customer flags, no SLA breaches). It is a good sign!" },
+              { q: "Can I change what I see on a page?", a: "Most pages have filters — try the filter dropdowns at the top of the page. If you need a different view that does not exist yet, lodge a Feature Request below." },
+            ].map((item) => (
+              <details key={item.q} className="bg-[#111111] rounded-xl border border-gray-800 group">
+                <summary className="px-4 py-3 text-sm font-medium text-white cursor-pointer list-none flex justify-between items-center hover:text-red-400 transition-colors">
+                  {item.q}
+                  <ChevronDown size={14} className="text-gray-500 group-open:rotate-180 transition-transform flex-shrink-0 ml-3" />
+                </summary>
+                <div className="px-4 pb-4 text-sm text-gray-400 leading-relaxed border-t border-gray-800 pt-3">
+                  {item.a}
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+
         {/* Support form */}
         <div className="bg-[#111111] rounded-xl border border-gray-800 overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-800">
             <h2 className="text-sm font-semibold text-white flex items-center gap-2">
               <Mail size={15} className="text-gray-400" />
-              Issues, Requests &amp; Automations
+              Lodge a Request
             </h2>
             <p className="text-xs text-gray-500 mt-1">
-              Your request goes straight to Gizmo (AI) and Chris. Fill in as much detail as you can — the more context, the faster it gets done.
+              Bug report, feature request, or automation — tell us what you need. Your request goes straight to Gizmo and Chris. The more detail you give, the faster it gets done.
             </p>
           </div>
           <div className="p-5">

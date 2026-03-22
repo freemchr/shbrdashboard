@@ -19,8 +19,15 @@ function field(label: string, value: string | undefined) {
   if (!value?.trim()) return '';
   return `
     <tr>
-      <td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap; color:#555; font-size:13px; font-weight:600; width:180px;">${escHtml(label)}</td>
+      <td style="padding:6px 14px 6px 0; vertical-align:top; white-space:nowrap; color:#555; font-size:13px; font-weight:600; width:200px;">${escHtml(label)}</td>
       <td style="padding:6px 0; color:#111; font-size:13px;">${escHtml(value)}</td>
+    </tr>`;
+}
+
+function section(title: string) {
+  return `
+    <tr>
+      <td colspan="2" style="padding:16px 0 6px; font-size:11px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:0.08em; border-top:1px solid #eee;">${escHtml(title)}</td>
     </tr>`;
 }
 
@@ -31,29 +38,49 @@ function buildHtml(data: Record<string, string>, submitterName: string, submitte
   const label  = typeLabel[data.type]  ?? data.type;
   const now    = new Date().toLocaleString('en-AU', { timeZone: 'Australia/Sydney' });
 
+  // Friendly label for trigger type
+  const triggerTypeLabel: Record<string, string> = {
+    schedule: 'On a schedule',
+    event:    'Event-based',
+    manual:   'On demand (manual)',
+  };
+
   const bugFields = data.type === 'bug' ? `
-    ${field('Page / URL',       data.pageUrl)}
-    ${field('Problem',          data.bugDescription)}
-    ${field('Expected',         data.bugExpected)}
-    ${field('Actual',           data.bugActual)}
-    ${field('Severity',         data.bugSeverity)}
+    ${section('Bug Report')}
+    ${field('Section / Page',     data.pageUrl)}
+    ${field("What's not working", data.bugDescription)}
+    ${field('What should happen', data.bugExpected)}
+    ${field('Trying to achieve',  data.bugGoal)}
+    ${field('How often',          data.bugFrequency)}
+    ${field('Severity',           data.bugSeverity)}
+    ${field('Extra context',      data.bugNotes)}
   ` : '';
 
   const featureFields = data.type === 'feature' ? `
-    ${field('Summary',          data.featureSummary)}
-    ${field('What it should do',data.featureDetail)}
-    ${field('Page / Section',   data.featurePage)}
-    ${field('Who would use it', data.featureWho)}
-    ${field('Priority',         data.featurePriority)}
+    ${section('Feature Request')}
+    ${field('Summary',            data.featureSummary)}
+    ${field('Trying to achieve',  data.featureGoal)}
+    ${field('Where',              data.featureLocation)}
+    ${field('Visual / layout',    data.featureVisual)}
+    ${field('Data needed',        data.featureData)}
+    ${field('Who uses it',        data.featureWho)}
+    ${field('Priority',           data.featurePriority)}
   ` : '';
 
+  const triggerDisplay = data.autoTriggerType
+    ? `${triggerTypeLabel[data.autoTriggerType] ?? data.autoTriggerType}${data.autoTriggerDetail ? ` — ${data.autoTriggerDetail}` : ''}`
+    : data.autoTriggerDetail || '';
+
   const autoFields = data.type === 'automation' ? `
-    ${field('What to automate', data.autoDescription)}
-    ${field('Data / Trigger',   data.autoTrigger)}
-    ${field('Email recipients', data.autoEmailTo)}
-    ${field('Output / Format',  data.autoOutput)}
-    ${field('Frequency',        data.autoFrequency)}
-    ${field('Additional notes', data.autoNotes)}
+    ${section('Automation / Report Request')}
+    ${field('What to automate',   data.autoDescription)}
+    ${field('Trigger',            triggerDisplay)}
+    ${field('Data source',        data.autoDataSource)}
+    ${field('Output',             data.autoOutput)}
+    ${field('Recipients',         data.autoRecipients)}
+    ${field('Frequency',          data.autoFrequency)}
+    ${field('Format / visual',    data.autoFormat)}
+    ${field('Additional notes',   data.autoNotes)}
   ` : '';
 
   return `<!DOCTYPE html>
@@ -64,8 +91,8 @@ function buildHtml(data: Record<string, string>, submitterName: string, submitte
   <p style="color:#666; font-size:13px; margin-top:0;">Submitted via SHBR Insights · ${now} AEST</p>
   <hr style="border:none; border-top:1px solid #ddd; margin:16px 0;">
 
-  <table style="border-collapse:collapse; width:100%; max-width:600px;">
-    ${field('Submitted by',     `${submitterName} (${submitterEmail})`)}
+  <table style="border-collapse:collapse; width:100%; max-width:640px;">
+    ${field('Submitted by', `${submitterName} (${submitterEmail})`)}
     ${bugFields}
     ${featureFields}
     ${autoFields}
