@@ -86,6 +86,7 @@ function formatDateLabel(dateStr: string): string {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
+    timeZone: 'Australia/Sydney',
   });
 }
 

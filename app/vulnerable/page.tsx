@@ -177,7 +177,7 @@ export default function VulnerablePage() {
       )}
 
       {data.generatedAt && (
-        <p className="text-xs text-gray-600 mt-4">Data generated: {new Date(data.generatedAt).toLocaleString('en-AU')}</p>
+        <p className="text-xs text-gray-600 mt-4">Data generated: {new Date(data.generatedAt).toLocaleString('en-AU', { timeZone: 'Australia/Sydney' })}</p>
       )}
     </div>
   );

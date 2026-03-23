@@ -492,7 +492,7 @@ function LiveClock() {
     const tick = () => {
       const now = new Date();
       setTime(now.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true }));
-      setDate(now.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }));
+      setDate(now.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Australia/Sydney' }));
     };
     tick();
     const id = setInterval(tick, 1000);
