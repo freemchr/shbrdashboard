@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAllOpenJobs, getStatusNameMap } from '@/lib/prime-open-jobs';
 import { getCached, setCached } from '@/lib/blob-cache';
+import { primeGetAllPages } from '@/lib/prime-auth';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -65,13 +66,31 @@ function deriveInsurer(clientReference: string): string {
   return 'Other';
 }
 
+async function getUserMap(): Promise<Record<string, string>> {
+  try {
+    const users = await primeGetAllPages('/users?per_page=100') as {
+      id: string;
+      attributes?: { fullName?: string; status?: string };
+    }[];
+    return Object.fromEntries(
+      users.map(u => [u.id, u.attributes?.fullName || u.id])
+    );
+  } catch {
+    return {};
+  }
+}
+
 export async function GET() {
   try {
-    const cacheKey = 'ops-data-v2';
+    const cacheKey = 'ops-data-v3';
     const cached = await getCached<unknown>(cacheKey);
     if (cached) return NextResponse.json(cached);
 
-    const [jobs, statusNames] = await Promise.all([getAllOpenJobs(), getStatusNameMap()]);
+    const [jobs, statusNames, userMap] = await Promise.all([
+      getAllOpenJobs(),
+      getStatusNameMap(),
+      getUserMap(),
+    ]);
 
     const opsJobs: OpsJob[] = (jobs as RawJob[]).map(j => {
       const rawAddr = j.attributes?.address;
@@ -89,6 +108,10 @@ export async function GET() {
       const clientReference = j.attributes?.clientReference || '';
       const statusName = statusNames[j.attributes?.statusId || ''] || '—';
 
+      // Resolve assignee from assignedId → user name (falls back to updatedBy if not found)
+      const assignedId = (j.attributes as Record<string, string> | undefined)?.assignedId || '';
+      const assignee = (assignedId && userMap[assignedId]) || j.attributes?.updatedBy || '—';
+
       return {
         id: j.id,
         jobNumber: j.attributes?.jobNumber || j.id,
@@ -104,7 +127,7 @@ export async function GET() {
         createdBy: j.attributes?.createdBy || '',
         primeUrl: j.attributes?.primeUrl || '',
         postcode: extractPostcode(address, rawAddr),
-        assignee: j.attributes?.createdBy || '—',
+        assignee,
         insurer: deriveInsurer(clientReference),
       };
     });
