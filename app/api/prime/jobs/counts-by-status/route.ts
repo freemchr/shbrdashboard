@@ -7,7 +7,7 @@ export const maxDuration = 60;
 
 export async function GET() {
   try {
-    const cacheKey = 'counts-by-status-v4';
+    const cacheKey = 'counts-by-status-v5';
     const cached = await getCached<unknown>(cacheKey);
     if (cached) return NextResponse.json(cached);
 

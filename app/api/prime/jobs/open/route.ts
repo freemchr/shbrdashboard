@@ -7,7 +7,7 @@ export const maxDuration = 60;
 
 export async function GET() {
   try {
-    const cacheKey = 'open-jobs-flat-v2';
+    const cacheKey = 'open-jobs-flat-v3';
     const cached = await getCached<unknown>(cacheKey);
     if (cached) return NextResponse.json(cached);
 

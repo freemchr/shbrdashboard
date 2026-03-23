@@ -18,6 +18,7 @@ import {
   Maximize2,
   Minimize2,
   ShieldAlert,
+  CalendarClock,
 } from 'lucide-react';
 import Link from 'next/link';
 import type { WeatherForecastResponse, CityForecast } from '@/app/api/weather/forecast/route';
@@ -46,6 +47,12 @@ interface SlaSummary {
   critical: number;
   warning: number;
   atRisk: number;
+}
+
+interface AppointmentCounts {
+  appointmentRequired: number;
+  apptTBC: number;
+  total: number;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -481,6 +488,58 @@ function WeatherRow({ cities }: { cities: CityForecast[] }) {
 }
 
 // ─────────────────────────────────────────────────────────────────
+// Appointments Panel
+// ─────────────────────────────────────────────────────────────────
+
+function AppointmentsPanel({
+  data,
+  loading,
+}: {
+  data: AppointmentCounts | null;
+  loading: boolean;
+}) {
+  return (
+    <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
+      <div className="flex items-center gap-2 mb-5">
+        <CalendarClock size={16} className="text-amber-400" />
+        <p className="text-sm font-medium text-gray-400 uppercase tracking-wide">Appointments</p>
+      </div>
+      {loading ? (
+        <div className="grid grid-cols-2 gap-4">
+          {[...Array(2)].map((_, i) => (
+            <div key={i} className="h-20 bg-gray-800 animate-pulse rounded-xl" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-4">
+          {/* Appointment Required */}
+          <div className="bg-amber-950/30 border border-amber-700/40 rounded-xl px-4 py-4 flex flex-col gap-1">
+            <span className="text-xs text-amber-300/70 uppercase tracking-wide font-medium">Appointment Required</span>
+            <span className="text-4xl font-bold tabular-nums text-amber-300">
+              {data?.appointmentRequired ?? '—'}
+            </span>
+            <span className="text-xs text-amber-400/50">Awaiting booking</span>
+          </div>
+          {/* Appt TBC */}
+          <div className="bg-yellow-950/30 border border-yellow-700/40 rounded-xl px-4 py-4 flex flex-col gap-1">
+            <span className="text-xs text-yellow-300/70 uppercase tracking-wide font-medium">Appt TBC</span>
+            <span className="text-4xl font-bold tabular-nums text-yellow-300">
+              {data?.apptTBC ?? '—'}
+            </span>
+            <span className="text-xs text-yellow-400/50">Date / time pending</span>
+          </div>
+        </div>
+      )}
+      {!loading && data && data.total > 0 && (
+        <p className="text-xs text-gray-600 mt-3 text-right">
+          {data.total} job{data.total !== 1 ? 's' : ''} need appointment action
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────
 // Clock
 // ─────────────────────────────────────────────────────────────────
 
@@ -528,25 +587,28 @@ function CommandCentreInner() {
   const [weather, setWeather] = useState<WeatherForecastResponse | null>(null);
   const [sla, setSla] = useState<SlaSummary | null>(null);
   const [vulnerableCount, setVulnerableCount] = useState<number | null>(null);
+  const [appointments, setAppointments] = useState<AppointmentCounts | null>(null);
   const [loadingKpis, setLoadingKpis] = useState(true);
   const [loadingTrends, setLoadingTrends] = useState(true);
   const [loadingCounts, setLoadingCounts] = useState(true);
   const [loadingWeather, setLoadingWeather] = useState(true);
   const [loadingSla, setLoadingSla] = useState(true);
   const [loadingVulnerable, setLoadingVulnerable] = useState(true);
+  const [loadingAppointments, setLoadingAppointments] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [kpiRes, trendsRes, countsRes, weatherRes, slaRes, vulRes] = await Promise.all([
+      const [kpiRes, trendsRes, countsRes, weatherRes, slaRes, vulRes, apptRes] = await Promise.all([
         fetch('/api/prime/jobs/kpis'),
         fetch('/api/prime/jobs/trends'),
         fetch('/api/prime/jobs/counts-by-status'),
         fetch('/api/weather/forecast'),
         fetch('/api/prime/jobs/sla'),
         fetch('/api/prime/jobs/vulnerable'),
+        fetch('/api/prime/jobs/appointments'),
       ]);
 
       if (kpiRes.ok) setKpis(await kpiRes.json());
@@ -564,6 +626,7 @@ function CommandCentreInner() {
         const vulData = await vulRes.json();
         setVulnerableCount(vulData.total ?? 0);
       }
+      if (apptRes.ok) setAppointments(await apptRes.json());
     } catch {
       // silently fail — will retry on next cycle
     } finally {
@@ -573,6 +636,7 @@ function CommandCentreInner() {
       setLoadingSla(false);
       setLoadingWeather(false);
       setLoadingVulnerable(false);
+      setLoadingAppointments(false);
       setLastRefresh(new Date());
     }
   }, []);
@@ -807,8 +871,8 @@ function CommandCentreInner() {
           />
         </div>
 
-        {/* Middle row: status breakdown + weather mini */}
-        <div className="grid grid-cols-3 gap-4 flex-1">
+        {/* Middle row: status breakdown + appointments + weather */}
+        <div className="grid grid-cols-4 gap-4 flex-1">
           <div className="col-span-2">
             <StatusBreakdown
               counts={counts}
@@ -818,6 +882,9 @@ function CommandCentreInner() {
               trendsLoading={loadingTrends}
             />
           </div>
+
+          {/* Appointments panel */}
+          <AppointmentsPanel data={appointments} loading={loadingAppointments} />
 
           {/* Rotating city weather highlight */}
           <WeatherCityCarousel cities={weather?.cities ?? []} loading={loadingWeather} />

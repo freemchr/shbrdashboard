@@ -8,7 +8,7 @@ export const maxDuration = 60;
 
 export async function GET() {
   try {
-    const cacheKey = 'kpis-v2';
+    const cacheKey = 'kpis-v3';
     const cached = await getCached<unknown>(cacheKey);
     if (cached) return NextResponse.json(cached);
 

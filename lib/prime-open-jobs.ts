@@ -27,9 +27,10 @@ export async function getOpenStatusIds(): Promise<{ id: string; name: string }[]
   return openStatuses;
 }
 
-// Fetch all open jobs efficiently using status ID batches
+// Fetch all open jobs efficiently using status ID batches.
+// ABE-prefixed jobs are excluded (separate insurer division — not part of SHBR ops).
 export async function getAllOpenJobs(): Promise<unknown[]> {
-  const cacheKey = 'all-open-jobs-v2';
+  const cacheKey = 'all-open-jobs-v3';
   const cached = await getCached<unknown[]>(cacheKey);
   if (cached) return cached;
 
@@ -62,7 +63,14 @@ export async function getAllOpenJobs(): Promise<unknown[]> {
     }
   }
 
-  await setCached(cacheKey, allJobs, 4 * 60 * 60 * 1000); // 30 min
+  // Exclude ABE-prefixed jobs
+  type RawJobNum = { attributes?: { jobNumber?: string } };
+  allJobs = allJobs.filter(job => {
+    const jobNum = (job as RawJobNum).attributes?.jobNumber ?? '';
+    return !jobNum.toUpperCase().startsWith('ABE');
+  });
+
+  await setCached(cacheKey, allJobs, 4 * 60 * 60 * 1000);
   return allJobs;
 }
 
