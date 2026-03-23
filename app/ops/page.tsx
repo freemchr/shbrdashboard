@@ -9,6 +9,7 @@ import { downloadCSV } from '@/lib/export-csv';
 import {
   Briefcase,
   CalendarCheck,
+  CalendarClock,
   Wrench,
   ThumbsUp,
   ChevronUp,
@@ -44,6 +45,8 @@ interface OpsData {
   assignees: string[];
   actionQueues: {
     needsAppointment: OpsJob[];
+    appointmentRequired: OpsJob[];
+    apptTBC: OpsJob[];
     awaitingTrade: OpsJob[];
     awaitingApproval: OpsJob[];
   };
@@ -95,7 +98,7 @@ export default function OpsPage() {
   // Filters
   const [insurerFilter, setInsurerFilter] = useState('');
   const [assigneeFilter, setAssigneeFilter] = useState('');
-  const [queueFilter, setQueueFilter] = useState<'all' | 'needsAppointment' | 'awaitingTrade' | 'awaitingApproval'>('all');
+  const [queueFilter, setQueueFilter] = useState<'all' | 'needsAppointment' | 'appointmentRequired' | 'apptTBC' | 'awaitingTrade' | 'awaitingApproval'>('all');
   const [statusFilter, setStatusFilter] = useState('');
 
   // Sort
@@ -112,6 +115,14 @@ export default function OpsPage() {
 
   const needsAppointmentSet = useMemo(
     () => new Set((data?.actionQueues.needsAppointment || []).map(j => j.id)),
+    [data]
+  );
+  const appointmentRequiredSet = useMemo(
+    () => new Set((data?.actionQueues.appointmentRequired || []).map(j => j.id)),
+    [data]
+  );
+  const apptTBCSet = useMemo(
+    () => new Set((data?.actionQueues.apptTBC || []).map(j => j.id)),
     [data]
   );
   const awaitingTradeSet = useMemo(
@@ -132,6 +143,8 @@ export default function OpsPage() {
     if (statusFilter) jobs = jobs.filter(j => j.status.toLowerCase().includes(statusFilter.toLowerCase()));
 
     if (queueFilter === 'needsAppointment') jobs = jobs.filter(j => needsAppointmentSet.has(j.id));
+    else if (queueFilter === 'appointmentRequired') jobs = jobs.filter(j => appointmentRequiredSet.has(j.id));
+    else if (queueFilter === 'apptTBC') jobs = jobs.filter(j => apptTBCSet.has(j.id));
     else if (queueFilter === 'awaitingTrade') jobs = jobs.filter(j => awaitingTradeSet.has(j.id));
     else if (queueFilter === 'awaitingApproval') jobs = jobs.filter(j => awaitingApprovalSet.has(j.id));
 
@@ -159,7 +172,7 @@ export default function OpsPage() {
           : String(av).localeCompare(String(bv));
       return sortDir === 'asc' ? cmp : -cmp;
     });
-  }, [data, insurerFilter, assigneeFilter, queueFilter, statusFilter, sortKey, sortDir, needsAppointmentSet, awaitingTradeSet, awaitingApprovalSet]);
+  }, [data, insurerFilter, assigneeFilter, queueFilter, statusFilter, sortKey, sortDir, needsAppointmentSet, appointmentRequiredSet, apptTBCSet, awaitingTradeSet, awaitingApprovalSet]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -217,7 +230,8 @@ export default function OpsPage() {
   if (!data) return null;
 
   const totalJobs = data.jobs.length;
-  const apptCount = data.actionQueues.needsAppointment.length;
+  const apptRequiredCount = data.actionQueues.appointmentRequired.length;
+  const apptTBCCount = data.actionQueues.apptTBC.length;
   const tradeCount = data.actionQueues.awaitingTrade.length;
   const approvalCount = data.actionQueues.awaitingApproval.length;
 
@@ -230,18 +244,25 @@ export default function OpsPage() {
       />
 
       {/* KPI Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
         <KpiCard
           title="Total Open Jobs"
           value={totalJobs}
           icon={<Briefcase size={18} />}
         />
         <KpiCard
-          title="Needs Appointment"
-          value={apptCount}
+          title="Appointment Required"
+          value={apptRequiredCount}
           icon={<CalendarCheck size={18} />}
-          onClick={() => setQueueFilter(q => q === 'needsAppointment' ? 'all' : 'needsAppointment')}
-          active={queueFilter === 'needsAppointment'}
+          onClick={() => setQueueFilter(q => q === 'appointmentRequired' ? 'all' : 'appointmentRequired')}
+          active={queueFilter === 'appointmentRequired'}
+        />
+        <KpiCard
+          title="Appt TBC"
+          value={apptTBCCount}
+          icon={<CalendarClock size={18} />}
+          onClick={() => setQueueFilter(q => q === 'apptTBC' ? 'all' : 'apptTBC')}
+          active={queueFilter === 'apptTBC'}
         />
         <KpiCard
           title="Awaiting Trade/Specialist"
@@ -293,7 +314,8 @@ export default function OpsPage() {
             className="bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-red-500 transition-colors"
           >
             <option value="all">All Queues</option>
-            <option value="needsAppointment">Needs Appointment</option>
+            <option value="appointmentRequired">Appointment Required</option>
+            <option value="apptTBC">Appt TBC</option>
             <option value="awaitingTrade">Awaiting Trade</option>
             <option value="awaitingApproval">Awaiting Approval</option>
           </select>

@@ -67,7 +67,7 @@ function deriveInsurer(clientReference: string): string {
 
 export async function GET() {
   try {
-    const cacheKey = 'ops-data-v1';
+    const cacheKey = 'ops-data-v2';
     const cached = await getCached<unknown>(cacheKey);
     if (cached) return NextResponse.json(cached);
 
@@ -109,10 +109,18 @@ export async function GET() {
       };
     });
 
-    // Action queues
-    const needsAppointment = opsJobs.filter(j =>
-      /appointment/i.test(j.status)
+    // Action queues — appointment split into two separate buckets
+    const appointmentRequired = opsJobs.filter(j =>
+      /^appointment required$/i.test(j.status.trim()) ||
+      /^appt required$/i.test(j.status.trim())
     );
+    const apptTBC = opsJobs.filter(j =>
+      /^appt tbc$/i.test(j.status.trim()) ||
+      /^appointment tbc$/i.test(j.status.trim())
+    );
+    // Legacy combined bucket (still used for the action badge / queue filter)
+    const needsAppointment = [...appointmentRequired, ...apptTBC];
+
     const awaitingTrade = opsJobs.filter(j =>
       /trade|specialist|report required/i.test(j.status)
     );
@@ -129,6 +137,8 @@ export async function GET() {
       assignees,
       actionQueues: {
         needsAppointment,
+        appointmentRequired,
+        apptTBC,
         awaitingTrade,
         awaitingApproval,
       },
