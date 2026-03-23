@@ -120,8 +120,8 @@ export async function GET() {
       /approved|approval|wip/i.test(j.status)
     );
 
-    const insurers = [...new Set(opsJobs.map(j => j.insurer))].sort();
-    const assignees = [...new Set(opsJobs.map(j => j.assignee).filter(a => a && a !== '—'))].sort();
+    const insurers = Array.from(new Set(opsJobs.map(j => j.insurer))).sort();
+    const assignees = Array.from(new Set(opsJobs.map(j => j.assignee).filter(a => a && a !== '—'))).sort();
 
     const result = {
       jobs: opsJobs,
