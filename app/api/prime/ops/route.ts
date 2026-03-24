@@ -55,14 +55,16 @@ function extractPostcode(address: string, rawAddress: unknown): string {
   return '';
 }
 
-function deriveInsurer(clientReference: string): string {
-  const ref = (clientReference || '').toUpperCase();
-  if (ref.startsWith('HOL')) return 'Hollard';
-  if (ref.startsWith('YOU')) return 'Youi';
-  if (ref.startsWith('SUN')) return 'Suncorp';
-  if (ref.startsWith('QBE')) return 'QBE';
-  if (ref.startsWith('AIR')) return 'Australian Insurance Reconstruction';
-  if (ref.startsWith('GEM')) return 'Gemlife';
+function deriveInsurer(jobNumber: string): string {
+  const num = (jobNumber || '').toUpperCase();
+  if (num.startsWith('SUN')) return 'Suncorp';
+  if (num.startsWith('CBA')) return 'CommInsure';
+  if (num.startsWith('AG')) return 'Allianz';
+  if (num.startsWith('CC')) return 'CommCover';
+  if (num.startsWith('HOL')) return 'Hollard';
+  if (num.startsWith('YOU')) return 'Youi';
+  if (num.startsWith('QBE')) return 'QBE';
+  if (num.startsWith('ABE')) return 'ABE';
   return 'Other';
 }
 
@@ -128,7 +130,7 @@ export async function GET() {
         primeUrl: j.attributes?.primeUrl || '',
         postcode: extractPostcode(address, rawAddr),
         assignee,
-        insurer: deriveInsurer(clientReference),
+        insurer: deriveInsurer(j.attributes?.jobNumber || ''),
       };
     });
 
