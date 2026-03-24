@@ -59,12 +59,16 @@ function deriveInsurer(jobNumber: string): string {
   const num = (jobNumber || '').toUpperCase();
   if (num.startsWith('SUN')) return 'Suncorp';
   if (num.startsWith('CBA')) return 'CommInsure';
-  if (num.startsWith('AG')) return 'Allianz';
-  if (num.startsWith('CC')) return 'CommCover';
   if (num.startsWith('HOL')) return 'Hollard';
+  if (num.startsWith('GUI')) return 'Guild';
+  if (num.startsWith('AG')) return 'Auto & General';
+  if (num.startsWith('CC')) return 'Crawford & Co';
+  if (num.startsWith('SDG')) return 'Sedgwick';
+  if (num.startsWith('LGA')) return 'Local Council';
   if (num.startsWith('YOU')) return 'Youi';
   if (num.startsWith('QBE')) return 'QBE';
   if (num.startsWith('ABE')) return 'ABE';
+  if (num.startsWith('JOB')) return 'Private / Generic';
   return 'Other';
 }
 
