@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Logo } from './Logo';
-import { ThemeToggle } from './ThemeToggle';
 import {
   LayoutDashboard,
   GitBranch,
@@ -172,9 +171,8 @@ export function Sidebar() {
           lg:translate-x-0 lg:static lg:flex
         `}
       >
-        <div className="p-5 border-b border-gray-800 flex items-center justify-between">
+        <div className="p-5 border-b border-gray-800">
           <Logo />
-          <ThemeToggle />
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">

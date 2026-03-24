@@ -2,109 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Dark mode (default) ─────────────────────────────────── */
-:root,
-.dark {
+:root {
   --foreground-rgb: 255, 255, 255;
   --background-start-rgb: 3, 7, 18;
   --background-end-rgb: 3, 7, 18;
-  --bg-page: #030712;
-  --bg-card: #111827;
-  --bg-card-hover: #1f2937;
-  --bg-sidebar: #111111;
-  --border-color: #1f2937;
-  --text-primary: #ffffff;
-  --text-secondary: #9ca3af;
-  --text-muted: #4b5563;
-}
-
-/* ─── Light mode ──────────────────────────────────────────── */
-:root:not(.dark) {
-  --foreground-rgb: 17, 24, 39;
-  --background-start-rgb: 243, 244, 246;
-  --background-end-rgb: 243, 244, 246;
-  --bg-page: #f3f4f6;
-  --bg-card: #ffffff;
-  --bg-card-hover: #f9fafb;
-  --bg-sidebar: #ffffff;
-  --border-color: #e5e7eb;
-  --text-primary: #111827;
-  --text-secondary: #6b7280;
-  --text-muted: #9ca3af;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
   background: rgb(var(--background-start-rgb));
-  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* ─── Light mode global overrides ────────────────────────── */
-
-/* Page background */
-:root:not(.dark) body,
-:root:not(.dark) .bg-gray-950,
-:root:not(.dark) .dark\:bg-gray-950 {
-  background-color: #f3f4f6 !important;
-}
-
-/* Cards / panels */
-:root:not(.dark) .bg-gray-900 {
-  background-color: #ffffff !important;
-  border-color: #e5e7eb !important;
-}
-:root:not(.dark) .bg-gray-800 {
-  background-color: #f3f4f6 !important;
-}
-:root:not(.dark) .bg-gray-800\/50 {
-  background-color: rgba(243, 244, 246, 0.9) !important;
-}
-:root:not(.dark) .bg-\[\#111111\] {
-  background-color: #ffffff !important;
-}
-
-/* Borders */
-:root:not(.dark) .border-gray-800 {
-  border-color: #e5e7eb !important;
-}
-:root:not(.dark) .border-gray-700 {
-  border-color: #d1d5db !important;
-}
-
-/* Text colours */
-:root:not(.dark) .text-white {
-  color: #111827 !important;
-}
-:root:not(.dark) .text-gray-400 {
-  color: #6b7280 !important;
-}
-:root:not(.dark) .text-gray-500 {
-  color: #9ca3af !important;
-}
-:root:not(.dark) .text-gray-600 {
-  color: #9ca3af !important;
-}
-:root:not(.dark) .text-gray-700 {
-  color: #6b7280 !important;
-}
-:root:not(.dark) .text-gray-300 {
-  color: #374151 !important;
-}
-
-/* Sidebar nav items */
-:root:not(.dark) .hover\:bg-gray-800:hover {
-  background-color: #f3f4f6 !important;
-}
-:root:not(.dark) .hover\:text-white:hover {
-  color: #111827 !important;
-}
-
-/* Login page */
-:root:not(.dark) .min-h-screen.bg-gray-950 {
-  background-color: #f3f4f6 !important;
-}
-
-/* ─── Scrollbar styling ───────────────────────────────────── */
+/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -112,24 +21,15 @@ body {
 ::-webkit-scrollbar-track {
   background: #111827;
 }
-:root:not(.dark) ::-webkit-scrollbar-track {
-  background: #f3f4f6;
-}
 ::-webkit-scrollbar-thumb {
   background: #374151;
   border-radius: 3px;
 }
-:root:not(.dark) ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-}
 ::-webkit-scrollbar-thumb:hover {
   background: #4b5563;
 }
-:root:not(.dark) ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
-}
 
-/* ─── Hide scrollbar for chart containers ────────────────── */
+/* Hide scrollbar for chart containers while keeping scroll functionality */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -138,7 +38,7 @@ body {
   display: none;
 }
 
-/* ─── Weather ticker marquee ─────────────────────────────── */
+/* Weather ticker marquee */
 @keyframes marquee {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }

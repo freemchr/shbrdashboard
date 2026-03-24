@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { AuthGuard } from '@/components/ui/AuthGuard';
-import { ThemeProvider } from '@/components/ui/ThemeProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -18,12 +17,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} bg-gray-950 dark:bg-gray-950 text-white dark:text-white min-h-screen transition-colors duration-200`}>
-        <ThemeProvider>
-          <AuthGuard>
-            {children}
-          </AuthGuard>
-        </ThemeProvider>
+      <body className={`${inter.className} bg-gray-950 text-white min-h-screen`}>
+        <AuthGuard>
+          {children}
+        </AuthGuard>
       </body>
     </html>
   );
