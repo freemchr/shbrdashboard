@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { LoadingSpinner, ErrorMessage } from '@/components/ui/LoadingSpinner';
-import { Droplets, ExternalLink, TrendingUp, Clock, BarChart2, MapPin } from 'lucide-react';
+import { Droplets, ExternalLink, TrendingUp, Clock, BarChart2, MapPin, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 
 interface EolJob {
   id: string;
@@ -65,10 +65,26 @@ function matchedOnBadge(matchedOn: string) {
   return <span className="text-xs bg-gray-800 border border-gray-700 text-gray-400 px-2 py-0.5 rounded-full">notes</span>;
 }
 
+type SortCol = keyof Pick<EolJob, 'jobNumber' | 'address' | 'status' | 'assignee' | 'region' | 'daysOpen' | 'matchedOn'>;
+
+function SortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
+  if (!active) return <ChevronsUpDown size={11} className="text-gray-700 inline ml-1" />;
+  return dir === 'asc'
+    ? <ChevronUp size={11} className="text-blue-400 inline ml-1" />
+    : <ChevronDown size={11} className="text-blue-400 inline ml-1" />;
+}
+
 export default function EolPage() {
   const [data, setData] = useState<EolResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sortCol, setSortCol] = useState<SortCol>('daysOpen');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const handleSort = (col: SortCol) => {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortCol(col); setSortDir(col === 'daysOpen' ? 'desc' : 'asc'); }
+  };
 
   useEffect(() => {
     fetch('/api/prime/jobs/eol')
@@ -85,19 +101,20 @@ export default function EolPage() {
   const { stats, openJobs } = data;
   const byRegionSorted = Object.entries(stats.byRegion).sort(([, a], [, b]) => b - a);
 
+  const sortedJobs = [...openJobs].sort((a, b) => {
+    const av = a[sortCol] ?? '';
+    const bv = b[sortCol] ?? '';
+    const cmp = typeof av === 'number' && typeof bv === 'number'
+      ? av - bv
+      : String(av).localeCompare(String(bv), undefined, { numeric: true });
+    return sortDir === 'asc' ? cmp : -cmp;
+  });
+
   return (
     <div>
-      {/* Tagline header */}
-      <div className="mb-2">
-        <div className="flex items-center gap-2 mb-1">
-          <Droplets size={20} className="text-blue-400" />
-          <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider">Suncorp&apos;s #1 risk reduction priority</span>
-        </div>
-      </div>
-
       <PageHeader
-        title="Escape of Liquid Portfolio"
-        subtitle="SHBR's Flexi Hose & Escape of Liquid Portfolio — Suncorp's #1 risk reduction priority"
+        title="Escape of Liquid Claims"
+        subtitle="SHBR's Flexi Hose & Escape of Liquid Claims Portfolio"
       />
 
       {/* Hero stat cards */}
@@ -162,7 +179,7 @@ export default function EolPage() {
         <div className="px-5 py-4 border-b border-gray-800 flex items-center gap-3">
           <Droplets size={16} className="text-blue-400" />
           <h2 className="text-sm font-semibold text-white">Open EOL Jobs</h2>
-          <span className="text-xs text-gray-500">— {openJobs.length} job{openJobs.length !== 1 ? 's' : ''}, sorted by age</span>
+          <span className="text-xs text-gray-500">— {openJobs.length} job{openJobs.length !== 1 ? 's' : ''}</span>
         </div>
 
         {openJobs.length === 0 ? (
@@ -176,18 +193,20 @@ export default function EolPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-800">
-                  <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium">Job #</th>
-                  <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium">Address</th>
-                  <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium">Status</th>
-                  <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium">Assignee</th>
-                  <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium">Region</th>
-                  <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium">Days Open</th>
-                  <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium hidden md:table-cell">Matched On</th>
+                  {([ ['jobNumber','Job #'], ['address','Address'], ['status','Status'], ['assignee','Assignee'], ['region','Region'], ['daysOpen','Days Open'], ['matchedOn','Matched On'] ] as [SortCol, string][]).map(([col, label]) => (
+                    <th
+                      key={col}
+                      onClick={() => handleSort(col)}
+                      className={`py-2 px-3 text-left text-xs text-gray-500 font-medium cursor-pointer select-none hover:text-white transition-colors whitespace-nowrap ${col === 'matchedOn' ? 'hidden md:table-cell' : ''} ${col === 'region' ? 'hidden sm:table-cell' : ''}`}
+                    >
+                      {label}<SortIcon active={sortCol === col} dir={sortDir} />
+                    </th>
+                  ))}
                   <th className="py-2 px-3"></th>
                 </tr>
               </thead>
               <tbody>
-                {openJobs.map(job => (
+                {sortedJobs.map(job => (
                   <tr
                     key={job.id}
                     className={`border-b border-gray-800 hover:bg-gray-800/40 transition-colors ${
