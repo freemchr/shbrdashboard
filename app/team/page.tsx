@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ErrorMessage, SkeletonTable } from '@/components/ui/LoadingSpinner';
 import { KpiCard } from '@/components/ui/KpiCard';
-import { Badge } from '@/components/ui/Badge';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { Users, Briefcase, DollarSign, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { formatCurrency } from '@/lib/prime-helpers';
