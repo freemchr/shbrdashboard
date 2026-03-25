@@ -303,15 +303,25 @@ export function Sidebar() {
               <span>{loggingOut ? 'Signing out…' : 'Sign Out'}</span>
             </button>
 
-            <Link
-              href="/support"
-              className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs transition-colors ${
-                isActive('/support') ? 'text-red-400' : 'text-gray-600 hover:text-gray-400 hover:bg-gray-800'
-              }`}
-            >
-              <HelpCircle size={11} />
-              <span>Help</span>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/support"
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs transition-colors ${
+                  isActive('/support') ? 'text-red-400' : 'text-gray-600 hover:text-gray-400 hover:bg-gray-800'
+                }`}
+              >
+                <HelpCircle size={11} />
+                <span>Help</span>
+              </Link>
+              <a
+                href="https://www.techgurus.com.au"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-gray-700 hover:text-red-400 transition-colors px-2 py-1.5"
+              >
+                TechGurus
+              </a>
+            </div>
           </div>
         </div>
       </aside>
