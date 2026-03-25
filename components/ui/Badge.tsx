@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+
 
 type BadgeVariant =
   | 'appointment'
