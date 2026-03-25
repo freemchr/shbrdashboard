@@ -5,6 +5,8 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { ErrorMessage, SkeletonTable } from '@/components/ui/LoadingSpinner';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { DataRefreshButton } from '@/components/ui/DataRefreshButton';
+import { Badge } from '@/components/ui/Badge';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { downloadCSV } from '@/lib/export-csv';
 import {
   Briefcase,
@@ -75,11 +77,11 @@ function ActionBadge({ job, needsAppointment, awaitingTrade, awaitingApproval }:
   awaitingApproval: Set<string>;
 }) {
   if (needsAppointment.has(job.id))
-    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-900/50 text-blue-300 border border-blue-700/50">Appointment</span>;
+    return <Badge label="Appointment" variant="appointment" dot />;
   if (awaitingTrade.has(job.id))
-    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-orange-900/50 text-orange-300 border border-orange-700/50">Trade</span>;
+    return <Badge label="Trade" variant="trade" dot />;
   if (awaitingApproval.has(job.id))
-    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-900/50 text-purple-300 border border-purple-700/50">Approval</span>;
+    return <Badge label="Approval" variant="approval" dot />;
   return <span className="text-gray-700 text-xs">—</span>;
 }
 
@@ -393,24 +395,38 @@ export default function OpsPage() {
                       )}
                     </td>
                     <td className="px-4 py-2.5 whitespace-nowrap">
-                      <span className="text-xs text-gray-300">{job.insurer}</span>
+                      <Badge label={job.insurer} variant="insurer" size="xs" />
                     </td>
                     <td className="px-4 py-2.5 max-w-[200px]">
-                      <span className="text-xs text-gray-400 block truncate" title={job.address}>
-                        {job.address || '—'}
-                      </span>
+                      {job.address && job.address.length > 35 ? (
+                        <Tooltip content={job.address}>
+                          <span className="text-xs text-gray-400 block truncate cursor-default">
+                            {job.address.slice(0, 35)}…
+                          </span>
+                        </Tooltip>
+                      ) : (
+                        <span className="text-xs text-gray-400 block truncate">
+                          {job.address || '—'}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5 whitespace-nowrap">
                       <span className="font-mono text-xs text-gray-400">{job.postcode || '—'}</span>
                     </td>
                     <td className="px-4 py-2.5 max-w-[160px]">
-                      <span className="text-xs text-gray-300 block truncate" title={job.status}>{job.status}</span>
+                      <Tooltip content={job.status}>
+                        <span className="text-xs text-gray-300 block truncate cursor-default">
+                          {job.status.length > 20 ? job.status.slice(0, 20) + '…' : job.status}
+                        </span>
+                      </Tooltip>
                     </td>
                     <td className="px-4 py-2.5 whitespace-nowrap">
                       <span className="text-xs text-gray-400">{job.assignee || '—'}</span>
                     </td>
                     <td className="px-4 py-2.5 whitespace-nowrap">
-                      <AgeCell days={age} />
+                      <Tooltip content={`Created: ${new Date(job.createdAt).toLocaleDateString('en-AU')}`}>
+                        <AgeCell days={age} />
+                      </Tooltip>
                     </td>
                     <td className="px-4 py-2.5 whitespace-nowrap">
                       <ActionBadge
