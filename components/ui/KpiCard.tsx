@@ -25,11 +25,9 @@ function parseValue(value: string | number): { prefix: string; num: number; suff
   return { prefix: match[1], num, suffix: match[3] };
 }
 
-function useCountUp(value: string | number, loading: boolean | undefined, duration = 700) {
+function useCountUp(value: string | number, loading: boolean | undefined, duration = 400) {
   const parsed = parseValue(value);
-  const [display, setDisplay] = useState<string | number>(
-    parsed ? `${parsed.prefix}0${parsed.suffix}` : value
-  );
+  const [display, setDisplay] = useState<string | number>(value);
   const rafRef = useRef<number | null>(null);
   const startedRef = useRef(false);
 
