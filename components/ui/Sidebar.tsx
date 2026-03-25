@@ -293,7 +293,6 @@ export function Sidebar() {
         </nav>
 
         <div className="px-3 py-2 border-t border-gray-800">
-          {/* Compact footer row: sign out + support + branding */}
           <div className="flex items-center justify-between gap-2">
             <button
               onClick={handleLogout}
@@ -304,28 +303,16 @@ export function Sidebar() {
               <span>{loggingOut ? 'Signing out…' : 'Sign Out'}</span>
             </button>
 
-            <div className="flex items-center gap-2">
-              <Link
-                href="/support"
-                className={`flex items-center gap-1 text-xs transition-colors ${
-                  isActive('/support') ? 'text-red-400' : 'text-gray-600 hover:text-gray-400'
-                }`}
-              >
-                <HelpCircle size={11} />
-                <span>Help</span>
-              </Link>
-              <span className="text-gray-800 text-xs">·</span>
-              <a
-                href="https://www.techgurus.com.au"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-gray-700 hover:text-red-400 transition-colors"
-              >
-                TechGurus
-              </a>
-            </div>
+            <Link
+              href="/support"
+              className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs transition-colors ${
+                isActive('/support') ? 'text-red-400' : 'text-gray-600 hover:text-gray-400 hover:bg-gray-800'
+              }`}
+            >
+              <HelpCircle size={11} />
+              <span>Help</span>
+            </Link>
           </div>
-          <p className="text-[10px] text-gray-800 text-center mt-1 leading-tight">SHBR Insights · Internal Use Only</p>
         </div>
       </aside>
     </>
