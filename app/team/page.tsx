@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { ErrorMessage, SkeletonTable } from '@/components/ui/LoadingSpinner';
+import { ErrorMessage, LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { Users, Briefcase, DollarSign, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { formatCurrency } from '@/lib/prime-helpers';
@@ -89,7 +89,7 @@ export default function TeamPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <SkeletonTable rows={8} />;
+  if (loading) return <LoadingSpinner message="Loading team data..." />;
   if (error) return <ErrorMessage message={error} />;
 
   const displayed = (showInactive ? team : team.filter(m => m.status === 'active' || m.openJobs > 0))
