@@ -292,37 +292,40 @@ export function Sidebar() {
           )}
         </nav>
 
-        <div className="p-4 border-t border-gray-800 space-y-3">
-          {/* Logout button */}
-          <button
-            onClick={handleLogout}
-            disabled={loggingOut}
-            className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <LogOut size={16} />
-            <span>{loggingOut ? 'Signing out...' : 'Sign Out'}</span>
-          </button>
-
-          <div className="pt-1">
-            <p className="text-xs text-gray-600 text-center">SHBR Insights</p>
-            <p className="text-xs text-gray-700 text-center">Internal Use Only</p>
-            <Link
-              href="/support"
-              className={`flex items-center justify-center gap-1.5 text-xs mt-1.5 transition-colors ${
-                isActive('/support') ? 'text-red-400' : 'text-gray-600 hover:text-gray-400'
-              }`}
+        <div className="px-3 py-2 border-t border-gray-800">
+          {/* Compact footer row: sign out + support + branding */}
+          <div className="flex items-center justify-between gap-2">
+            <button
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium text-gray-500 hover:text-white hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <HelpCircle size={11} />
-              <span>Support &amp; Help</span>
-            </Link>
-            <p className="text-xs text-gray-700 text-center mt-1">
-              Created by{' '}
-              <a href="https://www.techgurus.com.au" target="_blank" rel="noopener noreferrer"
-                className="text-gray-600 hover:text-red-400 transition-colors underline underline-offset-2">
+              <LogOut size={13} />
+              <span>{loggingOut ? 'Signing out…' : 'Sign Out'}</span>
+            </button>
+
+            <div className="flex items-center gap-2">
+              <Link
+                href="/support"
+                className={`flex items-center gap-1 text-xs transition-colors ${
+                  isActive('/support') ? 'text-red-400' : 'text-gray-600 hover:text-gray-400'
+                }`}
+              >
+                <HelpCircle size={11} />
+                <span>Help</span>
+              </Link>
+              <span className="text-gray-800 text-xs">·</span>
+              <a
+                href="https://www.techgurus.com.au"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-gray-700 hover:text-red-400 transition-colors"
+              >
                 TechGurus
               </a>
-            </p>
+            </div>
           </div>
+          <p className="text-[10px] text-gray-800 text-center mt-1 leading-tight">SHBR Insights · Internal Use Only</p>
         </div>
       </aside>
     </>
