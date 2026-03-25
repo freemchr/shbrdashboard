@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ErrorMessage, SkeletonTable } from '@/components/ui/LoadingSpinner';
 import { KpiCard } from '@/components/ui/KpiCard';
-import { Tooltip } from '@/components/ui/Tooltip';
 import { Users, Briefcase, DollarSign, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { formatCurrency } from '@/lib/prime-helpers';
 import { downloadCSV } from '@/lib/export-csv';
@@ -60,57 +59,18 @@ function healthScore(m: TeamMember): number {
   return 0;
 }
 
-function buildHealthTooltip(m: TeamMember): string {
-  const score = healthScore(m);
-  if (m.openJobs === 0) return 'No open jobs';
-  if (score === 2) {
-    const parts: string[] = [];
-    if (m.noReportCount > 2) parts.push(`No report: ${m.noReportCount} jobs`);
-    if (m.slaBreachCount > 3) parts.push(`SLA breaches: ${m.slaBreachCount}`);
-    if (m.avgDaysOpen > 30) parts.push(`Avg age: ${m.avgDaysOpen} days`);
-    if (m.criticalSlaCount > 0) parts.push(`Critical SLA: ${m.criticalSlaCount}`);
-    return parts.length > 0 ? parts.join(' | ') : 'Performance issues';
-  }
-  if (score === 1) {
-    const parts: string[] = [];
-    if (m.noReportCount > 0) parts.push(`No report: ${m.noReportCount} jobs`);
-    if (m.slaBreachCount >= 1 && m.slaBreachCount <= 2) parts.push(`SLA breaches: ${m.slaBreachCount}`);
-    if (m.avgDaysOpen >= 14 && m.avgDaysOpen <= 30) parts.push(`Avg age: ${m.avgDaysOpen} days`);
-    return parts.length > 0 ? parts.join(' | ') : 'Some concerns';
-  }
-  return 'All metrics within healthy range';
-}
-
 function TrafficLight({ m }: { m: TeamMember }) {
   const score = healthScore(m);
-  const tooltip = buildHealthTooltip(m);
-
   if (m.openJobs === 0) {
-    return (
-      <Tooltip content={tooltip}>
-        <span className="inline-block w-2.5 h-2.5 rounded-full bg-gray-700 cursor-default" />
-      </Tooltip>
-    );
+    return <span className="inline-block w-2.5 h-2.5 rounded-full bg-gray-700" title="No open jobs" />;
   }
   if (score === 2) {
-    return (
-      <Tooltip content={tooltip}>
-        <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-500 cursor-default" />
-      </Tooltip>
-    );
+    return <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-500" title="Red: performance issues" />;
   }
   if (score === 1) {
-    return (
-      <Tooltip content={tooltip}>
-        <span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-400 cursor-default" />
-      </Tooltip>
-    );
+    return <span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-400" title="Amber: some concerns" />;
   }
-  return (
-    <Tooltip content={tooltip}>
-      <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500 cursor-default" />
-    </Tooltip>
-  );
+  return <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500" title="Green: all good" />;
 }
 
 export default function TeamPage() {
@@ -241,8 +201,17 @@ export default function TeamPage() {
                     <div className="font-medium text-white text-sm">{m.name}</div>
                     {m.email && <div className="text-xs text-gray-500 mt-0.5 hidden sm:block">{m.email}</div>}
                   </td>
-                  <td className="px-4 py-2.5 whitespace-nowrap">
-                    <span className="text-xs text-gray-400">{m.roles.join(', ') || '—'}</span>
+                  <td className="px-4 py-2.5 text-xs text-gray-400 max-w-[120px]">
+                    {m.roles.length === 0 ? '—' : (
+                      <span title={m.roles.join(', ')} className="cursor-default">
+                        {m.roles[0]}
+                        {m.roles.length > 1 && (
+                          <span className="ml-1 text-gray-600 bg-gray-800 px-1.5 py-0.5 rounded-full text-[10px]" title={m.roles.join(', ')}>
+                            +{m.roles.length - 1}
+                          </span>
+                        )}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-2.5 whitespace-nowrap">
                     <span className={`font-bold font-mono text-sm ${
@@ -298,8 +267,10 @@ export default function TeamPage() {
                       {m.updatedThisMonth > 0 ? m.updatedThisMonth : '—'}
                     </span>
                   </td>
-                  <td className="px-4 py-2.5 hidden lg:table-cell whitespace-nowrap">
-                    <span className="text-xs text-gray-400">{m.regions.join(', ') || '—'}</span>
+                  <td className="px-4 py-2.5 whitespace-nowrap hidden lg:table-cell">
+                    <span className="text-xs text-gray-500">
+                      {m.regions.length > 0 ? `${m.regions.length} region${m.regions.length !== 1 ? 's' : ''}` : '—'}
+                    </span>
                   </td>
                   <td className="px-4 py-2.5 whitespace-nowrap">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
