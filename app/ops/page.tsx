@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { ErrorMessage, LoadingSpinner, SkeletonTable } from '@/components/ui/LoadingSpinner';
+import { ErrorMessage, SkeletonTable } from '@/components/ui/LoadingSpinner';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { DataRefreshButton } from '@/components/ui/DataRefreshButton';
 import { downloadCSV } from '@/lib/export-csv';

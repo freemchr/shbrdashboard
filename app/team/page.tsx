@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { ErrorMessage, LoadingSpinner, SkeletonTable } from '@/components/ui/LoadingSpinner';
+import { ErrorMessage, SkeletonTable } from '@/components/ui/LoadingSpinner';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { Users, Briefcase, DollarSign, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { formatCurrency } from '@/lib/prime-helpers';
