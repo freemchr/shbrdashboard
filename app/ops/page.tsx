@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { ErrorMessage, LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { ErrorMessage, LoadingSpinner, SkeletonTable } from '@/components/ui/LoadingSpinner';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { DataRefreshButton } from '@/components/ui/DataRefreshButton';
 import { downloadCSV } from '@/lib/export-csv';
@@ -225,7 +225,7 @@ export default function OpsPage() {
     </th>
   );
 
-  if (loading) return <LoadingSpinner message="Loading operations data…" />;
+  if (loading) return <SkeletonTable rows={10} />;
   if (error) return <ErrorMessage message={error} />;
   if (!data) return null;
 
@@ -236,7 +236,7 @@ export default function OpsPage() {
   const approvalCount = data.actionQueues.awaitingApproval.length;
 
   return (
-    <div>
+    <div className="animate-fade-in-up">
       <PageHeader
         title="Operations Dashboard"
         subtitle="Live job view — filter by insurer, assignee, or action queue"
