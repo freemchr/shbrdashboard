@@ -242,16 +242,8 @@ export default function TeamPage() {
                     <div className="font-medium text-white text-sm">{m.name}</div>
                     {m.email && <div className="text-xs text-gray-500 mt-0.5 hidden sm:block">{m.email}</div>}
                   </td>
-                  <td className="px-4 py-2.5 max-w-[160px]">
-                    {m.roles.length === 0 ? (
-                      <span className="text-xs text-gray-600">—</span>
-                    ) : (
-                      <div className="flex flex-wrap gap-1">
-                        {m.roles.map(role => (
-                          <Badge key={role} label={role} variant="role" size="xs" />
-                        ))}
-                      </div>
-                    )}
+                  <td className="px-4 py-2.5 whitespace-nowrap">
+                    <span className="text-xs text-gray-400">{m.roles.join(', ') || '—'}</span>
                   </td>
                   <td className="px-4 py-2.5 whitespace-nowrap">
                     <span className={`font-bold font-mono text-sm ${
@@ -307,16 +299,8 @@ export default function TeamPage() {
                       {m.updatedThisMonth > 0 ? m.updatedThisMonth : '—'}
                     </span>
                   </td>
-                  <td className="px-4 py-2.5 hidden lg:table-cell max-w-[160px]">
-                    {m.regions.length === 0 ? (
-                      <span className="text-xs text-gray-600">—</span>
-                    ) : (
-                      <div className="flex flex-wrap gap-1">
-                        {m.regions.map(region => (
-                          <Badge key={region} label={region} variant="region" size="xs" />
-                        ))}
-                      </div>
-                    )}
+                  <td className="px-4 py-2.5 hidden lg:table-cell whitespace-nowrap">
+                    <span className="text-xs text-gray-400">{m.regions.join(', ') || '—'}</span>
                   </td>
                   <td className="px-4 py-2.5 whitespace-nowrap">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
