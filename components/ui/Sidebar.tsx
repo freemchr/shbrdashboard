@@ -13,7 +13,6 @@ import {
   Search,
   Map,
   FileText,
-  FileEdit,
   Menu,
   X,
   LogOut,
@@ -28,9 +27,8 @@ import {
   ShieldCheck,
   HelpCircle,
   GitCommit,
-  Droplets,
-  UserCheck,
   ClipboardList,
+  Flag,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -41,21 +39,17 @@ const navItems = [
   { href: '/weather', label: 'Weather', icon: Cloud },
   { href: '/whs', label: 'WHS', icon: ShieldCheck },
   { href: '/pipeline', label: 'Pipeline', icon: GitBranch },
-  { href: '/bottlenecks', label: 'Bottlenecks', icon: AlertTriangle },
+  { href: '/stalled', label: 'Stalled Jobs', icon: Clock },
   { href: '/team', label: 'Team', icon: Users },
-  { href: '/aging', label: 'Aging', icon: Clock },
   { href: '/financial', label: 'Financial', icon: DollarSign },
   { href: '/search', label: 'Job Search', icon: Search },
   { href: '/map', label: 'Jobs Map', icon: Map },
 ];
 
 const reportsSubItems = [
-  { href: '/reports', label: 'Overview', icon: BarChart2, alert: true },
+  { href: '/reports', label: 'Report Status', icon: BarChart2, alert: true },
   { href: '/sla', label: 'SLA Tracker', icon: AlertTriangle, alert: true },
-  { href: '/report-assist', label: 'Report Assist', icon: FileEdit, alert: true },
-  { href: '/report-assist/polish', label: 'Report Polisher', icon: Sparkles },
-  { href: '/eol', label: 'EOL Portfolio', icon: Droplets },
-  { href: '/vulnerable', label: 'Vulnerable Customers', icon: UserCheck, alert: true },
+  { href: '/report-assist/polish', label: 'AI Polisher', icon: Sparkles },
 ];
 
 const estimatorsSubItems = [
@@ -98,7 +92,7 @@ export function Sidebar() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const isInReports = pathname.startsWith('/reports') || pathname.startsWith('/report-assist') || pathname.startsWith('/sla') || pathname.startsWith('/eol') || pathname.startsWith('/vulnerable');
+  const isInReports = pathname.startsWith('/reports') || pathname.startsWith('/report-assist') || pathname.startsWith('/sla');
   const [reportsOpen, setReportsOpen] = useState(isInReports);
 
   const isInEstimators = pathname.startsWith('/estimators') || pathname.startsWith('/timeline');
@@ -117,7 +111,6 @@ export function Sidebar() {
     fetch('/api/auth/session')
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
-
         if (data?.userEmail) setUserEmail(data.userEmail);
       })
       .catch(() => {});
@@ -126,8 +119,6 @@ export function Sidebar() {
   const isActive = (href: string) =>
     href === '/report-assist/polish'
       ? pathname === '/report-assist/polish'
-      : href === '/report-assist'
-      ? pathname === '/report-assist' || (pathname.startsWith('/report-assist/') && pathname !== '/report-assist/polish')
       : href === '/'
       ? pathname === '/'
       : pathname.startsWith(href);
@@ -142,6 +133,11 @@ export function Sidebar() {
     router.push('/login');
     router.refresh();
   };
+
+  // navItems before the Reports group (slice 0..3) and after (slice 3..)
+  // We render: items[0..3], Reports group, Flagged Jobs, Estimators group, items[3..]
+  const navItemsTop    = navItems.slice(0, 3);
+  const navItemsBottom = navItems.slice(3);
 
   return (
     <>
@@ -176,8 +172,8 @@ export function Sidebar() {
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {/* Overview, Weather, Pipeline */}
-          {navItems.slice(0, 3).map((item) => (
+          {/* Top nav items: Overview, Command Centre, Ops */}
+          {navItemsTop.map((item) => (
             <NavItem
               key={item.href}
               href={item.href}
@@ -205,7 +201,7 @@ export function Sidebar() {
               />
             </button>
 
-            <div className={`overflow-hidden transition-all duration-200 ${reportsOpen ? 'max-h-72 opacity-100' : 'max-h-0 opacity-0'}`}>
+            <div className={`overflow-hidden transition-all duration-200 ${reportsOpen ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'}`}>
               <div className="mt-0.5 space-y-0.5">
                 {reportsSubItems.map((item) => (
                   <Link
@@ -227,6 +223,14 @@ export function Sidebar() {
               </div>
             </div>
           </div>
+
+          {/* Flagged Jobs — direct nav item after Reports, before Estimators */}
+          <NavItem
+            href="/flagged"
+            label="Flagged Jobs"
+            icon={Flag}
+            active={isActive('/flagged')}
+          />
 
           {/* Collapsible Estimators group */}
           <div>
@@ -263,8 +267,8 @@ export function Sidebar() {
             </div>
           </div>
 
-          {/* Remaining nav items (Bottlenecks onward) */}
-          {navItems.slice(3).map((item) => (
+          {/* Remaining nav items (Weather, WHS, Pipeline, Stalled, Team, Financial, Search, Map) */}
+          {navItemsBottom.map((item) => (
             <NavItem
               key={item.href}
               href={item.href}
