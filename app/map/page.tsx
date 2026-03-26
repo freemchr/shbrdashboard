@@ -202,34 +202,31 @@ export default function MapPage() {
 
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center gap-3">
-          <MapPin size={20} className="text-red-500 flex-shrink-0" />
-          <div>
-            <p className="text-xl sm:text-2xl font-bold text-white">{mapped.length}</p>
-            <p className="text-xs text-gray-500">Pinned on Map</p>
+        {[
+          { icon: <MapPin size={20} className="text-red-500" />, value: mapped.length, label: 'Pinned on Map' },
+          { icon: <RefreshCw size={20} className={`text-blue-400 ${geocoding ? 'animate-spin' : ''}`} />, value: pending.length, label: 'Pending Geocode' },
+          { icon: <AlertTriangle size={20} className="text-yellow-500" />, value: unmapped.length, label: 'Not Geocoded' },
+          { icon: <MapPin size={20} className="text-gray-500" />, value: total || jobs.length, label: 'Total Open Jobs' },
+        ].map(({ icon, value, label }) => (
+          <div key={label} className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center gap-3">
+            <span className="flex-shrink-0">{icon}</span>
+            <div>
+              {loading ? (
+                <div className="space-y-1.5">
+                  <div className="h-6 w-12 rounded-md bg-gray-800 relative overflow-hidden">
+                    <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.4s_infinite] bg-gradient-to-r from-transparent via-gray-700/50 to-transparent" />
+                  </div>
+                  <div className="h-2.5 w-20 rounded bg-gray-800/70" />
+                </div>
+              ) : (
+                <>
+                  <p className="text-xl sm:text-2xl font-bold text-white">{value}</p>
+                  <p className="text-xs text-gray-500">{label}</p>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center gap-3">
-          <RefreshCw size={20} className={`text-blue-400 flex-shrink-0 ${geocoding ? 'animate-spin' : ''}`} />
-          <div>
-            <p className="text-xl sm:text-2xl font-bold text-white">{pending.length}</p>
-            <p className="text-xs text-gray-500">Pending Geocode</p>
-          </div>
-        </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center gap-3">
-          <AlertTriangle size={20} className="text-yellow-500 flex-shrink-0" />
-          <div>
-            <p className="text-xl sm:text-2xl font-bold text-white">{unmapped.length}</p>
-            <p className="text-xs text-gray-500">Not Geocoded</p>
-          </div>
-        </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center gap-3">
-          <MapPin size={20} className="text-gray-500 flex-shrink-0" />
-          <div>
-            <p className="text-xl sm:text-2xl font-bold text-white">{total || jobs.length}</p>
-            <p className="text-xs text-gray-500">Total Open Jobs</p>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Geocoding progress */}

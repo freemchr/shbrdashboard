@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ErrorMessage, SkeletonTable } from '@/components/ui/LoadingSpinner';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { DataRefreshButton } from '@/components/ui/DataRefreshButton';
 import { downloadCSV } from '@/lib/export-csv';
@@ -403,8 +404,8 @@ export default function OpsPage() {
                     <td className="px-4 py-2.5 whitespace-nowrap">
                       <span className="font-mono text-xs text-gray-400">{job.postcode || '—'}</span>
                     </td>
-                    <td className="px-4 py-2.5 max-w-[160px]">
-                      <span className="text-xs text-gray-300 block truncate" title={job.status}>{job.status}</span>
+                    <td className="px-4 py-2.5 max-w-[180px]">
+                      <StatusBadge label={job.status} className="max-w-full truncate block" />
                     </td>
                     <td className="px-4 py-2.5 whitespace-nowrap">
                       <span className="text-xs text-gray-400">{job.assignee || '—'}</span>

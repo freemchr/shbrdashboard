@@ -6,6 +6,7 @@ import { ErrorMessage, LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatCurrency, formatDate } from '@/lib/prime-helpers';
 import { downloadCSV } from '@/lib/export-csv';
 import { ExternalLink, Download, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { JobTypeBadge, StatusBadge } from '@/components/ui/StatusBadge';
 
 interface FlatJob {
   id: string;
@@ -170,7 +171,15 @@ export default function BottlenecksPage() {
           </div>
 
           {sorted.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">No stuck jobs match your filters 🎉</div>
+            <div className="flex flex-col items-center justify-center py-14 gap-3 text-center">
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gray-800 border border-gray-700 text-emerald-500">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              </div>
+              <div>
+                <p className="text-gray-300 font-semibold text-sm">No stuck jobs here 🎉</p>
+                <p className="text-gray-500 text-xs mt-1">No jobs match your current filters.</p>
+              </div>
+            </div>
           ) : (
             <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
               <div className="overflow-x-auto">
@@ -191,15 +200,15 @@ export default function BottlenecksPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sorted.map(job => (
-                      <tr key={job.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
+                    {sorted.map((job, idx) => (
+                      <tr key={job.id} className={`border-b border-gray-800/40 hover:bg-gray-800/50 transition-colors ${idx % 2 !== 0 ? 'bg-gray-900/60' : ''}`}>
                         <td className="py-2 px-2 font-mono text-red-400 text-xs whitespace-nowrap">
                           {job.primeUrl
                             ? <a href={job.primeUrl} target="_blank" rel="noopener noreferrer" className="hover:text-red-300 underline underline-offset-2">{job.jobNumber || job.id}</a>
                             : job.jobNumber || job.id}
                         </td>
-                        <td className="py-2 px-2 text-gray-300 text-xs max-w-[140px] truncate">{job.status}</td>
-                        <td className="py-2 px-2 text-gray-400 text-xs whitespace-nowrap">{job.jobType || '—'}</td>
+                        <td className="py-2 px-2"><StatusBadge label={job.status} /></td>
+                        <td className="py-2 px-2">{job.jobType ? <JobTypeBadge label={job.jobType} /> : <span className="text-gray-600 text-xs">—</span>}</td>
                         <td className="py-2 px-2 text-gray-400 text-xs whitespace-nowrap">{job.region || '—'}</td>
                         <td className="py-2 px-2 text-gray-300 text-xs max-w-[140px] truncate hidden md:table-cell">{job.address || '—'}</td>
                         <td className="py-2 px-2 text-gray-400 text-xs hidden lg:table-cell">{job.clientReference || '—'}</td>

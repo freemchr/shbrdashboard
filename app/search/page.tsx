@@ -6,6 +6,8 @@ import { ErrorMessage } from '@/components/ui/LoadingSpinner';
 import { formatCurrency, formatDate } from '@/lib/prime-helpers';
 import type { PrimeJob } from '@/lib/prime-helpers';
 import { Search, ExternalLink, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { JobTypeBadge, StatusBadge } from '@/components/ui/StatusBadge';
 
 interface FlatJob {
   id: string;
@@ -204,9 +206,7 @@ export default function SearchPage() {
 
       {error && <ErrorMessage message={error} />}
 
-      {loading && (
-        <div className="text-center py-8 text-gray-500">Loading jobs...</div>
-      )}
+      {loading && <LoadingSpinner message="Loading jobs…" />}
 
       {loaded && !loading && (
         <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
@@ -230,24 +230,24 @@ export default function SearchPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.slice(0, 100).map((job) => (
+                {filtered.slice(0, 100).map((job, idx) => (
                   <>
                     <tr
                       key={job.id}
                       onClick={() => setSelectedJob(selectedJob?.id === job.id ? null : job)}
-                      className="border-b border-gray-800/50 hover:bg-gray-800/40 cursor-pointer transition-colors"
+                      className={`border-b border-gray-800/40 hover:bg-gray-800/50 cursor-pointer transition-colors ${idx % 2 !== 0 ? 'bg-gray-900/60' : ''}`}
                     >
                       <td className="py-3 px-4">
                         <span className="font-mono text-red-400 text-xs">{job.jobNumber}</span>
                       </td>
                       <td className="py-3 px-4 text-gray-300 max-w-[140px] truncate">{job.address}</td>
                       <td className="py-3 px-4 hidden sm:table-cell">
-                        <span className="text-xs bg-gray-800 text-gray-300 px-2 py-0.5 rounded">
-                          {job.status}
-                        </span>
+                        <StatusBadge label={job.status} />
                       </td>
                       <td className="py-3 px-4 text-gray-400 text-xs hidden md:table-cell">{job.region}</td>
-                      <td className="py-3 px-4 text-gray-400 text-xs hidden md:table-cell">{job.jobType}</td>
+                      <td className="py-3 px-4 hidden md:table-cell">
+                        {job.jobType && job.jobType !== '—' ? <JobTypeBadge label={job.jobType} /> : <span className="text-gray-600 text-xs">—</span>}
+                      </td>
                       <td className="py-3 px-4 text-right text-gray-300 text-xs hidden sm:table-cell">
                         {formatCurrency(job.authorisedTotal)}
                       </td>

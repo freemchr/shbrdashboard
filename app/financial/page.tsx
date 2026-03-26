@@ -40,6 +40,7 @@ export default function FinancialPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAllZero, setShowAllZero] = useState(false);
+  const [breakdownTab, setBreakdownTab] = useState<'region' | 'type' | 'status'>('region');
 
   useEffect(() => {
     fetch('/api/prime/financial')
@@ -92,77 +93,89 @@ export default function FinancialPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
-
-        {/* By Region */}
-        <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
-          <h2 className="text-base font-semibold text-white mb-4">Auth. Value by Region</h2>
-          <div className="space-y-2">
-            {data.byRegion.map(r => {
-              const pct = data.totalAuthIncTax > 0 ? (r.total / data.totalAuthIncTax) * 100 : 0;
-              return (
-                <div key={r.region}>
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-gray-300 truncate max-w-[140px]">{r.region}</span>
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <span className="text-gray-500">{r.count} jobs</span>
-                      <span className="text-white font-mono font-medium">{formatCurrency(r.total)}</span>
-                    </div>
-                  </div>
-                  <div className="h-1.5 bg-gray-800 rounded-full">
-                    <div className="h-full bg-red-600 rounded-full" style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      {/* Breakdown — tabbed on mobile, 3-col on xl */}
+      <div className="mb-6">
+        {/* Tab switcher — visible below xl */}
+        <div className="flex items-center gap-1 mb-4 xl:hidden bg-gray-800 border border-gray-700 rounded-lg p-1 w-fit">
+          {(['region', 'type', 'status'] as const).map(tab => (
+            <button key={tab} onClick={() => setBreakdownTab(tab)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors capitalize ${breakdownTab === tab ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+              {tab === 'type' ? 'Job Type' : tab === 'status' ? 'Status' : 'Region'}
+            </button>
+          ))}
         </div>
 
-        {/* By Job Type */}
-        <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
-          <h2 className="text-base font-semibold text-white mb-4">Auth. Value by Job Type</h2>
-          <div className="space-y-2">
-            {data.byJobType.map(t => {
-              const pct = data.totalAuthIncTax > 0 ? (t.total / data.totalAuthIncTax) * 100 : 0;
-              return (
-                <div key={t.jobType}>
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-gray-300 truncate max-w-[140px]">{t.jobType}</span>
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <span className="text-gray-500">{t.count} jobs</span>
-                      <span className="text-white font-mono font-medium">{formatCurrency(t.total)}</span>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          {/* By Region */}
+          <div className={`bg-gray-900 rounded-xl border border-gray-800 p-5 ${breakdownTab !== 'region' ? 'hidden xl:block' : ''}`}>
+            <h2 className="text-base font-semibold text-white mb-4">Auth. Value by Region</h2>
+            <div className="space-y-2">
+              {data.byRegion.map(r => {
+                const pct = data.totalAuthIncTax > 0 ? (r.total / data.totalAuthIncTax) * 100 : 0;
+                return (
+                  <div key={r.region}>
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="text-gray-300 truncate max-w-[140px]">{r.region}</span>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <span className="text-gray-500">{r.count} jobs</span>
+                        <span className="text-white font-mono font-medium">{formatCurrency(r.total)}</span>
+                      </div>
+                    </div>
+                    <div className="h-1.5 bg-gray-800 rounded-full">
+                      <div className="h-full bg-red-600 rounded-full" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
-                  <div className="h-1.5 bg-gray-800 rounded-full">
-                    <div className="h-full bg-orange-500 rounded-full" style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
 
-        {/* By Status (top 12) */}
-        <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
-          <h2 className="text-base font-semibold text-white mb-4">Auth. Value by Status (top 12)</h2>
-          <div className="space-y-2">
-            {data.byStatus.slice(0, 12).map(s => {
-              const pct = data.totalAuthIncTax > 0 ? (s.total / data.totalAuthIncTax) * 100 : 0;
-              return (
-                <div key={s.status}>
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-gray-300 truncate max-w-[140px]">{s.status}</span>
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <span className="text-gray-500">{s.count} jobs</span>
-                      <span className="text-white font-mono font-medium">{formatCurrency(s.total)}</span>
+          {/* By Job Type */}
+          <div className={`bg-gray-900 rounded-xl border border-gray-800 p-5 ${breakdownTab !== 'type' ? 'hidden xl:block' : ''}`}>
+            <h2 className="text-base font-semibold text-white mb-4">Auth. Value by Job Type</h2>
+            <div className="space-y-2">
+              {data.byJobType.map(t => {
+                const pct = data.totalAuthIncTax > 0 ? (t.total / data.totalAuthIncTax) * 100 : 0;
+                return (
+                  <div key={t.jobType}>
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="text-gray-300 truncate max-w-[140px]">{t.jobType}</span>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <span className="text-gray-500">{t.count} jobs</span>
+                        <span className="text-white font-mono font-medium">{formatCurrency(t.total)}</span>
+                      </div>
+                    </div>
+                    <div className="h-1.5 bg-gray-800 rounded-full">
+                      <div className="h-full bg-orange-500 rounded-full" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
-                  <div className="h-1.5 bg-gray-800 rounded-full">
-                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${pct}%` }} />
+                );
+              })}
+            </div>
+          </div>
+
+          {/* By Status (top 12) */}
+          <div className={`bg-gray-900 rounded-xl border border-gray-800 p-5 ${breakdownTab !== 'status' ? 'hidden xl:block' : ''}`}>
+            <h2 className="text-base font-semibold text-white mb-4">Auth. Value by Status (top 12)</h2>
+            <div className="space-y-2">
+              {data.byStatus.slice(0, 12).map(s => {
+                const pct = data.totalAuthIncTax > 0 ? (s.total / data.totalAuthIncTax) * 100 : 0;
+                return (
+                  <div key={s.status}>
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="text-gray-300 truncate max-w-[140px]">{s.status}</span>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <span className="text-gray-500">{s.count} jobs</span>
+                        <span className="text-white font-mono font-medium">{formatCurrency(s.total)}</span>
+                      </div>
+                    </div>
+                    <div className="h-1.5 bg-gray-800 rounded-full">
+                      <div className="h-full bg-blue-500 rounded-full" style={{ width: `${pct}%` }} />
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

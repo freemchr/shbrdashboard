@@ -6,7 +6,8 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { BarChartComponent } from '@/components/charts/BarChartComponent';
 import { ErrorMessage, LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatCurrency, formatDate } from '@/lib/prime-helpers';
-import { ExternalLink, X, Download, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { ExternalLink, X, Download, ChevronUp, ChevronDown, ChevronsUpDown, BarChart2 } from 'lucide-react';
+import { JobTypeBadge, StatusBadge } from '@/components/ui/StatusBadge';
 import { downloadCSV } from '@/lib/export-csv';
 
 interface StatusCount { status: string; count: number; statusType: string; }
@@ -31,6 +32,7 @@ function PipelineContent() {
   const [regionFilter, setRegionFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [search, setSearch] = useState('');
+  const [chartsOpen, setChartsOpen] = useState(false);
   type SortKey = 'jobNumber' | 'address' | 'clientReference' | 'status' | 'jobType' | 'region' | 'authorisedTotal' | 'updatedAt';
   const [sortKey, setSortKey] = useState<SortKey>('updatedAt');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
@@ -95,20 +97,35 @@ function PipelineContent() {
     <div>
       <PageHeader title="Pipeline" subtitle="All open jobs — filter by status, region, or type" />
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
-        {/* Status chart — clickable */}
-        <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
-          <h2 className="text-base font-semibold text-white mb-1">Open Jobs by Status</h2>
-          <p className="text-xs text-gray-500 mb-4">Click a bar to filter the job list below</p>
-          <BarChartComponent data={chartData} height={280} onBarClick={handleBarClick} activeBar={statusFilter} />
-        </div>
-
-        {/* Weekly chart */}
-        <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
-          <h2 className="text-base font-semibold text-white mb-1">Jobs Created per Week</h2>
-          <p className="text-xs text-gray-500 mb-4">Last 12 weeks</p>
-          <BarChartComponent data={weeklyData.map(w => ({ name: w.label, value: w.count }))} height={280} />
-        </div>
+      {/* Charts — collapsible toggle */}
+      <div className="bg-gray-900 rounded-xl border border-gray-800 mb-6 overflow-hidden">
+        <button
+          onClick={() => setChartsOpen(o => !o)}
+          className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-gray-800/40 transition-colors text-left"
+        >
+          <div className="flex items-center gap-2">
+            <BarChart2 size={16} className="text-gray-400" />
+            <span className="text-sm font-semibold text-white">Charts</span>
+            <span className="text-xs text-gray-500">— Status breakdown &amp; weekly trend</span>
+          </div>
+          {chartsOpen
+            ? <ChevronUp size={16} className="text-gray-500" />
+            : <ChevronDown size={16} className="text-gray-500" />}
+        </button>
+        {chartsOpen && (
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 p-5 border-t border-gray-800">
+            <div>
+              <h2 className="text-base font-semibold text-white mb-1">Open Jobs by Status</h2>
+              <p className="text-xs text-gray-500 mb-4">Click a bar to filter the job list below</p>
+              <BarChartComponent data={chartData} height={260} onBarClick={handleBarClick} activeBar={statusFilter} />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-white mb-1">Jobs Created per Week</h2>
+              <p className="text-xs text-gray-500 mb-4">Last 12 weeks</p>
+              <BarChartComponent data={weeklyData.map(w => ({ name: w.label, value: w.count }))} height={260} />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
@@ -188,8 +205,8 @@ function PipelineContent() {
             <tbody>
               {filtered.length === 0 ? (
                 <tr><td colSpan={9} className="py-12 text-center text-gray-500">No jobs match your filters</td></tr>
-              ) : filtered.map(job => (
-                <tr key={job.id} className="border-b border-gray-800/50 hover:bg-gray-800/40 transition-colors">
+              ) : filtered.map((job, idx) => (
+                <tr key={job.id} className={`border-b border-gray-800/40 hover:bg-gray-800/50 transition-colors ${idx % 2 === 0 ? '' : 'bg-gray-900/60'}`}>
                   <td className="py-2.5 px-3 font-mono text-red-400 text-xs whitespace-nowrap">
                     {job.primeUrl ? (
                       <a href={job.primeUrl} target="_blank" rel="noopener noreferrer" className="hover:text-red-300 underline underline-offset-2">
@@ -200,12 +217,13 @@ function PipelineContent() {
                   <td className="py-2.5 px-3 text-gray-300 max-w-[140px] truncate">{job.address}</td>
                   <td className="py-2.5 px-3 text-gray-400 text-xs whitespace-nowrap hidden md:table-cell">{job.clientReference || '—'}</td>
                   <td className="py-2.5 px-3">
-                    <button onClick={() => setStatusFilter(s => s === job.status ? '' : job.status)}
-                      className="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-0.5 rounded-full transition-colors whitespace-nowrap">
-                      {job.status}
+                    <button onClick={() => setStatusFilter(s => s === job.status ? '' : job.status)} title="Click to filter by status">
+                      <StatusBadge label={job.status} />
                     </button>
                   </td>
-                  <td className="py-2.5 px-3 text-gray-400 text-xs whitespace-nowrap hidden sm:table-cell">{job.jobType}</td>
+                  <td className="py-2.5 px-3 hidden sm:table-cell">
+                    {job.jobType ? <JobTypeBadge label={job.jobType} /> : <span className="text-gray-600 text-xs">—</span>}
+                  </td>
                   <td className="py-2.5 px-3 text-gray-400 text-xs whitespace-nowrap hidden md:table-cell">{job.region}</td>
                   <td className="py-2.5 px-3 text-right text-gray-300 text-xs whitespace-nowrap hidden sm:table-cell">{formatCurrency(job.authorisedTotal)}</td>
                   <td className="py-2.5 px-3 text-gray-500 text-xs whitespace-nowrap hidden lg:table-cell">

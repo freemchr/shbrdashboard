@@ -16,6 +16,7 @@ import {
   ShieldAlert,
   CalendarX,
 } from 'lucide-react';
+import { JobTypeBadge } from '@/components/ui/StatusBadge';
 
 // ── Schedule Types ──────────────────────────────────────────────────────────
 interface ScheduleJobEntry {
@@ -579,10 +580,10 @@ export default function SlaPage() {
                 </tr>
               </thead>
               <tbody>
-                {sorted.map(job => (
+                {sorted.map((job, idx) => (
                   <tr
                     key={job.id}
-                    className={`border-b transition-colors hover:brightness-110 ${severityRowClass(job.severity)}`}
+                    className={`border-b transition-colors hover:brightness-110 ${severityRowClass(job.severity)} ${idx % 2 !== 0 ? 'brightness-[0.92]' : ''}`}
                   >
                     <td className="py-2 px-3 whitespace-nowrap">
                       {severityBadge(job.severity)}
@@ -608,7 +609,7 @@ export default function SlaPage() {
                     <td className="py-2 px-3 text-gray-300 text-xs max-w-[140px] truncate">{job.address}</td>
                     <td className="py-2 px-3 text-xs text-gray-400 whitespace-nowrap">{job.assignee}</td>
                     <td className="py-2 px-3 text-xs text-gray-400 max-w-[120px] truncate">{job.status}</td>
-                    <td className="py-2 px-3 text-xs text-gray-500 whitespace-nowrap hidden sm:table-cell">{job.jobType}</td>
+                    <td className="py-2 px-3 hidden sm:table-cell">{job.jobType ? <JobTypeBadge label={job.jobType} /> : <span className="text-gray-600 text-xs">—</span>}</td>
                     <td className="py-2 px-3 text-xs text-gray-500 whitespace-nowrap hidden sm:table-cell">{job.region}</td>
                     <td className="py-2 px-3 text-xs whitespace-nowrap">
                       <span className={

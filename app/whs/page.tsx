@@ -379,13 +379,13 @@ export default function WHSPage() {
           <span className="flex items-center gap-1.5"><DotIndicator color="bg-red-400" /> Red = action required</span>
         </div>
 
-        {/* ── Charts Row ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* ── Charts Row — stacked vertically for readability ── */}
+        <div className="grid grid-cols-1 gap-4">
           {/* Status Distribution */}
           <div className="bg-[#111111] rounded-xl border border-gray-800 p-5">
             <h3 className="text-sm font-semibold text-white mb-1">SWMS Status Distribution</h3>
             <p className="text-xs text-gray-500 mb-4">All forms in the last 180 days</p>
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={180}>
               <BarChart data={statusDist} layout="vertical" margin={{ left: 10, right: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
@@ -418,7 +418,7 @@ export default function WHSPage() {
             <p className="text-xs text-gray-500 mb-4">
               Completion rate % and total forms created per month
             </p>
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={220}>
               <LineChart data={data.trend.map((t) => ({ ...t, month: formatMonth(t.month) }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
