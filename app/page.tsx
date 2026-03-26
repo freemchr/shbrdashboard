@@ -8,6 +8,8 @@ import { formatDate, formatCurrency } from '@/lib/prime-helpers';
 import { ExternalLink, Briefcase, AlertTriangle, Calendar, Hash, X, ChevronRight, FileText, LayoutGrid, List, ChevronLeft, ChevronsUpDown, ChevronDown, ChevronUp } from 'lucide-react';
 import Link from 'next/link';
 import { DataRefreshButton } from '@/components/ui/DataRefreshButton';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { JobTypeBadge } from '@/components/ui/StatusBadge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, LabelList } from 'recharts';
 import type { TrendsResult } from '@/app/api/prime/jobs/trends/route';
 
@@ -73,8 +75,8 @@ function JobRow({ job }: { job: FlatJob }) {
             <span className="font-mono text-red-400 text-xs font-semibold">{job.jobNumber}</span>
           )}
           {job.clientReference && <span className="text-xs text-gray-500 font-mono">{job.clientReference}</span>}
-          <span className="text-xs bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">{job.jobType}</span>
-          <span className="text-xs text-gray-500">{job.region}</span>
+          {job.jobType && <JobTypeBadge label={job.jobType} />}
+          {job.region && <span className="text-xs text-gray-500">{job.region}</span>}
         </div>
         <p className="text-gray-300 truncate mt-0.5 text-xs">{job.address}</p>
         <div className="flex items-center gap-3 mt-0.5 flex-wrap">
@@ -354,7 +356,7 @@ export default function OverviewPage() {
           {loadingCounts ? (
             <LoadingSpinner message="Loading status counts…" />
           ) : chartData.length === 0 ? (
-            <p className="text-gray-500 text-sm py-8 text-center">No data</p>
+            <EmptyState variant="default" heading="No status data" body="No open job statuses to display." />
           ) : (
             <div ref={chartScrollRef} className="overflow-x-auto scrollbar-hide">
               <div style={{ width: chartWidth, minWidth: '100%' }}>
@@ -408,7 +410,7 @@ export default function OverviewPage() {
           ) : (
             <div className="space-y-2 max-h-[340px] overflow-y-auto pr-1">
               {reportQuoteJobs.slice(0, 30).map(job => <JobRow key={job.id} job={job} />)}
-              {reportQuoteJobs.length === 0 && <p className="text-gray-500 text-sm py-8 text-center">No jobs</p>}
+              {reportQuoteJobs.length === 0 && <EmptyState variant="jobs" heading="No jobs" body="No Report/Quote Sent jobs." />}
               {reportQuoteJobs.length > 30 && (
                 <p className="text-xs text-gray-600 text-center pt-2">+{reportQuoteJobs.length - 30} more · use Job Search</p>
               )}
@@ -486,7 +488,7 @@ export default function OverviewPage() {
             {loadingJobs ? (
               <LoadingSpinner message="Loading jobs…" />
             ) : jobs.length === 0 ? (
-              <p className="text-gray-500 text-sm py-8 text-center">No jobs found.</p>
+              <EmptyState variant="jobs" heading="No jobs found" body="No jobs match this status." />
             ) : viewMode === 'tile' ? (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
