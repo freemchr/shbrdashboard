@@ -37,14 +37,17 @@ import { useState, useEffect } from 'react';
 const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/command-centre', label: 'Command Centre', icon: Tv2 },
-  { href: '/weather', label: 'Weather', icon: Cloud },
-  { href: '/cat-forecast', label: 'CAT Forecast', icon: Zap },
   { href: '/whs', label: 'WHS', icon: ShieldCheck },
   { href: '/pipeline', label: 'Pipeline', icon: GitBranch },
   { href: '/stalled', label: 'Stalled Jobs', icon: Clock },
   { href: '/financial', label: 'Financial', icon: DollarSign },
   { href: '/search', label: 'Job Search', icon: Search },
   { href: '/map', label: 'Jobs Map', icon: Map },
+];
+
+const weatherSubItems = [
+  { href: '/weather', label: 'Forecast', icon: Cloud },
+  { href: '/cat-forecast', label: 'CAT Demand', icon: Zap },
 ];
 
 const opsSubItems = [
@@ -99,6 +102,9 @@ export function Sidebar() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
 
+  const isInWeather = pathname.startsWith('/weather') || pathname.startsWith('/cat-forecast');
+  const [weatherOpen, setWeatherOpen] = useState(isInWeather);
+
   const isInOps = pathname.startsWith('/ops') || pathname.startsWith('/team') || pathname.startsWith('/sla');
   const [opsOpen, setOpsOpen] = useState(isInOps);
 
@@ -108,6 +114,7 @@ export function Sidebar() {
   const isInEstimators = pathname.startsWith('/estimators') || pathname.startsWith('/timeline');
   const [estimatorsOpen, setEstimatorsOpen] = useState(isInEstimators);
 
+  useEffect(() => { if (isInWeather) setWeatherOpen(true); }, [isInWeather]);
   useEffect(() => { if (isInOps) setOpsOpen(true); }, [isInOps]);
   useEffect(() => { if (isInReports) setReportsOpen(true); }, [isInReports]);
   useEffect(() => { if (isInEstimators) setEstimatorsOpen(true); }, [isInEstimators]);
@@ -141,7 +148,7 @@ export function Sidebar() {
 
   // Overview + Command Centre sit above all groups; everything else below
   const navItemsTop    = navItems.slice(0, 2);  // Overview, Command Centre
-  const navItemsBottom = navItems.slice(2);     // Weather, WHS, Pipeline, Stalled, Financial, Search, Map
+  const navItemsBottom = navItems.slice(2);     // WHS, Pipeline, Stalled, Financial, Search, Map
 
   return (
     <>
@@ -186,6 +193,40 @@ export function Sidebar() {
               active={isActive(item.href)}
             />
           ))}
+
+          {/* Collapsible Weather & CAT group */}
+          <div>
+            <button
+              onClick={() => setWeatherOpen(o => !o)}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all
+                ${isInWeather ? 'text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'}`}
+            >
+              <Cloud size={18} className={isInWeather ? 'text-red-400' : ''} />
+              <span className="flex-1 text-left">Weather & CAT</span>
+              <ChevronDown
+                size={15}
+                className={`text-gray-500 transition-transform duration-200 ${weatherOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+            <div className={`overflow-hidden transition-all duration-200 ${weatherOpen ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
+              <div className="mt-0.5 space-y-0.5">
+                {weatherSubItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-3 pl-8 pr-4 py-2 rounded-lg text-sm transition-all
+                      ${isActive(item.href)
+                        ? 'bg-red-600 text-white font-medium'
+                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                      }`}
+                  >
+                    <item.icon size={15} />
+                    <span className="flex-1">{item.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
 
           {/* Collapsible Operations group — Job Board + Team Performance */}
           <div>
