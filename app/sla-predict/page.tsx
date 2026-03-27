@@ -299,7 +299,7 @@ export default function SlaPredictPage() {
     <div>
       <PageHeader
         title="SLA Risk Predictor"
-        subtitle="Jobs predicted to breach in the next 14 days"
+        subtitle="Jobs on track to breach their SLA in the next 14 days — act now to prevent it"
         actions={
           <div className="flex items-center gap-2">
             <DataRefreshButton />
@@ -312,6 +312,16 @@ export default function SlaPredictPage() {
           </div>
         }
       />
+
+      {/* Context banner */}
+      <div className="mb-5 flex items-start gap-3 bg-gray-900/60 border border-gray-700/50 rounded-xl px-4 py-3">
+        <TrendingUp size={16} className="text-yellow-400 flex-shrink-0 mt-0.5" />
+        <p className="text-gray-400 text-xs leading-relaxed">
+          <span className="text-gray-200 font-medium">SLA Predictor</span> uses a risk scoring model to flag jobs <span className="text-yellow-300">before they breach</span> — based on SLA progress, staleness, and status category.
+          {' '}Score 75+ = breach imminent. For jobs that have <span className="text-orange-300">already breached</span>, see the{' '}
+          <a href="/sla" className="text-red-400 hover:text-red-300 underline underline-offset-2">SLA Tracker</a>.
+        </p>
+      </div>
 
       {/* Critical alert banner */}
       {summary.critical > 0 && (

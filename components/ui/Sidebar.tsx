@@ -50,12 +50,12 @@ const navItems = [
 const opsSubItems = [
   { href: '/ops', label: 'Job Board', icon: ClipboardList },
   { href: '/team', label: 'Team Performance', icon: Users },
+  { href: '/sla', label: 'SLA Tracker', icon: AlertTriangle, alert: true },
   { href: '/sla-predict', label: 'SLA Predictor', icon: TrendingUp, alert: true },
 ];
 
 const reportsSubItems = [
   { href: '/reports', label: 'Report Status', icon: BarChart2, alert: true },
-  { href: '/sla', label: 'SLA Tracker', icon: AlertTriangle, alert: true },
   { href: '/report-assist/polish', label: 'AI Polisher', icon: Sparkles },
 ];
 
@@ -99,10 +99,10 @@ export function Sidebar() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const isInOps = pathname.startsWith('/ops') || pathname.startsWith('/team');
+  const isInOps = pathname.startsWith('/ops') || pathname.startsWith('/team') || pathname.startsWith('/sla');
   const [opsOpen, setOpsOpen] = useState(isInOps);
 
-  const isInReports = pathname.startsWith('/reports') || pathname.startsWith('/report-assist') || pathname.startsWith('/sla');
+  const isInReports = pathname.startsWith('/reports') || pathname.startsWith('/report-assist');
   const [reportsOpen, setReportsOpen] = useState(isInReports);
 
   const isInEstimators = pathname.startsWith('/estimators') || pathname.startsWith('/timeline');
@@ -201,7 +201,7 @@ export function Sidebar() {
                 className={`text-gray-500 transition-transform duration-200 ${opsOpen ? 'rotate-180' : ''}`}
               />
             </button>
-            <div className={`overflow-hidden transition-all duration-200 ${opsOpen ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
+            <div className={`overflow-hidden transition-all duration-200 ${opsOpen ? 'max-h-56 opacity-100' : 'max-h-0 opacity-0'}`}>
               <div className="mt-0.5 space-y-0.5">
                 {opsSubItems.map((item) => (
                   <Link

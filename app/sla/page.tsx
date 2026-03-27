@@ -393,7 +393,7 @@ export default function SlaPage() {
     <div>
       <PageHeader
         title="SLA Tracker"
-        subtitle="Monitor SLA breaches and at-risk jobs across the open portfolio"
+        subtitle="Jobs that have already breached their SLA targets — action required now"
         actions={
           <button
             onClick={handleExport}
@@ -403,6 +403,16 @@ export default function SlaPage() {
           </button>
         }
       />
+
+      {/* Context banner */}
+      <div className="mb-5 flex items-start gap-3 bg-gray-900/60 border border-gray-700/50 rounded-xl px-4 py-3">
+        <AlertTriangle size={16} className="text-orange-400 flex-shrink-0 mt-0.5" />
+        <p className="text-gray-400 text-xs leading-relaxed">
+          <span className="text-gray-200 font-medium">SLA Tracker</span> shows jobs that have <span className="text-orange-300">already breached</span> their SLA deadline — these need immediate action.
+          {' '}To see jobs <span className="text-yellow-300">heading toward a breach</span> before it happens, use the{' '}
+          <a href="/sla-predict" className="text-red-400 hover:text-red-300 underline underline-offset-2">SLA Predictor</a>.
+        </p>
+      </div>
 
       {/* Critical alert banner */}
       {summary.critical > 0 && (
