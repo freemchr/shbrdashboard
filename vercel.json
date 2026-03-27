@@ -7,6 +7,14 @@
     {
       "path": "/api/prime/jobs/timeline",
       "schedule": "0 20 * * *"
+    },
+    {
+      "path": "/api/weather/bom-warnings",
+      "schedule": "0 1 * * 1"
+    },
+    {
+      "path": "/api/prime/jobs/sla-predict",
+      "schedule": "0 19 * * *"
     }
   ]
 }

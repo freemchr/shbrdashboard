@@ -29,6 +29,8 @@ import {
   GitCommit,
   ClipboardList,
   Flag,
+  TrendingUp,
+  Zap,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -36,6 +38,7 @@ const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/command-centre', label: 'Command Centre', icon: Tv2 },
   { href: '/weather', label: 'Weather', icon: Cloud },
+  { href: '/cat-forecast', label: 'CAT Forecast', icon: Zap },
   { href: '/whs', label: 'WHS', icon: ShieldCheck },
   { href: '/pipeline', label: 'Pipeline', icon: GitBranch },
   { href: '/stalled', label: 'Stalled Jobs', icon: Clock },
@@ -47,6 +50,7 @@ const navItems = [
 const opsSubItems = [
   { href: '/ops', label: 'Job Board', icon: ClipboardList },
   { href: '/team', label: 'Team Performance', icon: Users },
+  { href: '/sla-predict', label: 'SLA Predictor', icon: TrendingUp, alert: true },
 ];
 
 const reportsSubItems = [
