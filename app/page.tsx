@@ -61,35 +61,41 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
   return null;
 };
 
+// Compact single-line row for the Report/Quote Sent panel
 function JobRow({ job }: { job: FlatJob }) {
+  const pd = (s?: string) => s ? new Date(s.replace(' ', 'T')) : null;
+  const daysSince = job.updatedAt ? Math.floor((Date.now() - (pd(job.updatedAt)?.getTime() ?? 0)) / 86400000) : null;
   return (
-    <div className="flex items-start justify-between p-3 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors gap-3">
+    <div className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-800/60 transition-colors border border-transparent hover:border-gray-700/50 group">
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
           {job.primeUrl ? (
             <a href={job.primeUrl} target="_blank" rel="noopener noreferrer"
-              className="font-mono text-red-400 text-xs hover:text-red-300 underline underline-offset-2 font-semibold">
+              className="font-mono text-red-400 text-xs hover:text-red-300 font-semibold flex-shrink-0">
               {job.jobNumber}
             </a>
           ) : (
-            <span className="font-mono text-red-400 text-xs font-semibold">{job.jobNumber}</span>
+            <span className="font-mono text-red-400 text-xs font-semibold flex-shrink-0">{job.jobNumber}</span>
           )}
-          {job.clientReference && <span className="text-xs text-gray-500 font-mono">{job.clientReference}</span>}
-          {job.jobType && <JobTypeBadge label={job.jobType} />}
-          {job.region && <span className="text-xs text-gray-500">{job.region}</span>}
+          <span className="text-gray-400 text-xs truncate">{job.address}</span>
         </div>
-        <p className="text-gray-300 truncate mt-0.5 text-xs">{job.address}</p>
-        <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-          <p className="text-gray-600 text-xs">Updated {formatDate(job.updatedAt)} · {job.updatedBy || '—'}</p>
-          {job.authorisedTotal > 0 && <p className="text-gray-500 text-xs font-mono">{formatCurrency(job.authorisedTotal)}</p>}
+        <div className="flex items-center gap-2 mt-0.5">
+          {job.jobType && <JobTypeBadge label={job.jobType} />}
+          {job.region && <span className="text-[10px] text-gray-600">{job.region}</span>}
         </div>
       </div>
-      {job.primeUrl && (
-        <a href={job.primeUrl} target="_blank" rel="noopener noreferrer"
-          className="text-gray-500 hover:text-red-400 flex-shrink-0 mt-0.5">
-          <ExternalLink size={14} />
-        </a>
-      )}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {job.authorisedTotal > 0 && <span className="text-[11px] text-gray-500 font-mono hidden sm:block">{formatCurrency(job.authorisedTotal)}</span>}
+        {daysSince !== null && (
+          <span className={`text-[11px] font-mono font-bold flex-shrink-0 ${daysSince > 14 ? 'text-amber-400' : 'text-gray-600'}`}>{daysSince}d</span>
+        )}
+        {job.primeUrl && (
+          <a href={job.primeUrl} target="_blank" rel="noopener noreferrer"
+            className="text-gray-700 group-hover:text-red-400 transition-colors">
+            <ExternalLink size={12} />
+          </a>
+        )}
+      </div>
     </div>
   );
 }
@@ -290,18 +296,23 @@ export default function OverviewPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 xl:grid-cols-5 gap-4 mb-8">
-        <KpiCard title="Total Jobs" value={loadingKpis ? '…' : (kpis?.totalJobs ?? '—')} icon={<Hash size={18} />} />
+        <KpiCard title="Total Jobs" value={loadingKpis ? '…' : (kpis?.totalJobs ?? '—')} icon={<Hash size={18} />}
+          trend={trends && !loadingKpis ? { delta: trends.openNow - trends.openLastWeek, upIsGood: false } : undefined} />
         <KpiCard title="Open Jobs" value={loadingCounts ? '…' : totalOpen} icon={<Briefcase size={18} />}
-          onClick={() => openKpiPanel('open')} active={kpiPanel === 'open'} subtitle="Click to view ↓" />
+          onClick={() => openKpiPanel('open')} active={kpiPanel === 'open'} subtitle="Click to view ↓"
+          trend={trends && !loadingCounts ? { delta: trends.openNow - trends.openLastWeek, upIsGood: false } : undefined} />
         <KpiCard title="Stuck >7 Days" value={loadingKpis ? '…' : (kpis?.stuckOver7Days ?? '—')}
           icon={<AlertTriangle size={18} />} accent={!loadingKpis && (kpis?.stuckOver7Days ?? 0) > 0}
-          onClick={() => openKpiPanel('stuck')} active={kpiPanel === 'stuck'} subtitle="Click to view ↓" />
+          onClick={() => openKpiPanel('stuck')} active={kpiPanel === 'stuck'} subtitle="Click to view ↓"
+          trend={trends && !loadingKpis ? { delta: trends.stuckNow - trends.stuckLastWeek, upIsGood: false } : undefined} />
         <KpiCard title="Created This Week" value={loadingKpis ? '…' : (kpis?.createdThisWeek ?? '—')}
           icon={<Calendar size={18} />}
-          onClick={() => openKpiPanel('week')} active={kpiPanel === 'week'} subtitle="Click to view ↓" />
+          onClick={() => openKpiPanel('week')} active={kpiPanel === 'week'} subtitle="Click to view ↓"
+          trend={trends && !loadingKpis ? { delta: trends.createdThisWeek - trends.createdLastWeek, upIsGood: true, label: 'vs last week' } : undefined} />
         <KpiCard title="Created This Month" value={loadingKpis ? '…' : (kpis?.createdThisMonth ?? '—')}
           icon={<Calendar size={18} />}
-          onClick={() => openKpiPanel('month')} active={kpiPanel === 'month'} subtitle="Click to view ↓" />
+          onClick={() => openKpiPanel('month')} active={kpiPanel === 'month'} subtitle="Click to view ↓"
+          trend={trends && !loadingKpis ? { delta: trends.createdThisMonth - trends.createdLastMonth, upIsGood: true, label: 'vs last month' } : undefined} />
       </div>
 
       {error && <ErrorMessage message={error} />}

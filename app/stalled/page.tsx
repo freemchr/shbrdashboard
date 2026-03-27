@@ -110,9 +110,12 @@ function AgeTab() {
   return (
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <KpiCard title=">30 Days Open" value={data.buckets.over30} icon={<Clock size={18} />} subtitle="Needs attention" />
-        <KpiCard title=">60 Days Open" value={data.buckets.over60} icon={<Clock size={18} />} accent={data.buckets.over60 > 0} subtitle="Overdue" />
-        <KpiCard title=">90 Days Open" value={data.buckets.over90} icon={<Clock size={18} />} accent={data.buckets.over90 > 0} subtitle="Critical" />
+        <KpiCard title=">30 Days Open" value={data.buckets.over30} icon={<Clock size={18} />}
+          subtitle={`${data.jobs.length > 0 ? Math.round(data.buckets.over30 / data.jobs.length * 100) : 0}% of all open jobs`} />
+        <KpiCard title=">60 Days Open" value={data.buckets.over60} icon={<Clock size={18} />} accent={data.buckets.over60 > 0}
+          subtitle={`${data.jobs.length > 0 ? Math.round(data.buckets.over60 / data.jobs.length * 100) : 0}% of all open jobs`} />
+        <KpiCard title=">90 Days Open" value={data.buckets.over90} icon={<Clock size={18} />} accent={data.buckets.over90 > 0}
+          subtitle={`${data.jobs.length > 0 ? Math.round(data.buckets.over90 / data.jobs.length * 100) : 0}% of all open jobs — critical`} />
       </div>
 
       <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">

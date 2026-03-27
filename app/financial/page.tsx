@@ -109,20 +109,23 @@ export default function FinancialPage() {
           {/* By Region */}
           <div className={`bg-gray-900 rounded-xl border border-gray-800 p-5 ${breakdownTab !== 'region' ? 'hidden xl:block' : ''}`}>
             <h2 className="text-base font-semibold text-white mb-4">Auth. Value by Region</h2>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {data.byRegion.map(r => {
                 const pct = data.totalAuthIncTax > 0 ? (r.total / data.totalAuthIncTax) * 100 : 0;
                 return (
                   <div key={r.region}>
-                    <div className="flex items-center justify-between text-xs mb-1">
+                    <div className="flex items-center justify-between text-xs mb-1.5">
                       <span className="text-gray-300 truncate max-w-[140px]">{r.region}</span>
                       <div className="flex items-center gap-3 flex-shrink-0">
                         <span className="text-gray-500">{r.count} jobs</span>
                         <span className="text-white font-mono font-medium">{formatCurrency(r.total)}</span>
                       </div>
                     </div>
-                    <div className="h-1.5 bg-gray-800 rounded-full">
-                      <div className="h-full bg-red-600 rounded-full" style={{ width: `${pct}%` }} />
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2.5 bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-red-600 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-[11px] text-gray-500 w-9 text-right flex-shrink-0">{pct.toFixed(0)}%</span>
                     </div>
                   </div>
                 );
@@ -133,20 +136,23 @@ export default function FinancialPage() {
           {/* By Job Type */}
           <div className={`bg-gray-900 rounded-xl border border-gray-800 p-5 ${breakdownTab !== 'type' ? 'hidden xl:block' : ''}`}>
             <h2 className="text-base font-semibold text-white mb-4">Auth. Value by Job Type</h2>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {data.byJobType.map(t => {
                 const pct = data.totalAuthIncTax > 0 ? (t.total / data.totalAuthIncTax) * 100 : 0;
                 return (
                   <div key={t.jobType}>
-                    <div className="flex items-center justify-between text-xs mb-1">
+                    <div className="flex items-center justify-between text-xs mb-1.5">
                       <span className="text-gray-300 truncate max-w-[140px]">{t.jobType}</span>
                       <div className="flex items-center gap-3 flex-shrink-0">
                         <span className="text-gray-500">{t.count} jobs</span>
                         <span className="text-white font-mono font-medium">{formatCurrency(t.total)}</span>
                       </div>
                     </div>
-                    <div className="h-1.5 bg-gray-800 rounded-full">
-                      <div className="h-full bg-orange-500 rounded-full" style={{ width: `${pct}%` }} />
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2.5 bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-orange-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-[11px] text-gray-500 w-9 text-right flex-shrink-0">{pct.toFixed(0)}%</span>
                     </div>
                   </div>
                 );
@@ -157,20 +163,23 @@ export default function FinancialPage() {
           {/* By Status (top 12) */}
           <div className={`bg-gray-900 rounded-xl border border-gray-800 p-5 ${breakdownTab !== 'status' ? 'hidden xl:block' : ''}`}>
             <h2 className="text-base font-semibold text-white mb-4">Auth. Value by Status (top 12)</h2>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {data.byStatus.slice(0, 12).map(s => {
                 const pct = data.totalAuthIncTax > 0 ? (s.total / data.totalAuthIncTax) * 100 : 0;
                 return (
                   <div key={s.status}>
-                    <div className="flex items-center justify-between text-xs mb-1">
+                    <div className="flex items-center justify-between text-xs mb-1.5">
                       <span className="text-gray-300 truncate max-w-[140px]">{s.status}</span>
                       <div className="flex items-center gap-3 flex-shrink-0">
                         <span className="text-gray-500">{s.count} jobs</span>
                         <span className="text-white font-mono font-medium">{formatCurrency(s.total)}</span>
                       </div>
                     </div>
-                    <div className="h-1.5 bg-gray-800 rounded-full">
-                      <div className="h-full bg-blue-500 rounded-full" style={{ width: `${pct}%` }} />
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2.5 bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-[11px] text-gray-500 w-9 text-right flex-shrink-0">{pct.toFixed(0)}%</span>
                     </div>
                   </div>
                 );

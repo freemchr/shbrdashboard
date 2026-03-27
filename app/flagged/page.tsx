@@ -130,12 +130,23 @@ function EolTab() {
             <h2 className="text-sm font-semibold text-white">EOL Jobs by Region</h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {byRegionSorted.map(([region, count]) => (
-              <div key={region} className="bg-gray-800 rounded-lg px-4 py-3 flex items-center justify-between">
-                <span className="text-xs text-gray-400 truncate">{region}</span>
-                <span className="text-sm font-bold text-blue-300 ml-2 flex-shrink-0">{count}</span>
-              </div>
-            ))}
+            {byRegionSorted.map(([region, count], idx) => {
+              // Top 3 get progressively warmer tints
+              const tileClass = idx === 0
+                ? 'bg-amber-950/40 border border-amber-700/40'
+                : idx === 1
+                  ? 'bg-amber-950/20 border border-amber-800/30'
+                  : idx === 2
+                    ? 'bg-yellow-950/20 border border-yellow-900/20'
+                    : 'bg-gray-800 border border-gray-700/50';
+              const countClass = idx === 0 ? 'text-amber-300' : idx <= 2 ? 'text-yellow-300' : 'text-blue-300';
+              return (
+                <div key={region} className={`rounded-lg px-4 py-3 flex items-center justify-between ${tileClass}`}>
+                  <span className="text-xs text-gray-400 truncate">{region}</span>
+                  <span className={`text-sm font-bold ml-2 flex-shrink-0 ${countClass}`}>{count}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

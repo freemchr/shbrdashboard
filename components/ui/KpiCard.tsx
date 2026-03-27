@@ -1,4 +1,11 @@
 import { ReactNode } from 'react';
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+
+export interface TrendDelta {
+  delta: number;
+  upIsGood?: boolean; // true = more is good (e.g. created jobs), false = more is bad (e.g. open/stuck)
+  label?: string;     // e.g. "vs last week"
+}
 
 interface KpiCardProps {
   title: string;
@@ -9,11 +16,35 @@ interface KpiCardProps {
   loading?: boolean;
   onClick?: () => void;
   active?: boolean;
+  trend?: TrendDelta;
 }
 
-// ── #5  KPI Card with multi-line shimmer skeleton (inspired by 21st.dev Cards)
-export function KpiCard({ title, value, subtitle, icon, accent, loading, onClick, active }: KpiCardProps) {
+export function KpiCard({ title, value, subtitle, icon, accent, loading, onClick, active, trend }: KpiCardProps) {
   const clickable = !!onClick;
+
+  // Determine trend colour and icon
+  let trendEl: ReactNode = null;
+  if (trend && !loading && trend.delta !== 0) {
+    const up = trend.delta > 0;
+    const good = trend.upIsGood ? up : !up;
+    const colour = good ? 'text-emerald-400' : 'text-red-400';
+    const Icon = up ? TrendingUp : TrendingDown;
+    const sign = up ? '+' : '';
+    const lbl = trend.label ?? 'vs last week';
+    trendEl = (
+      <span className={`flex items-center gap-1 text-[11px] font-medium ${colour}`}>
+        <Icon size={11} />
+        {sign}{trend.delta} <span className="text-gray-600 font-normal">{lbl}</span>
+      </span>
+    );
+  } else if (trend && !loading && trend.delta === 0) {
+    trendEl = (
+      <span className="flex items-center gap-1 text-[11px] text-gray-600">
+        <Minus size={11} /> no change
+      </span>
+    );
+  }
+
   return (
     <div
       onClick={onClick}
@@ -32,7 +63,6 @@ export function KpiCard({ title, value, subtitle, icon, accent, loading, onClick
       </div>
 
       {loading ? (
-        /* Multi-line shimmer skeleton */
         <div className="space-y-2 py-1">
           <div className="h-7 w-20 rounded-md bg-gray-800 relative overflow-hidden">
             <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.4s_infinite] bg-gradient-to-r from-transparent via-gray-700/50 to-transparent" />
@@ -46,6 +76,9 @@ export function KpiCard({ title, value, subtitle, icon, accent, loading, onClick
           {value}
         </div>
       )}
+
+      {/* Trend delta */}
+      {trendEl && <div>{trendEl}</div>}
 
       {subtitle && !loading && (
         <p className={`text-xs ${active ? 'text-red-400/70' : 'text-gray-500'}`}>{subtitle}</p>
