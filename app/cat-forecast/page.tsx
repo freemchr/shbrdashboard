@@ -293,6 +293,10 @@ export default function CATForecastPage() {
   const [error, setError]       = useState<string | null>(null);
   // dataLoaded: only true after successful API response — gates AnimatedCounter
   const [dataLoaded, setDataLoaded] = useState(false);
+  // Sort state — declared here (before early returns) to satisfy Rules of Hooks
+  type SortKey = 'state' | 'predictedJobsThisWeek' | 'weatherSeverityScore' | 'activeWarnings' | 'multiplier';
+  const [sortKey, setSortKey] = useState<SortKey>('predictedJobsThisWeek');
+  const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc');
 
   useEffect(() => {
     fetch('/api/weather/bom-warnings')
@@ -314,11 +318,6 @@ export default function CATForecastPage() {
   if (!data)   return null;
 
   const hasActiveWarnings = data.activeWarningCount > 0;
-
-  // ── Sort state ──────────────────────────────────────────────────────────────
-  type SortKey = 'state' | 'predictedJobsThisWeek' | 'weatherSeverityScore' | 'activeWarnings' | 'multiplier';
-  const [sortKey, setSortKey] = useState<SortKey>('predictedJobsThisWeek');
-  const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc');
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
