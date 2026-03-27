@@ -201,7 +201,7 @@ export function Sidebar() {
                 className={`text-gray-500 transition-transform duration-200 ${opsOpen ? 'rotate-180' : ''}`}
               />
             </button>
-            <div className={`overflow-hidden transition-all duration-200 ${opsOpen ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
+            <div className={`overflow-hidden transition-all duration-200 ${opsOpen ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
               <div className="mt-0.5 space-y-0.5">
                 {opsSubItems.map((item) => (
                   <Link
