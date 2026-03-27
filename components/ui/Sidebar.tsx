@@ -35,15 +35,18 @@ import { useState, useEffect } from 'react';
 const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/command-centre', label: 'Command Centre', icon: Tv2 },
-  { href: '/ops', label: 'Operations', icon: ClipboardList },
   { href: '/weather', label: 'Weather', icon: Cloud },
   { href: '/whs', label: 'WHS', icon: ShieldCheck },
   { href: '/pipeline', label: 'Pipeline', icon: GitBranch },
   { href: '/stalled', label: 'Stalled Jobs', icon: Clock },
-  { href: '/team', label: 'Team', icon: Users },
   { href: '/financial', label: 'Financial', icon: DollarSign },
   { href: '/search', label: 'Job Search', icon: Search },
   { href: '/map', label: 'Jobs Map', icon: Map },
+];
+
+const opsSubItems = [
+  { href: '/ops', label: 'Job Board', icon: ClipboardList },
+  { href: '/team', label: 'Team Performance', icon: Users },
 ];
 
 const reportsSubItems = [
@@ -92,20 +95,18 @@ export function Sidebar() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
 
+  const isInOps = pathname.startsWith('/ops') || pathname.startsWith('/team');
+  const [opsOpen, setOpsOpen] = useState(isInOps);
+
   const isInReports = pathname.startsWith('/reports') || pathname.startsWith('/report-assist') || pathname.startsWith('/sla');
   const [reportsOpen, setReportsOpen] = useState(isInReports);
 
   const isInEstimators = pathname.startsWith('/estimators') || pathname.startsWith('/timeline');
   const [estimatorsOpen, setEstimatorsOpen] = useState(isInEstimators);
 
-  // Auto-expand when navigating into a reports or estimators route
-  useEffect(() => {
-    if (isInReports) setReportsOpen(true);
-  }, [isInReports]);
-
-  useEffect(() => {
-    if (isInEstimators) setEstimatorsOpen(true);
-  }, [isInEstimators]);
+  useEffect(() => { if (isInOps) setOpsOpen(true); }, [isInOps]);
+  useEffect(() => { if (isInReports) setReportsOpen(true); }, [isInReports]);
+  useEffect(() => { if (isInEstimators) setEstimatorsOpen(true); }, [isInEstimators]);
 
   useEffect(() => {
     fetch('/api/auth/session')
@@ -134,10 +135,9 @@ export function Sidebar() {
     router.refresh();
   };
 
-  // navItems before the Reports group (slice 0..3) and after (slice 3..)
-  // We render: items[0..3], Reports group, Flagged Jobs, Estimators group, items[3..]
-  const navItemsTop    = navItems.slice(0, 3);
-  const navItemsBottom = navItems.slice(3);
+  // Overview + Command Centre sit above all groups; everything else below
+  const navItemsTop    = navItems.slice(0, 2);  // Overview, Command Centre
+  const navItemsBottom = navItems.slice(2);     // Weather, WHS, Pipeline, Stalled, Financial, Search, Map
 
   return (
     <>
@@ -182,6 +182,40 @@ export function Sidebar() {
               active={isActive(item.href)}
             />
           ))}
+
+          {/* Collapsible Operations group — Job Board + Team Performance */}
+          <div>
+            <button
+              onClick={() => setOpsOpen(o => !o)}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all
+                ${isInOps ? 'text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'}`}
+            >
+              <ClipboardList size={18} className={isInOps ? 'text-red-400' : ''} />
+              <span className="flex-1 text-left">Operations</span>
+              <ChevronDown
+                size={15}
+                className={`text-gray-500 transition-transform duration-200 ${opsOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+            <div className={`overflow-hidden transition-all duration-200 ${opsOpen ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
+              <div className="mt-0.5 space-y-0.5">
+                {opsSubItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-3 pl-8 pr-4 py-2 rounded-lg text-sm transition-all
+                      ${isActive(item.href)
+                        ? 'bg-red-600 text-white font-medium'
+                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                      }`}
+                  >
+                    <item.icon size={15} />
+                    <span className="flex-1">{item.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
 
           {/* Collapsible Reports group */}
           <div>
@@ -267,7 +301,7 @@ export function Sidebar() {
             </div>
           </div>
 
-          {/* Remaining nav items (Weather, WHS, Pipeline, Stalled, Team, Financial, Search, Map) */}
+          {/* Remaining nav items (Weather, WHS, Pipeline, Stalled, Financial, Search, Map) */}
           {navItemsBottom.map((item) => (
             <NavItem
               key={item.href}
