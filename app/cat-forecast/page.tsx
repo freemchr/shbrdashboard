@@ -10,6 +10,9 @@ import {
   Thermometer,
   Droplets,
   Info,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
 } from 'lucide-react';
 import type { CATForecastResponse, StateCAT, BomWarning } from '@/app/api/weather/bom-warnings/route';
 
@@ -312,11 +315,33 @@ export default function CATForecastPage() {
 
   const hasActiveWarnings = data.activeWarningCount > 0;
 
-  // Bento grid column spans: NSW (index 0) and QLD (index 2) are wider
-  const bentoSpan = (state: string) => {
-    if (state === 'NSW' || state === 'QLD') return 'md:col-span-2';
-    return '';
+  // ── Sort state ──────────────────────────────────────────────────────────────
+  type SortKey = 'state' | 'predictedJobsThisWeek' | 'weatherSeverityScore' | 'activeWarnings' | 'multiplier';
+  const [sortKey, setSortKey] = useState<SortKey>('predictedJobsThisWeek');
+  const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc');
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir('desc'); }
   };
+
+  const sortedStates = [...data.states].sort((a, b) => {
+    let av: number | string;
+    let bv: number | string;
+    if (sortKey === 'state') { av = a.state; bv = b.state; }
+    else if (sortKey === 'activeWarnings') { av = a.activeWarnings.length; bv = b.activeWarnings.length; }
+    else { av = a[sortKey] as number; bv = b[sortKey] as number; }
+    if (av < bv) return sortDir === 'asc' ? -1 : 1;
+    if (av > bv) return sortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  function SortIcon({ col }: { col: SortKey }) {
+    if (sortKey !== col) return <ChevronsUpDown size={13} className="text-gray-600" />;
+    return sortDir === 'asc'
+      ? <ChevronUp size={13} className="text-red-400" />
+      : <ChevronDown size={13} className="text-red-400" />;
+  }
 
   return (
     <div>
@@ -408,17 +433,40 @@ export default function CATForecastPage() {
         </div>
       </div>
 
-      {/* Bento grid — NSW & QLD span 2 cols on md+, others span 1
-          Grid is 3 cols on xl, 2 cols on md, 1 on mobile */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 xl:grid-flow-row-dense">
-        {data.states.map(state => (
-          <div key={state.state} className={bentoSpan(state.state)}>
-            <StateCard
-              state={state}
-              enabled={dataLoaded}
-              generatedAt={data.fetchedAt}
-            />
-          </div>
+      {/* Sort controls */}
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <span className="text-xs text-gray-500 mr-1">Sort by:</span>
+        {([
+          { key: 'predictedJobsThisWeek', label: 'Predicted Jobs' },
+          { key: 'weatherSeverityScore',  label: 'Severity Score' },
+          { key: 'activeWarnings',        label: 'Active Warnings' },
+          { key: 'multiplier',            label: 'Multiplier' },
+          { key: 'state',                 label: 'State' },
+        ] as { key: SortKey; label: string }[]).map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => toggleSort(key)}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+              sortKey === key
+                ? 'bg-red-600 border-red-500 text-white'
+                : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white'
+            }`}
+          >
+            {label}
+            <SortIcon col={key} />
+          </button>
+        ))}
+      </div>
+
+      {/* Single-column state cards */}
+      <div className="flex flex-col gap-4">
+        {sortedStates.map(state => (
+          <StateCard
+            key={state.state}
+            state={state}
+            enabled={dataLoaded}
+            generatedAt={data.fetchedAt}
+          />
         ))}
       </div>
 
