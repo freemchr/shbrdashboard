@@ -277,7 +277,12 @@ export async function GET(req: NextRequest) {
     );
 
     // Aggregate
-    const totalPredictedJobs = results.reduce((sum, s) => sum + s.predictedJobsThisWeek, 0);
+    // National total = baseline + sum of per-state uplifts above baseline
+    // (baseline is already a national figure, not per-state)
+    const BASELINE = 45;
+    const totalPredictedJobs = BASELINE + results.reduce((sum, s) => {
+      return sum + Math.max(0, s.predictedJobsThisWeek - BASELINE);
+    }, 0);
     const activeWarningCount = results.reduce((sum, s) => sum + s.activeWarnings.length, 0);
 
     const highestRisk = results.reduce((best, s) =>
