@@ -133,6 +133,8 @@ export function Sidebar() {
       ? pathname === '/report-assist/polish'
       : href === '/'
       ? pathname === '/'
+      : href === '/sla'
+      ? pathname === '/sla'
       : pathname.startsWith(href);
 
   const handleLogout = async () => {
