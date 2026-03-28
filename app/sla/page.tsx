@@ -492,7 +492,7 @@ export default function SlaPage() {
     const body = buildEmailBody(tabLabel, sorted, includeWipCols);
     const subject = encodeURIComponent(`SHBR SLA Report — ${tabLabel} (${new Date().toLocaleDateString('en-AU')})`);
     const encodedBody = encodeURIComponent(body);
-    window.location.href = `mailto:stella@shbr.com.au?cc=chris.freeman@techgurus.com.au&subject=${subject}&body=${encodedBody}`;
+    window.location.href = `mailto:?subject=${subject}&body=${encodedBody}`;
   };
 
   if (loading) return <LoadingSpinner message="Calculating SLA breaches…" />;
