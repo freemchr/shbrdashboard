@@ -3,7 +3,23 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { RefreshCw } from 'lucide-react';
 
-const AUTO_REFRESH_MS = 6 * 60 * 60 * 1000; // 6 hours — was 1h, caused too-frequent cache busting
+// Auto-refresh intervals by page type:
+// - 'operational' (1h)  — Job Board, Command Centre, SLA Tracker: jobs move status throughout the day
+// - 'analytical'  (6h)  — SLA Predictor, Reports: data changes slowly, cache is 12h
+// - 'weekly'      (off) — CAT Forecast, Weather: data is weekly/BOM-driven, auto-refresh is pointless
+// - number              — custom ms value
+export type RefreshMode = 'operational' | 'analytical' | 'weekly' | number;
+
+const REFRESH_INTERVALS: Record<string, number> = {
+  operational: 60 * 60 * 1000,       // 1 hour
+  analytical:  6 * 60 * 60 * 1000,   // 6 hours
+  weekly:      0,                     // disabled
+};
+
+function getIntervalMs(mode: RefreshMode): number {
+  if (typeof mode === 'number') return mode;
+  return REFRESH_INTERVALS[mode] ?? REFRESH_INTERVALS.operational;
+}
 
 function formatRelative(date: Date): string {
   const diffMs = Date.now() - date.getTime();
@@ -15,37 +31,44 @@ function formatRelative(date: Date): string {
   return diffHrs === 1 ? '1 hr ago' : `${diffHrs} hrs ago`;
 }
 
-export function DataRefreshButton() {
+interface DataRefreshButtonProps {
+  mode?: RefreshMode;
+  endpoint?: string; // optional specific cache endpoint to bust (defaults to full invalidate)
+}
+
+export function DataRefreshButton({ mode = 'operational', endpoint }: DataRefreshButtonProps = {}) {
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [refreshing, setRefreshing] = useState(false);
   const [relativeTime, setRelativeTime] = useState('just now');
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intervalMs = getIntervalMs(mode);
 
   const doRefresh = useCallback(async (isAuto = false) => {
     if (refreshing) return;
     setRefreshing(true);
     try {
-      // Invalidate the blob cache so all pages fetch fresh data
-      await fetch('/api/prime/cache/invalidate', { method: 'POST' });
+      const url = endpoint
+        ? `${endpoint}?bust=1`
+        : '/api/prime/cache/invalidate';
+      await fetch(url, { method: endpoint ? 'GET' : 'POST' });
       setLastRefreshed(new Date());
-      // Hard reload to re-fetch all server components with fresh data
       window.location.reload();
     } catch {
-      // silently fail — not critical
       setRefreshing(false);
     }
     if (isAuto) {
       console.log('[DataRefresh] Auto-refreshed at', new Date().toLocaleTimeString('en-AU', { timeZone: 'Australia/Sydney' }));
     }
-  }, [refreshing]);
+  }, [refreshing, endpoint]);
 
-  // Auto-refresh every hour
+  // Auto-refresh — disabled if intervalMs is 0 (weekly mode)
   useEffect(() => {
-    timerRef.current = setTimeout(() => doRefresh(true), AUTO_REFRESH_MS);
+    if (!intervalMs) return;
+    timerRef.current = setTimeout(() => doRefresh(true), intervalMs);
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [doRefresh, lastRefreshed]);
+  }, [doRefresh, lastRefreshed, intervalMs]);
 
   // Update relative time label every minute
   useEffect(() => {

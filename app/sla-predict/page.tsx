@@ -302,7 +302,7 @@ export default function SlaPredictPage() {
         subtitle="Jobs on track to breach their SLA in the next 14 days — act now to prevent it"
         actions={
           <div className="flex items-center gap-2">
-            <DataRefreshButton />
+            <DataRefreshButton mode="analytical" />
             <button
               onClick={handleExport}
               className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-sm px-4 py-2 rounded-lg transition-colors"

@@ -669,7 +669,7 @@ export default function CATForecastPage() {
       <PageHeader
         title="CAT Demand Forecasting"
         subtitle="Predicted claim volume based on BOM severe weather warnings & 14-day forecasts"
-        actions={<DataRefreshButton />}
+        actions={<DataRefreshButton mode="weekly" />}
       />
 
       {/* Active warnings alert banner */}
