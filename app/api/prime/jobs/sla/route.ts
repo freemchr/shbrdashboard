@@ -205,7 +205,7 @@ function severity(daysOverdue: number): 'critical' | 'warning' | 'at_risk' {
   return 'at_risk';
 }
 
-const CACHE_KEY = 'sla-breaches-v1';
+const CACHE_KEY = 'sla-breaches-v2'; // bumped to include startDate/endDate fields
 
 export async function GET() {
   try {
