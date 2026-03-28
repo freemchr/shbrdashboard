@@ -317,11 +317,46 @@ function severityBadge(s: SlaBreachJob['severity']) {
   return <span className="text-xs font-semibold text-yellow-400 bg-yellow-500/10 border border-yellow-500/30 px-2 py-0.5 rounded-full">At Risk</span>;
 }
 
+// ── Workflow tab definitions ────────────────────────────────────────────────
+type WorkflowTab = 'all' | 'awaiting_report' | 'works_in_progress' | 'with_council' | 'invoice';
+
+const WORKFLOW_TABS: { key: WorkflowTab; label: string; description: string }[] = [
+  { key: 'all',              label: 'All Breaches',       description: 'All SLA breaches across every workflow stage' },
+  { key: 'awaiting_report',  label: 'Awaiting Report',    description: 'Jobs not yet assessed or report not yet submitted' },
+  { key: 'works_in_progress',label: 'Works in Progress',  description: 'Authorised jobs — trades allocated, works underway or scheduled' },
+  { key: 'with_council',     label: 'With Council',       description: 'Jobs held up pending council approval or permits' },
+  { key: 'invoice',          label: 'Awaiting Invoice',   description: 'Works complete — invoice not yet submitted' },
+];
+
+function getWorkflowTab(status: string): WorkflowTab {
+  const s = status.toLowerCase().trim();
+  if (s === 'with council') return 'with_council';
+  if (
+    s.includes('works in progress') || s.includes('works scheduled') ||
+    s.includes('trades allocated') || s.includes('trades to be allocated') ||
+    s.includes('trade booked') || s.includes('trade completed') ||
+    s.includes('restorer allocated') || s.includes('works authorised') ||
+    s.includes('partial works') || s.includes('waiting for materials') ||
+    s.includes('works on hold') || s.includes('awaiting parts') ||
+    s.includes('rectification in progress') || s.includes('installation approved') ||
+    s.includes('makesafe in progress')
+  ) return 'works_in_progress';
+  if (
+    s.includes('works completed') || s.includes('job completed') ||
+    s.includes('completed - awaiting invoice') || s.includes('awaiting final invoice') ||
+    s.includes('ready to invoice') || s.includes('final inspection') ||
+    s.includes('awaiting sign-off') || s.includes('confirm repair completion') ||
+    s.includes('satisfaction confirmed')
+  ) return 'invoice';
+  return 'awaiting_report';
+}
+
 export default function SlaPage() {
   const [data, setData] = useState<SlaResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [workflowTab, setWorkflowTab] = useState<WorkflowTab>('all');
   const [severityFilter, setSeverityFilter] = useState('');
   const [regionFilter, setRegionFilter] = useState('');
   const [assigneeFilter, setAssigneeFilter] = useState('');
@@ -346,12 +381,28 @@ export default function SlaPage() {
   const filtered = useMemo(() => {
     if (!data) return [];
     return data.breaches.filter(j =>
+      (workflowTab === 'all' || getWorkflowTab(j.status) === workflowTab) &&
       (!severityFilter || j.severity === severityFilter) &&
       (!regionFilter   || j.region   === regionFilter) &&
       (!assigneeFilter || j.assignee === assigneeFilter) &&
       (!typeFilter     || j.jobType  === typeFilter)
     );
-  }, [data, severityFilter, regionFilter, assigneeFilter, typeFilter]);
+  }, [data, workflowTab, severityFilter, regionFilter, assigneeFilter, typeFilter]);
+
+  // Tab counts — unaffected by other filters so the tabs always show totals
+  const tabCounts = useMemo(() => {
+    if (!data) return {} as Record<WorkflowTab, { total: number; critical: number }>;
+    return WORKFLOW_TABS.reduce((acc, tab) => {
+      const jobs = tab.key === 'all'
+        ? data.breaches
+        : data.breaches.filter(j => getWorkflowTab(j.status) === tab.key);
+      acc[tab.key] = {
+        total: jobs.length,
+        critical: jobs.filter(j => j.severity === 'critical').length,
+      };
+      return acc;
+    }, {} as Record<WorkflowTab, { total: number; critical: number }>);
+  }, [data]);
 
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
@@ -413,6 +464,52 @@ export default function SlaPage() {
           <a href="/sla-predict" className="text-red-400 hover:text-red-300 underline underline-offset-2">SLA Predictor</a>.
         </p>
       </div>
+
+      {/* Workflow tabs */}
+      <div className="flex gap-1 mb-5 overflow-x-auto pb-1">
+        {WORKFLOW_TABS.map(tab => {
+          const counts = tabCounts[tab.key];
+          const isActive = workflowTab === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => { setWorkflowTab(tab.key); setSeverityFilter(''); }}
+              title={tab.description}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all border ${
+                isActive
+                  ? 'bg-red-600 border-red-500 text-white'
+                  : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white'
+              }`}
+            >
+              <span>{tab.label}</span>
+              {counts && counts.total > 0 && (
+                <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
+                  isActive
+                    ? 'bg-white/20 text-white'
+                    : counts.critical > 0
+                      ? 'bg-red-500/20 text-red-400'
+                      : 'bg-gray-700 text-gray-400'
+                }`}>
+                  {counts.total}
+                  {counts.critical > 0 && !isActive && (
+                    <span className="ml-1 text-red-400">· {counts.critical} crit</span>
+                  )}
+                </span>
+              )}
+              {counts && counts.total === 0 && (
+                <span className="text-xs text-gray-600">0</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Active tab description */}
+      {workflowTab !== 'all' && (
+        <p className="text-xs text-gray-500 mb-4 -mt-2">
+          {WORKFLOW_TABS.find(t => t.key === workflowTab)?.description}
+        </p>
+      )}
 
       {/* Critical alert banner */}
       {summary.critical > 0 && (
