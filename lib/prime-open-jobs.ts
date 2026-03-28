@@ -53,7 +53,7 @@ export async function getAllOpenJobs(): Promise<unknown[]> {
 
     while (page <= totalPages) {
       const data = await primeGet(
-        `/jobs?per_page=100&page=${page}&q='statusId'.in(${inQuery})`
+        `/jobs?per_page=250&page=${page}&q='statusId'.in(${inQuery})`
       ) as { data?: unknown[]; meta?: { pagination?: { total_pages?: number; total?: number } } };
 
       const items = data.data || [];
@@ -70,7 +70,7 @@ export async function getAllOpenJobs(): Promise<unknown[]> {
     return !jobNum.toUpperCase().startsWith('ABE');
   });
 
-  await setCached(cacheKey, allJobs, 4 * 60 * 60 * 1000);
+  await setCached(cacheKey, allJobs, 12 * 60 * 60 * 1000); // 12h — reduces Blob ops and Prime hammering
   return allJobs;
 }
 

@@ -55,7 +55,7 @@ export async function GET() {
       };
     });
 
-    await setCached(cacheKey, flat, 4 * 60 * 60 * 1000);
+    await setCached(cacheKey, flat, 12 * 60 * 60 * 1000);
     return NextResponse.json(flat);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';

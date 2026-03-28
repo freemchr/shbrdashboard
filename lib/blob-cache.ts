@@ -70,16 +70,20 @@ export async function getCached<T>(key: string): Promise<T | null> {
     const token = process.env.BLOB_READ_WRITE_TOKEN;
     const res = await fetch(blobDirectUrl(key), {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(8000), // increased from 5s
     });
 
-    if (!res.ok) return null; // 404 = cache miss
+    if (!res.ok) return null; // 404 = genuine cache miss
 
     const meta: BlobMeta = await res.json();
-    if (Date.now() > meta.expiresAt) return null; // fully expired
 
-    const ttlLeft = meta.expiresAt - Date.now();
-    const staleLeft = Math.max(0, (meta.staleAt || meta.expiresAt) - Date.now());
+    // Serve stale data rather than triggering a full Prime re-fetch
+    // Fully expired data (2x TTL past) is discarded; stale-but-usable is served
+    const now = Date.now();
+    if (now > meta.expiresAt * 2 - (meta.staleAt || meta.expiresAt)) return null; // truly old
+
+    const ttlLeft = Math.max(60_000, meta.expiresAt - now); // min 1 min in memory
+    const staleLeft = Math.max(0, (meta.staleAt || meta.expiresAt) - now);
     memSet(key, meta.data, ttlLeft, staleLeft);
     return meta.data as T;
   } catch {
