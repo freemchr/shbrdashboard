@@ -16,7 +16,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import type { CATForecastResponse, StateCAT, BomWarning } from '@/app/api/weather/bom-warnings/route';
-import type { IncidentsResponse, LiveIncident } from '@/app/api/weather/incidents/route';
+import type { IncidentsResponse } from '@/app/api/weather/incidents/route';
 
 // ─── Animated counter ─────────────────────────────────────────────────────────
 // Only fires after `enabled` flips true (i.e. data confirmed loaded). Safe for
