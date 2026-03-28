@@ -79,7 +79,7 @@ interface SlaResponse {
 
 type SortKey = keyof Pick<
   SlaBreachJob,
-  'jobNumber' | 'address' | 'assignee' | 'status' | 'jobType' | 'region' | 'slaRule' | 'daysOverdue' | 'authorisedTotal' | 'daysSinceCreated'
+  'jobNumber' | 'address' | 'assignee' | 'status' | 'jobType' | 'region' | 'slaRule' | 'daysOverdue' | 'authorisedTotal' | 'daysSinceCreated' | 'startDate' | 'endDate'
 >;
 
 const SEVERITY_LABEL: Record<SlaBreachJob['severity'], string> = {
@@ -422,6 +422,12 @@ export default function SlaPage() {
     return [...filtered].sort((a, b) => {
       const av = a[sortKey] ?? '';
       const bv = b[sortKey] ?? '';
+      // Null dates sort to the bottom regardless of sort direction
+      if ((sortKey === 'startDate' || sortKey === 'endDate')) {
+        if (!av && !bv) return 0;
+        if (!av) return 1;  // nulls always last
+        if (!bv) return -1;
+      }
       const cmp =
         typeof av === 'number' && typeof bv === 'number'
           ? av - bv
@@ -725,8 +731,8 @@ export default function SlaPage() {
                   <SortTh col="authorisedTotal" label="Value"     sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   {(['trades_allocated','works_in_progress','with_council'] as WorkflowTab[]).includes(workflowTab) && (
                     <>
-                      <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium whitespace-nowrap">Start Date</th>
-                      <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium whitespace-nowrap">End Date</th>
+                      <SortTh col="startDate" label="Start Date" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                      <SortTh col="endDate"   label="End Date"   sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                     </>
                   )}
                   <th className="py-2 px-3"></th>
