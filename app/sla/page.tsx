@@ -15,6 +15,7 @@ import {
   ChevronsUpDown,
   ShieldAlert,
   CalendarX,
+  Mail,
 } from 'lucide-react';
 import { JobTypeBadge } from '@/components/ui/StatusBadge';
 
@@ -366,6 +367,37 @@ function getWorkflowTab(status: string): WorkflowTab {
   return 'awaiting_report';
 }
 
+// ── Email helper ────────────────────────────────────────────────────────────
+function buildEmailBody(
+  tabLabel: string,
+  jobs: SlaBreachJob[],
+  includeWipCols: boolean,
+): string {
+  const date = new Date().toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' });
+  const header = `SLA Tracker — ${tabLabel} (${date})\n${'─'.repeat(60)}\n\n`;
+  const totalCritical = jobs.filter(j => j.severity === 'critical').length;
+  const totalWarning  = jobs.filter(j => j.severity === 'warning').length;
+  const totalAtRisk   = jobs.filter(j => j.severity === 'at_risk').length;
+  const summary = `Total: ${jobs.length} job${jobs.length !== 1 ? 's' : ''} — Critical: ${totalCritical}, Warning: ${totalWarning}, At Risk: ${totalAtRisk}\n\n`;
+
+  const rows = jobs.map(j => {
+    const sev = SEVERITY_LABEL[j.severity].toUpperCase().padEnd(8);
+    const job = j.jobNumber.padEnd(14);
+    const overdue = j.daysOverdue > 0 ? `+${j.daysOverdue}d overdue` : 'due soon';
+    const assignee = (j.assignee || '—').padEnd(24);
+    const addr = (j.address || '—').slice(0, 40).padEnd(42);
+    let extra = '';
+    if (includeWipCols) {
+      const start = j.startDate ? formatDate(j.startDate) : 'No start date';
+      const end   = j.endDate   ? formatDate(j.endDate)   : 'No end date';
+      extra = ` | ${start} → ${end}`;
+    }
+    return `${sev} ${job} ${overdue.padEnd(14)} | ${assignee} | ${addr}${extra}`;
+  });
+
+  return header + summary + rows.join('\n');
+}
+
 export default function SlaPage() {
   const [data, setData] = useState<SlaResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -454,6 +486,15 @@ export default function SlaPage() {
     );
   };
 
+  const handleEmail = () => {
+    const tabLabel = WORKFLOW_TABS.find(t => t.key === workflowTab)?.label ?? 'SLA Breaches';
+    const includeWipCols = (['trades_allocated', 'works_in_progress', 'with_council'] as WorkflowTab[]).includes(workflowTab);
+    const body = buildEmailBody(tabLabel, sorted, includeWipCols);
+    const subject = encodeURIComponent(`SHBR SLA Report — ${tabLabel} (${new Date().toLocaleDateString('en-AU')})`);
+    const encodedBody = encodeURIComponent(body);
+    window.location.href = `mailto:stella@shbr.com.au?cc=chris.freeman@techgurus.com.au&subject=${subject}&body=${encodedBody}`;
+  };
+
   if (loading) return <LoadingSpinner message="Calculating SLA breaches…" />;
   if (error)   return <ErrorMessage message={error} />;
   if (!data)   return null;
@@ -467,12 +508,20 @@ export default function SlaPage() {
         title="SLA Tracker"
         subtitle="Jobs that have already breached their SLA targets — action required now"
         actions={
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-sm px-4 py-2 rounded-lg transition-colors"
-          >
-            <Download size={14} /> Export CSV
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleEmail}
+              className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-sm px-4 py-2 rounded-lg transition-colors"
+            >
+              <Mail size={14} /> Email Tab
+            </button>
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-sm px-4 py-2 rounded-lg transition-colors"
+            >
+              <Download size={14} /> Export CSV
+            </button>
+          </div>
         }
       />
 
