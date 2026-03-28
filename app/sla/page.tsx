@@ -318,35 +318,45 @@ function severityBadge(s: SlaBreachJob['severity']) {
 }
 
 // ── Workflow tab definitions ────────────────────────────────────────────────
-type WorkflowTab = 'all' | 'awaiting_report' | 'works_in_progress' | 'with_council' | 'invoice';
+type WorkflowTab = 'all' | 'awaiting_report' | 'trades_allocated' | 'works_in_progress' | 'with_council' | 'invoice';
 
 const WORKFLOW_TABS: { key: WorkflowTab; label: string; description: string }[] = [
-  { key: 'all',              label: 'All Breaches',       description: 'All SLA breaches across every workflow stage' },
-  { key: 'awaiting_report',  label: 'Awaiting Report',    description: 'Jobs not yet assessed or report not yet submitted' },
-  { key: 'works_in_progress',label: 'Works in Progress',  description: 'Authorised jobs — trades allocated, works underway or scheduled' },
-  { key: 'with_council',     label: 'With Council',       description: 'Jobs held up pending council approval or permits' },
-  { key: 'invoice',          label: 'Awaiting Invoice',   description: 'Works complete — invoice not yet submitted' },
+  { key: 'all',              label: 'All Breaches',        description: 'All SLA breaches across every workflow stage' },
+  { key: 'awaiting_report',  label: 'Awaiting Report',     description: 'Jobs not yet assessed or report not yet submitted' },
+  { key: 'trades_allocated', label: 'Trades Allocated',    description: 'ATP received — trades allocated or to be allocated, works scheduled' },
+  { key: 'works_in_progress',label: 'Works in Progress',   description: 'Works actively underway, restorer on site, materials awaited' },
+  { key: 'with_council',     label: 'With Council',        description: 'Jobs held up pending council approval or permits' },
+  { key: 'invoice',          label: 'Awaiting Invoice',    description: 'Works complete — invoice not yet submitted' },
 ];
 
 function getWorkflowTab(status: string): WorkflowTab {
   const s = status.toLowerCase().trim();
   if (s === 'with council') return 'with_council';
+  // Trades allocated / scheduled — ATP received, trades being organised
   if (
-    s.includes('works in progress') || s.includes('works scheduled') ||
-    s.includes('trades allocated') || s.includes('trades to be allocated') ||
-    s.includes('trade booked') || s.includes('trade completed') ||
-    s.includes('restorer allocated') || s.includes('works authorised') ||
-    s.includes('partial works') || s.includes('waiting for materials') ||
-    s.includes('works on hold') || s.includes('awaiting parts') ||
-    s.includes('rectification in progress') || s.includes('installation approved') ||
-    s.includes('makesafe in progress')
+    s === 'trades allocated' || s === 'trades to be allocated' ||
+    s === 'trade booked' || s === 'works scheduled' ||
+    s === 'works authorised' || s === 'works authorised - awaiting trade' ||
+    s === 'awaiting trade' || s === 'restorer allocated' ||
+    s === 'waiting atp with restoration works' || s === 'approved job' ||
+    s === 'installation approved'
+  ) return 'trades_allocated';
+  // Works actively in progress
+  if (
+    s === 'works in progress' || s === 'trade completed' ||
+    s === 'partial works completed' || s === 'waiting for materials' ||
+    s === 'works on hold' || s === 'awaiting parts' ||
+    s === 'rectification in progress' || s === 'makesafe in progress' ||
+    s === 'equipment onsite' || s === 'pending variation' ||
+    s === 'installation paused'
   ) return 'works_in_progress';
+  // Invoice stage
   if (
     s.includes('works completed') || s.includes('job completed') ||
     s.includes('completed - awaiting invoice') || s.includes('awaiting final invoice') ||
     s.includes('ready to invoice') || s.includes('final inspection') ||
-    s.includes('awaiting sign-off') || s.includes('confirm repair completion') ||
-    s.includes('satisfaction confirmed')
+    s.includes('awaiting sign-off') || s === 'confirm repair completion' ||
+    s === 'satisfaction confirmed' || s === 'await completion docs'
   ) return 'invoice';
   return 'awaiting_report';
 }
