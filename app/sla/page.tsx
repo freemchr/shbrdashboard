@@ -58,6 +58,10 @@ interface SlaBreachJob {
   daysOverdue: number;
   severity: 'critical' | 'warning' | 'at_risk';
   primeUrl: string;
+  startDate: string | null;
+  endDate: string | null;
+  allocatedDate: string | null;
+  missingDates: boolean;
 }
 
 interface SlaSummary {
@@ -536,6 +540,25 @@ export default function SlaPage() {
         </div>
       )}
 
+      {/* Missing dates alert — shown on WIP/Trades/Council tabs */}
+      {(['trades_allocated', 'works_in_progress', 'with_council'] as WorkflowTab[]).includes(workflowTab) && (() => {
+        const missingCount = filtered.filter(j => j.missingDates).length;
+        if (missingCount === 0) return null;
+        return (
+          <div className="mb-5 flex items-start gap-3 bg-amber-950/30 border border-amber-700/40 rounded-xl px-4 py-3">
+            <CalendarX size={16} className="text-amber-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-amber-300 font-semibold text-sm">
+                {missingCount} job{missingCount !== 1 ? 's' : ''} missing start or end date
+              </p>
+              <p className="text-amber-400/70 text-xs mt-0.5">
+                These jobs are in an active works stage but have no start/end date entered in Prime. Please update them to track progress accurately.
+              </p>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Summary cards */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         <button
@@ -693,6 +716,12 @@ export default function SlaPage() {
                   <SortTh col="slaRule"       label="SLA Rule"    sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   <SortTh col="daysOverdue"   label="Days Overdue" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   <SortTh col="authorisedTotal" label="Value"     sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                  {(['trades_allocated','works_in_progress','with_council'] as WorkflowTab[]).includes(workflowTab) && (
+                    <>
+                      <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium whitespace-nowrap">Start Date</th>
+                      <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium whitespace-nowrap">End Date</th>
+                    </>
+                  )}
                   <th className="py-2 px-3"></th>
                 </tr>
               </thead>
@@ -753,6 +782,20 @@ export default function SlaPage() {
                     <td className="py-2 px-3 text-xs font-mono text-gray-400 whitespace-nowrap hidden md:table-cell">
                       {job.authorisedTotal > 0 ? formatCurrency(job.authorisedTotal) : '—'}
                     </td>
+                    {(['trades_allocated','works_in_progress','with_council'] as WorkflowTab[]).includes(workflowTab) && (
+                      <>
+                        <td className="py-2 px-3 text-xs whitespace-nowrap">
+                          {job.startDate
+                            ? <span className="text-gray-400 font-mono">{formatDate(job.startDate)}</span>
+                            : <span className="text-amber-400 font-semibold">Missing ⚠</span>}
+                        </td>
+                        <td className="py-2 px-3 text-xs whitespace-nowrap">
+                          {job.endDate
+                            ? <span className="text-gray-400 font-mono">{formatDate(job.endDate)}</span>
+                            : <span className="text-amber-400 font-semibold">Missing ⚠</span>}
+                        </td>
+                      </>
+                    )}
                     <td className="py-2 px-3">
                       {job.primeUrl && (
                         <a

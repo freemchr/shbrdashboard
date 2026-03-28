@@ -157,6 +157,11 @@ export interface SlaBreachJob {
   daysOverdue: number;
   severity: 'critical' | 'warning' | 'at_risk';
   primeUrl: string;
+  // Date fields — populated when entered in Prime
+  startDate: string | null;
+  endDate: string | null;
+  allocatedDate: string | null;
+  missingDates: boolean; // true if startDate or endDate is absent
 }
 
 export interface SlaSummary {
@@ -188,6 +193,9 @@ type RawJob = {
     updatedAt?: string;
     updatedBy?: string;
     primeUrl?: string;
+    startDate?: string | null;
+    endDate?: string | null;
+    allocatedDate?: string | null;
   };
 };
 
@@ -232,6 +240,11 @@ export async function GET() {
         ? Math.floor((now - new Date(updatedAt.replace(' ', 'T')).getTime()) / 86_400_000)
         : 0;
 
+      const startDate    = attrs.startDate    ?? null;
+      const endDate      = attrs.endDate      ?? null;
+      const allocatedDate = attrs.allocatedDate ?? null;
+      const missingDates = !startDate || !endDate;
+
       const base = {
         id:            raw.id,
         jobNumber:     attrs.jobNumber ?? raw.id,
@@ -245,6 +258,10 @@ export async function GET() {
         daysSinceCreated,
         daysSinceUpdated,
         primeUrl:      attrs.primeUrl ?? '',
+        startDate,
+        endDate,
+        allocatedDate,
+        missingDates,
       };
 
       // ── Rule 1: Report submission SLA (>7 calendar days) ─────────────────
