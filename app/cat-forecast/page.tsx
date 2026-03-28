@@ -306,14 +306,21 @@ function StateBadge({ state }: { state: string }) {
 
 function IncidentStatusBadge({ status }: { status: string }) {
   const colours: Record<string, string> = {
-    'Active':        'bg-red-500/15 text-red-400 border border-red-500/30',
-    'Responding':    'bg-orange-500/15 text-orange-400 border border-orange-500/30',
-    'Monitoring':    'bg-yellow-500/15 text-yellow-400 border border-yellow-500/30',
-    'Under Control': 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30',
-    'Unknown':       'bg-gray-700/50 text-gray-500 border border-gray-700',
+    'Active':          'bg-red-500/15 text-red-400 border border-red-500/30',
+    'Responding':      'bg-orange-500/15 text-orange-400 border border-orange-500/30',
+    'Request For Assistance': 'bg-orange-500/15 text-orange-400 border border-orange-500/30',
+    'Monitoring':      'bg-yellow-500/15 text-yellow-400 border border-yellow-500/30',
+    'Watch & Act':     'bg-yellow-500/15 text-yellow-400 border border-yellow-500/30',
+    'Warning':         'bg-red-500/15 text-red-400 border border-red-500/30',
+    'Minor Flooding':  'bg-blue-500/15 text-blue-400 border border-blue-500/30',
+    'Under Control':   'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30',
+    'Complete':        'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30',
+    'Minor':           'bg-blue-500/15 text-blue-400 border border-blue-500/30',
+    'Unknown':         'bg-gray-700/50 text-gray-500 border border-gray-700',
   };
+  const cls = colours[status] ?? 'bg-gray-700/50 text-gray-400 border border-gray-700';
   return (
-    <span className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${colours[status] ?? colours['Unknown']}`}>
+    <span className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${cls}`}>
       {status}
     </span>
   );

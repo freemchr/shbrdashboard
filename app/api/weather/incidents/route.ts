@@ -67,7 +67,7 @@ function parseDescriptionField(description: string, fieldName: string): string {
 
 function normaliseType(raw: string): string {
   const r = raw.toLowerCase();
-  if (r.includes('flood')) return 'Flood';
+  if (r.includes('flood') || r === 'met') return 'Flood';
   if (r.includes('storm')) return 'Storm';
   if (r.includes('tree')) return 'Tree Down';
   if (r.includes('cyclone') || r.includes('tropical')) return 'Cyclone';
@@ -78,11 +78,14 @@ function normaliseType(raw: string): string {
 
 function normaliseStatus(raw: string): string {
   const r = raw.toLowerCase();
-  if (r.includes('under control') || r.includes('controlled')) return 'Under Control';
-  if (r.includes('responding') || r.includes('response')) return 'Responding';
+  if (r.includes('under control') || r.includes('controlled') || r === 'complete' || r.includes('complete')) return 'Under Control';
+  if (r.includes('responding') || r.includes('response') || r.includes('request for assistance') || r.includes('on scene')) return 'Responding';
   if (r.includes('monitor')) return 'Monitoring';
   if (r.includes('active')) return 'Active';
-  return 'Unknown';
+  if (r.includes('advice') || r.includes('watch')) return 'Watch & Act';
+  if (r.includes('warning')) return 'Warning';
+  if (r.includes('minor')) return 'Minor Flooding';
+  return raw || 'Unknown';
 }
 
 function isClaimRelevantType(type: string): boolean {
@@ -199,6 +202,16 @@ function extractVICCoords(geometry: VICFeature['geometry']): { lat?: number; lng
       const first = coords[0]?.[0]?.[0];
       if (first?.length >= 2) return { lng: first[0], lat: first[1] };
     }
+    // VIC SES incidents use GeometryCollection — extract from first sub-geometry
+    if (geometry.type === 'GeometryCollection') {
+      const geoms = (geometry as unknown as { geometries?: { type: string; coordinates: unknown }[] }).geometries ?? [];
+      for (const g of geoms) {
+        if (g.type === 'Point') {
+          const coords = g.coordinates as number[];
+          if (coords.length >= 2) return { lng: coords[0], lat: coords[1] };
+        }
+      }
+    }
   } catch { /* ignore */ }
   return {};
 }
@@ -221,18 +234,21 @@ async function fetchVIC(): Promise<{ incidents: LiveIncident[]; lastUpdated: str
     const status   = normaliseStatus(p.status ?? '');
     const { lat, lng } = extractVICCoords(f.geometry);
 
+    const location = p.location ?? 'Unknown';
+    const titleFallback = location !== 'Unknown' ? `${type} — ${location}` : type;
+
     return {
       id:              `vic-${p.id ?? p.eventId ?? i}`,
       state:           'VIC',
-      title:           p.name ?? rawType ?? 'Unknown Incident',
+      title:           p.name || p.sourceTitle !== 'Undefined' && p.sourceTitle || titleFallback,
       type,
       status,
-      location:        p.location ?? 'Unknown',
+      location,
       council:         undefined,
       lat,
       lng,
       updatedAt:       p.updated ?? p.created ?? new Date().toISOString(),
-      sourceOrg:       'VicEmergency',
+      sourceOrg:       p.sourceOrg === 'VIC/SES' ? 'VIC SES' : 'VicEmergency',
       isClaimRelevant: isClaimRelevantType(rawType),
     };
   });
