@@ -710,10 +710,17 @@ export default function SlaPage() {
                   <SortTh col="jobNumber"     label="Job #"       sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   <th className="py-2 px-3 text-left text-xs text-gray-500 font-medium">Address</th>
                   <SortTh col="assignee"      label="Assignee"    sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-                  <SortTh col="status"        label="Status"      sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-                  <SortTh col="jobType"       label="Type"        sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                  {/* Status/Type/SLA Rule hidden on date tabs to make room */}
+                  {!(['trades_allocated','works_in_progress','with_council'] as WorkflowTab[]).includes(workflowTab) && (
+                    <SortTh col="status"      label="Status"      sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                  )}
+                  {!(['trades_allocated','works_in_progress','with_council'] as WorkflowTab[]).includes(workflowTab) && (
+                    <SortTh col="jobType"     label="Type"        sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                  )}
                   <SortTh col="region"        label="Region"      sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-                  <SortTh col="slaRule"       label="SLA Rule"    sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                  {!(['trades_allocated','works_in_progress','with_council'] as WorkflowTab[]).includes(workflowTab) && (
+                    <SortTh col="slaRule"     label="SLA Rule"    sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                  )}
                   <SortTh col="daysOverdue"   label="Days Overdue" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   <SortTh col="authorisedTotal" label="Value"     sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   {(['trades_allocated','works_in_progress','with_council'] as WorkflowTab[]).includes(workflowTab) && (
@@ -754,18 +761,24 @@ export default function SlaPage() {
                     </td>
                     <td className="py-2 px-3 text-gray-300 text-xs max-w-[140px] truncate">{job.address}</td>
                     <td className="py-2 px-3 text-xs text-gray-400 whitespace-nowrap">{job.assignee}</td>
-                    <td className="py-2 px-3 text-xs text-gray-400 max-w-[120px] truncate">{job.status}</td>
-                    <td className="py-2 px-3 hidden sm:table-cell">{job.jobType ? <JobTypeBadge label={job.jobType} /> : <span className="text-gray-600 text-xs">—</span>}</td>
-                    <td className="py-2 px-3 text-xs text-gray-500 whitespace-nowrap hidden sm:table-cell">{job.region}</td>
-                    <td className="py-2 px-3 text-xs whitespace-nowrap">
-                      <span className={
-                        job.severity === 'critical' ? 'text-red-400' :
-                        job.severity === 'warning'  ? 'text-amber-400' :
-                        'text-yellow-400'
-                      }>
-                        {job.slaRule}
-                      </span>
-                    </td>
+                    {!(['trades_allocated','works_in_progress','with_council'] as WorkflowTab[]).includes(workflowTab) && (
+                      <td className="py-2 px-3 text-xs text-gray-400 max-w-[120px] truncate">{job.status}</td>
+                    )}
+                    {!(['trades_allocated','works_in_progress','with_council'] as WorkflowTab[]).includes(workflowTab) && (
+                      <td className="py-2 px-3 hidden sm:table-cell">{job.jobType ? <JobTypeBadge label={job.jobType} /> : <span className="text-gray-600 text-xs">—</span>}</td>
+                    )}
+                    <td className="py-2 px-3 text-xs text-gray-500 whitespace-nowrap">{job.region}</td>
+                    {!(['trades_allocated','works_in_progress','with_council'] as WorkflowTab[]).includes(workflowTab) && (
+                      <td className="py-2 px-3 text-xs whitespace-nowrap">
+                        <span className={
+                          job.severity === 'critical' ? 'text-red-400' :
+                          job.severity === 'warning'  ? 'text-amber-400' :
+                          'text-yellow-400'
+                        }>
+                          {job.slaRule}
+                        </span>
+                      </td>
+                    )}
                     <td className="py-2 px-3 text-xs font-mono font-bold whitespace-nowrap">
                       {job.daysOverdue > 0 ? (
                         <span className={
