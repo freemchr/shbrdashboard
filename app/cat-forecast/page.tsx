@@ -521,16 +521,18 @@ function IncidentsSection({ incidents, loading }: { incidents: IncidentsResponse
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-300 max-w-[200px]" title={inc.location}>
                         <div className="truncate">{inc.location}</div>
-                        {inc.alertLevel && (
-                          <div className="text-gray-500 text-[10px] mt-0.5">{inc.alertLevel}</div>
+                        {/* Extra detail only when a specific state is selected */}
+                        {stateFilter !== 'All' && inc.alertLevel && (
+                          <div className="text-gray-500 text-[10px] mt-0.5">⚠ {inc.alertLevel}</div>
                         )}
-                        {inc.region && inc.region !== inc.council && (
+                        {stateFilter !== 'All' && inc.region && inc.region !== inc.council && (
                           <div className="text-gray-600 text-[10px] mt-0.5">{inc.region}</div>
                         )}
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-500 hidden md:table-cell max-w-[140px]" title={inc.council ?? ''}>
                         <div className="truncate">{inc.council ?? '—'}</div>
-                        {inc.agency && (
+                        {/* Agency only when drilling into a specific state */}
+                        {stateFilter !== 'All' && inc.agency && (
                           <div className="text-gray-600 text-[10px] mt-0.5 truncate" title={inc.agency}>{inc.agency}</div>
                         )}
                       </td>
