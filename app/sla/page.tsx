@@ -61,6 +61,7 @@ interface SlaBreachJob {
   startDate: string | null;
   endDate: string | null;
   allocatedDate: string | null;
+  daysSinceAllocated: number | null;
   missingDates: boolean;
 }
 
@@ -79,7 +80,7 @@ interface SlaResponse {
 
 type SortKey = keyof Pick<
   SlaBreachJob,
-  'jobNumber' | 'address' | 'assignee' | 'status' | 'jobType' | 'region' | 'slaRule' | 'daysOverdue' | 'authorisedTotal' | 'daysSinceCreated' | 'startDate' | 'endDate'
+  'jobNumber' | 'address' | 'assignee' | 'status' | 'jobType' | 'region' | 'slaRule' | 'daysOverdue' | 'authorisedTotal' | 'daysSinceCreated' | 'startDate' | 'endDate' | 'daysSinceAllocated'
 >;
 
 const SEVERITY_LABEL: Record<SlaBreachJob['severity'], string> = {
@@ -422,11 +423,11 @@ export default function SlaPage() {
     return [...filtered].sort((a, b) => {
       const av = a[sortKey] ?? '';
       const bv = b[sortKey] ?? '';
-      // Null dates sort to the bottom regardless of sort direction
-      if ((sortKey === 'startDate' || sortKey === 'endDate')) {
+      // Null dates/numbers sort to the bottom regardless of sort direction
+      if (['startDate', 'endDate', 'daysSinceAllocated'].includes(sortKey)) {
         if (!av && !bv) return 0;
-        if (!av) return 1;  // nulls always last
-        if (!bv) return -1;
+        if (av === null || av === '') return 1;  // nulls always last
+        if (bv === null || bv === '') return -1;
       }
       const cmp =
         typeof av === 'number' && typeof bv === 'number'
@@ -731,8 +732,9 @@ export default function SlaPage() {
                   <SortTh col="authorisedTotal" label="Value"     sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                   {(['trades_allocated','works_in_progress','with_council'] as WorkflowTab[]).includes(workflowTab) && (
                     <>
-                      <SortTh col="startDate" label="Start Date" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-                      <SortTh col="endDate"   label="End Date"   sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                      <SortTh col="startDate"          label="Start Date"       sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                      <SortTh col="endDate"             label="End Date"         sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                      <SortTh col="daysSinceAllocated"  label="Days Since Alloc" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                     </>
                   )}
                   <th className="py-2 px-3"></th>
@@ -812,6 +814,11 @@ export default function SlaPage() {
                           {job.endDate
                             ? <span className="text-gray-400 font-mono">{formatDate(job.endDate)}</span>
                             : <span className="text-amber-400 font-semibold">Missing ⚠</span>}
+                        </td>
+                        <td className="py-2 px-3 text-xs whitespace-nowrap font-mono">
+                          {job.daysSinceAllocated !== null
+                            ? <span className="text-gray-400">{job.daysSinceAllocated}d</span>
+                            : <span className="text-gray-600">—</span>}
                         </td>
                       </>
                     )}

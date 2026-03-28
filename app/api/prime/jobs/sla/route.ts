@@ -161,6 +161,7 @@ export interface SlaBreachJob {
   startDate: string | null;
   endDate: string | null;
   allocatedDate: string | null;
+  daysSinceAllocated: number | null; // calendar days since allocatedDate, null if not set
   missingDates: boolean; // true if startDate or endDate is absent
 }
 
@@ -243,6 +244,9 @@ export async function GET() {
       const startDate    = attrs.startDate    ?? null;
       const endDate      = attrs.endDate      ?? null;
       const allocatedDate = attrs.allocatedDate ?? null;
+      const daysSinceAllocated = allocatedDate
+        ? Math.floor((now - new Date(allocatedDate.replace(' ', 'T')).getTime()) / 86_400_000)
+        : null;
       const missingDates = !startDate || !endDate;
 
       const base = {
@@ -261,6 +265,7 @@ export async function GET() {
         startDate,
         endDate,
         allocatedDate,
+        daysSinceAllocated,
         missingDates,
       };
 
