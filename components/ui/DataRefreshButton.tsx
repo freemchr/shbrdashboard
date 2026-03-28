@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { RefreshCw } from 'lucide-react';
 
-const AUTO_REFRESH_MS = 60 * 60 * 1000; // 1 hour
+const AUTO_REFRESH_MS = 6 * 60 * 60 * 1000; // 6 hours — was 1h, caused too-frequent cache busting
 
 function formatRelative(date: Date): string {
   const diffMs = Date.now() - date.getTime();
