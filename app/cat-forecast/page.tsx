@@ -13,8 +13,10 @@ import {
   ChevronUp,
   ChevronDown,
   ChevronsUpDown,
+  AlertCircle,
 } from 'lucide-react';
 import type { CATForecastResponse, StateCAT, BomWarning } from '@/app/api/weather/bom-warnings/route';
+import type { IncidentsResponse, LiveIncident } from '@/app/api/weather/incidents/route';
 
 // ─── Animated counter ─────────────────────────────────────────────────────────
 // Only fires after `enabled` flips true (i.e. data confirmed loaded). Safe for
@@ -285,6 +287,264 @@ function StateCard({
   );
 }
 
+// ─── Incidents helpers ────────────────────────────────────────────────────────
+
+function StateBadge({ state }: { state: string }) {
+  const colours: Record<string, string> = {
+    NSW: 'bg-red-500/15 text-red-400 border border-red-500/30',
+    VIC: 'bg-blue-500/15 text-blue-400 border border-blue-500/30',
+    WA:  'bg-yellow-500/15 text-yellow-400 border border-yellow-500/30',
+    QLD: 'bg-purple-500/15 text-purple-400 border border-purple-500/30',
+    ACT: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30',
+  };
+  return (
+    <span className={`text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${colours[state] ?? 'bg-gray-700 text-gray-300 border border-gray-600'}`}>
+      {state}
+    </span>
+  );
+}
+
+function IncidentStatusBadge({ status }: { status: string }) {
+  const colours: Record<string, string> = {
+    'Active':        'bg-red-500/15 text-red-400 border border-red-500/30',
+    'Responding':    'bg-orange-500/15 text-orange-400 border border-orange-500/30',
+    'Monitoring':    'bg-yellow-500/15 text-yellow-400 border border-yellow-500/30',
+    'Under Control': 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30',
+    'Unknown':       'bg-gray-700/50 text-gray-500 border border-gray-700',
+  };
+  return (
+    <span className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${colours[status] ?? colours['Unknown']}`}>
+      {status}
+    </span>
+  );
+}
+
+function IncidentTypeIcon({ type }: { type: string }) {
+  const icons: Record<string, string> = {
+    'Flood':     '🌊',
+    'Storm':     '⛈️',
+    'Tree Down': '🌳',
+    'Cyclone':   '🌀',
+    'Wind':      '💨',
+    'Bushfire':  '🔥',
+    'Other':     '⚠️',
+  };
+  return <span className="text-base leading-none">{icons[type] ?? '⚠️'}</span>;
+}
+
+function IncidentsSection({ incidents, loading }: { incidents: IncidentsResponse | null; loading: boolean }) {
+  const [stateFilter, setStateFilter] = useState<string>('All');
+  const [typeFilter,  setTypeFilter]  = useState<string>('All');
+
+  const stateButtons = ['All', 'NSW', 'VIC', 'WA', 'QLD', 'ACT'];
+  const typeButtons  = [
+    { key: 'All',          label: 'All Types' },
+    { key: 'Storm/Flood',  label: 'Storm/Flood' },
+    { key: 'Tree Down',    label: 'Tree Down' },
+    { key: 'Cyclone/Wind', label: 'Cyclone/Wind' },
+  ];
+
+  const filtered = (incidents?.incidents ?? []).filter(inc => {
+    const stateOk = stateFilter === 'All' || inc.state === stateFilter;
+    let typeOk = true;
+    if (typeFilter === 'Storm/Flood')  typeOk = inc.type === 'Storm' || inc.type === 'Flood';
+    if (typeFilter === 'Tree Down')    typeOk = inc.type === 'Tree Down';
+    if (typeFilter === 'Cyclone/Wind') typeOk = inc.type === 'Cyclone' || inc.type === 'Wind';
+    return stateOk && typeOk;
+  });
+
+  // States with > 0 claim-relevant incidents
+  const activeStates = incidents
+    ? Object.entries(incidents.byState)
+        .filter(([, count]) => count > 0)
+        .map(([state]) => state)
+    : [];
+
+  return (
+    <div>
+      <hr className="border-gray-800 my-8" />
+
+      <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
+        <h2 className="text-white font-bold text-xl flex items-center gap-2">
+          🚨 Active Incidents Right Now
+        </h2>
+        {loading && (
+          <span className="flex items-center gap-2 text-xs text-gray-500">
+            <span className="inline-block w-3 h-3 border-2 border-gray-600 border-t-gray-300 rounded-full animate-spin" />
+            Loading feeds…
+          </span>
+        )}
+      </div>
+      <p className="text-xs text-gray-500 mb-5">
+        Storm, flood, tree down, and wind incidents from state emergency services — updated every 5 minutes
+      </p>
+
+      {/* Error state */}
+      {!loading && !incidents && (
+        <p className="text-sm text-gray-500 flex items-center gap-2">
+          <AlertCircle size={14} className="text-gray-600" />
+          Incident feeds temporarily unavailable
+        </p>
+      )}
+
+      {/* Summary bar */}
+      {incidents && (
+        <>
+          <div className="flex items-center gap-4 mb-4 flex-wrap">
+            <div className="flex items-baseline gap-1.5">
+              <span className={`text-3xl font-bold tabular-nums ${incidents.totalClaimRelevant > 0 ? 'text-red-400' : 'text-gray-500'}`}>
+                {incidents.totalClaimRelevant}
+              </span>
+              <span className="text-sm text-gray-500">claim-relevant incidents</span>
+            </div>
+            {activeStates.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                {activeStates.map(st => (
+                  <span key={st} className="text-xs text-gray-400 bg-gray-800 border border-gray-700 px-2 py-0.5 rounded-full">
+                    <StateBadge state={st} /> <span className="ml-1">{incidents.byState[st]}</span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Filter row */}
+          <div className="flex items-center gap-4 mb-4 flex-wrap">
+            {/* State filter */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-xs text-gray-500 mr-1">State:</span>
+              {stateButtons.map(st => (
+                <button
+                  key={st}
+                  onClick={() => setStateFilter(st)}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium border transition-all ${
+                    stateFilter === st
+                      ? 'bg-red-600 border-red-500 text-white'
+                      : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white'
+                  }`}
+                >
+                  {st}
+                </button>
+              ))}
+            </div>
+            {/* Type filter */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-xs text-gray-500 mr-1">Type:</span>
+              {typeButtons.map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setTypeFilter(key)}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium border transition-all ${
+                    typeFilter === key
+                      ? 'bg-red-600 border-red-500 text-white'
+                      : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Incidents table */}
+          {filtered.length === 0 ? (
+            <div className="flex items-center gap-2 text-sm text-gray-500 py-6 px-4 bg-gray-900 rounded-xl border border-gray-800">
+              <span className="text-green-400 text-lg">✓</span>
+              No active claim-relevant incidents
+              {stateFilter !== 'All' || typeFilter !== 'All' ? ' matching your filters' : ''}
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-gray-800">
+              <table className="w-full text-sm min-w-[700px]">
+                <thead>
+                  <tr className="border-b border-gray-800 bg-gray-900/60">
+                    <th className="text-left text-xs text-gray-500 font-semibold uppercase tracking-wide px-4 py-3">State</th>
+                    <th className="text-left text-xs text-gray-500 font-semibold uppercase tracking-wide px-4 py-3">Type</th>
+                    <th className="text-left text-xs text-gray-500 font-semibold uppercase tracking-wide px-4 py-3">Location</th>
+                    <th className="text-left text-xs text-gray-500 font-semibold uppercase tracking-wide px-4 py-3 hidden md:table-cell">Council/LGA</th>
+                    <th className="text-left text-xs text-gray-500 font-semibold uppercase tracking-wide px-4 py-3">Status</th>
+                    <th className="text-left text-xs text-gray-500 font-semibold uppercase tracking-wide px-4 py-3 hidden lg:table-cell">Source</th>
+                    <th className="text-left text-xs text-gray-500 font-semibold uppercase tracking-wide px-4 py-3 hidden lg:table-cell">Updated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((inc, i) => (
+                    <tr
+                      key={inc.id}
+                      className={`border-b border-gray-800/60 hover:bg-gray-800/30 transition-colors ${i % 2 === 0 ? 'bg-gray-900/20' : ''}`}
+                    >
+                      <td className="px-4 py-3"><StateBadge state={inc.state} /></td>
+                      <td className="px-4 py-3">
+                        <span className="flex items-center gap-1.5 whitespace-nowrap text-gray-300">
+                          <IncidentTypeIcon type={inc.type} />
+                          <span className="text-xs">{inc.type}</span>
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-300 max-w-[180px] truncate" title={inc.location}>
+                        {inc.location}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-500 hidden md:table-cell max-w-[140px] truncate" title={inc.council ?? ''}>
+                        {inc.council ?? '—'}
+                      </td>
+                      <td className="px-4 py-3"><IncidentStatusBadge status={inc.status} /></td>
+                      <td className="px-4 py-3 text-xs text-gray-500 hidden lg:table-cell whitespace-nowrap">
+                        {inc.sourceOrg}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-600 hidden lg:table-cell whitespace-nowrap">
+                        {formatDateShort(inc.updatedAt)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Data Sources table */}
+      <div className="mt-8">
+        <h3 className="text-gray-400 font-semibold text-sm mb-3">Data Sources</h3>
+        <div className="overflow-x-auto rounded-xl border border-gray-800">
+          <table className="w-full text-sm min-w-[640px]">
+            <thead>
+              <tr className="border-b border-gray-800 bg-gray-900/60">
+                <th className="text-left text-xs text-gray-500 font-semibold uppercase tracking-wide px-4 py-3">Source</th>
+                <th className="text-left text-xs text-gray-500 font-semibold uppercase tracking-wide px-4 py-3">States</th>
+                <th className="text-left text-xs text-gray-500 font-semibold uppercase tracking-wide px-4 py-3">Data Type</th>
+                <th className="text-left text-xs text-gray-500 font-semibold uppercase tracking-wide px-4 py-3">Updated</th>
+                <th className="text-left text-xs text-gray-500 font-semibold uppercase tracking-wide px-4 py-3">Access</th>
+              </tr>
+            </thead>
+            <tbody className="text-xs text-gray-400">
+              {[
+                { source: 'NSW Rural Fire Service',          states: 'NSW',        type: 'Fire, flood, storm, tree down', updated: 'Live (on page load)',         access: 'Public GeoJSON feed' },
+                { source: 'VicEmergency',                    states: 'VIC',        type: 'All incident types',            updated: 'Live (on page load)',         access: 'Public GeoJSON feed' },
+                { source: 'WA DFES Emergency',               states: 'WA',         type: 'All incident types',            updated: 'Live (on page load)',         access: 'Public REST API' },
+                { source: 'ACT Emergency Services',          states: 'ACT',        type: 'All incident types',            updated: 'Live (on page load)',         access: 'Public RSS feed' },
+                { source: 'QLD Fire & Emergency Services',   states: 'QLD',        type: 'Bushfire alerts',               updated: 'Every 2 hours (local script)', access: 'Public S3 bucket' },
+                { source: 'Bureau of Meteorology (BOM)',     states: 'All states', type: 'Severe weather warnings',       updated: 'Weekly (Monday cron)',        access: 'BOM FTP CAP feeds' },
+                { source: 'Open-Meteo',                      states: 'All states', type: '14-day weather forecast',       updated: 'Weekly (Monday cron)',        access: 'Free weather API' },
+              ].map((row, i) => (
+                <tr
+                  key={row.source}
+                  className={`border-b border-gray-800/60 hover:bg-gray-800/20 transition-colors ${i % 2 === 0 ? 'bg-gray-900/20' : ''}`}
+                >
+                  <td className="px-4 py-3 text-gray-300 font-medium whitespace-nowrap">{row.source}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">{row.states}</td>
+                  <td className="px-4 py-3">{row.type}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">{row.updated}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">{row.access}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function CATForecastPage() {
@@ -297,6 +557,10 @@ export default function CATForecastPage() {
   type SortKey = 'state' | 'predictedJobsThisWeek' | 'weatherSeverityScore' | 'activeWarnings' | 'multiplier';
   const [sortKey, setSortKey] = useState<SortKey>('predictedJobsThisWeek');
   const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc');
+
+  // Incidents state — independent fetch, loads after main data
+  const [incidents, setIncidents]             = useState<IncidentsResponse | null>(null);
+  const [incidentsLoading, setIncidentsLoading] = useState(true);
 
   useEffect(() => {
     fetch('/api/weather/bom-warnings')
@@ -311,6 +575,14 @@ export default function CATForecastPage() {
       })
       .catch(e => setError(String(e)))
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/weather/incidents')
+      .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+      .then((d: IncidentsResponse) => setIncidents(d))
+      .catch(e => console.error('[incidents] fetch failed:', e))
+      .finally(() => setIncidentsLoading(false));
   }, []);
 
   if (loading) return <LoadingSpinner message="Fetching BOM warnings and weather forecasts…" />;
@@ -468,6 +740,9 @@ export default function CATForecastPage() {
           />
         ))}
       </div>
+
+      {/* Live Incidents section */}
+      <IncidentsSection incidents={incidents} loading={incidentsLoading} />
 
       {/* Footer note */}
       <div className="mt-6 flex items-center gap-2 text-xs text-gray-600">
