@@ -25,6 +25,10 @@ export interface LiveIncident {
   status: string;         // 'Active' | 'Responding' | 'Monitoring' | 'Under Control' | 'Unknown'
   location: string;       // suburb/area name
   council?: string;       // LGA/council area
+  region?: string;        // state region (WA dfes-region, NSW council area)
+  alertLevel?: string;    // NSW RFS alert level (Advice, Watch & Act, Emergency Warning)
+  size?: string;          // NSW RFS fire size
+  agency?: string;        // responsible agency
   lat?: number;
   lng?: number;
   updatedAt: string;      // ISO timestamp
@@ -140,8 +144,11 @@ async function fetchNSW(): Promise<{ incidents: LiveIncident[]; lastUpdated: str
       }
     } catch { /* ignore coord parse errors */ }
 
-    const type   = normaliseType(rawType);
-    const status = normaliseStatus(rawStatus);
+    const type       = normaliseType(rawType);
+    const status     = normaliseStatus(rawStatus);
+    const alertLevel = parseDescriptionField(desc, 'ALERT LEVEL');
+    const size       = parseDescriptionField(desc, 'SIZE');
+    const agency     = parseDescriptionField(desc, 'RESPONSIBLE AGENCY');
 
     return {
       id:              `nsw-${f.properties.guid ?? i}`,
@@ -151,6 +158,10 @@ async function fetchNSW(): Promise<{ incidents: LiveIncident[]; lastUpdated: str
       status,
       location:        rawLoc,
       council:         rawCouncil || undefined,
+      region:          rawCouncil || undefined,
+      alertLevel:      alertLevel || undefined,
+      size:            size || undefined,
+      agency:          agency || undefined,
       lat,
       lng,
       updatedAt:       f.properties.updated ?? f.properties.pubDate ?? new Date().toISOString(),
@@ -264,6 +275,7 @@ interface WAIncident {
   location?: { value?: string };
   suburbs?: string[];
   lga?: string[];
+  'dfes-regions'?: string[];
   'incident-status'?: string;
   'start-date-time'?: string;
   'updated-date-time'?: string;
@@ -288,8 +300,9 @@ async function fetchWA(): Promise<{ incidents: LiveIncident[]; lastUpdated: stri
     const rawType  = inc['incident-type'] ?? 'Other';
     const type     = normaliseType(rawType);
     const status   = normaliseStatus(inc['incident-status'] ?? '');
-    const location = inc.location?.value ?? (inc.suburbs ?? []).join(', ') ?? 'Unknown';
+    const location = (inc.suburbs ?? []).join(', ') || inc.location?.value || 'Unknown';
     const council  = (inc.lga ?? []).join(', ') || undefined;
+    const region   = (inc['dfes-regions'] ?? []).join(', ') || undefined;
 
     let lat: number | undefined;
     let lng: number | undefined;
@@ -306,6 +319,7 @@ async function fetchWA(): Promise<{ incidents: LiveIncident[]; lastUpdated: stri
       status,
       location,
       council,
+      region,
       lat,
       lng,
       updatedAt:       inc['updated-date-time'] ?? inc['start-date-time'] ?? new Date().toISOString(),

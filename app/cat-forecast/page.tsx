@@ -339,9 +339,18 @@ function IncidentTypeIcon({ type }: { type: string }) {
   return <span className="text-base leading-none">{icons[type] ?? '⚠️'}</span>;
 }
 
+type IncidentSortKey = 'state' | 'type' | 'location' | 'council' | 'status' | 'sourceOrg' | 'updatedAt';
+
 function IncidentsSection({ incidents, loading }: { incidents: IncidentsResponse | null; loading: boolean }) {
   const [stateFilter, setStateFilter] = useState<string>('All');
   const [typeFilter,  setTypeFilter]  = useState<string>('All');
+  const [incSortKey,  setIncSortKey]  = useState<IncidentSortKey>('state');
+  const [incSortDir,  setIncSortDir]  = useState<'asc' | 'desc'>('asc');
+
+  const toggleIncSort = (key: IncidentSortKey) => {
+    if (incSortKey === key) setIncSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setIncSortKey(key); setIncSortDir('asc'); }
+  };
 
   const stateButtons = ['All', 'NSW', 'VIC', 'WA', 'QLD', 'ACT'];
   const typeButtons  = [
@@ -351,14 +360,20 @@ function IncidentsSection({ incidents, loading }: { incidents: IncidentsResponse
     { key: 'Cyclone/Wind', label: 'Cyclone/Wind' },
   ];
 
-  const filtered = (incidents?.incidents ?? []).filter(inc => {
-    const stateOk = stateFilter === 'All' || inc.state === stateFilter;
-    let typeOk = true;
-    if (typeFilter === 'Storm/Flood')  typeOk = inc.type === 'Storm' || inc.type === 'Flood';
-    if (typeFilter === 'Tree Down')    typeOk = inc.type === 'Tree Down';
-    if (typeFilter === 'Cyclone/Wind') typeOk = inc.type === 'Cyclone' || inc.type === 'Wind';
-    return stateOk && typeOk;
-  });
+  const filtered = (incidents?.incidents ?? [])
+    .filter(inc => {
+      const stateOk = stateFilter === 'All' || inc.state === stateFilter;
+      let typeOk = true;
+      if (typeFilter === 'Storm/Flood')  typeOk = inc.type === 'Storm' || inc.type === 'Flood';
+      if (typeFilter === 'Tree Down')    typeOk = inc.type === 'Tree Down';
+      if (typeFilter === 'Cyclone/Wind') typeOk = inc.type === 'Cyclone' || inc.type === 'Wind';
+      return stateOk && typeOk;
+    })
+    .sort((a, b) => {
+      const av = (a[incSortKey] ?? '') as string;
+      const bv = (b[incSortKey] ?? '') as string;
+      return incSortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
 
   // States with > 0 claim-relevant incidents
   const activeStates = incidents
@@ -465,13 +480,30 @@ function IncidentsSection({ incidents, loading }: { incidents: IncidentsResponse
               <table className="w-full text-sm min-w-[700px]">
                 <thead>
                   <tr className="border-b border-gray-800 bg-gray-900/60">
-                    <th className="text-left text-xs text-gray-500 font-semibold uppercase tracking-wide px-4 py-3">State</th>
-                    <th className="text-left text-xs text-gray-500 font-semibold uppercase tracking-wide px-4 py-3">Type</th>
-                    <th className="text-left text-xs text-gray-500 font-semibold uppercase tracking-wide px-4 py-3">Location</th>
-                    <th className="text-left text-xs text-gray-500 font-semibold uppercase tracking-wide px-4 py-3 hidden md:table-cell">Council/LGA</th>
-                    <th className="text-left text-xs text-gray-500 font-semibold uppercase tracking-wide px-4 py-3">Status</th>
-                    <th className="text-left text-xs text-gray-500 font-semibold uppercase tracking-wide px-4 py-3 hidden lg:table-cell">Source</th>
-                    <th className="text-left text-xs text-gray-500 font-semibold uppercase tracking-wide px-4 py-3 hidden lg:table-cell">Updated</th>
+                    {([
+                      { key: 'state',     label: 'State',      cls: '' },
+                      { key: 'type',      label: 'Type',       cls: '' },
+                      { key: 'location',  label: 'Location',   cls: '' },
+                      { key: 'council',   label: 'Council/LGA',cls: 'hidden md:table-cell' },
+                      { key: 'status',    label: 'Status',     cls: '' },
+                      { key: 'sourceOrg', label: 'Source',     cls: 'hidden lg:table-cell' },
+                      { key: 'updatedAt', label: 'Updated',    cls: 'hidden lg:table-cell' },
+                    ] as { key: IncidentSortKey; label: string; cls: string }[]).map(col => (
+                      <th
+                        key={col.key}
+                        onClick={() => toggleIncSort(col.key)}
+                        className={`text-left text-xs text-gray-500 font-semibold uppercase tracking-wide px-4 py-3 cursor-pointer hover:text-gray-300 select-none ${col.cls} ${incSortKey === col.key ? 'text-red-400' : ''}`}
+                      >
+                        <span className="flex items-center gap-1">
+                          {col.label}
+                          {incSortKey === col.key ? (
+                            incSortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />
+                          ) : (
+                            <ChevronsUpDown size={11} className="opacity-30" />
+                          )}
+                        </span>
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
@@ -487,11 +519,20 @@ function IncidentsSection({ incidents, loading }: { incidents: IncidentsResponse
                           <span className="text-xs">{inc.type}</span>
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-300 max-w-[180px] truncate" title={inc.location}>
-                        {inc.location}
+                      <td className="px-4 py-3 text-xs text-gray-300 max-w-[200px]" title={inc.location}>
+                        <div className="truncate">{inc.location}</div>
+                        {inc.alertLevel && (
+                          <div className="text-gray-500 text-[10px] mt-0.5">{inc.alertLevel}</div>
+                        )}
+                        {inc.region && inc.region !== inc.council && (
+                          <div className="text-gray-600 text-[10px] mt-0.5">{inc.region}</div>
+                        )}
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-500 hidden md:table-cell max-w-[140px] truncate" title={inc.council ?? ''}>
-                        {inc.council ?? '—'}
+                      <td className="px-4 py-3 text-xs text-gray-500 hidden md:table-cell max-w-[140px]" title={inc.council ?? ''}>
+                        <div className="truncate">{inc.council ?? '—'}</div>
+                        {inc.agency && (
+                          <div className="text-gray-600 text-[10px] mt-0.5 truncate" title={inc.agency}>{inc.agency}</div>
+                        )}
                       </td>
                       <td className="px-4 py-3"><IncidentStatusBadge status={inc.status} /></td>
                       <td className="px-4 py-3 text-xs text-gray-500 hidden lg:table-cell whitespace-nowrap">
