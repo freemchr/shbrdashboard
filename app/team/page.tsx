@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ErrorMessage, SkeletonTable } from '@/components/ui/LoadingSpinner';
 import { KpiCard } from '@/components/ui/KpiCard';
-import { Users, Briefcase, DollarSign, AlertTriangle, ChevronDown, ChevronUp, ExternalLink, X, Loader2 } from 'lucide-react';
+import { Users, Briefcase, DollarSign, AlertTriangle, ChevronDown, ChevronUp, ExternalLink, X, Loader2, Mail } from 'lucide-react';
 import { formatCurrency } from '@/lib/prime-helpers';
 import { downloadCSV } from '@/lib/export-csv';
 import { Download } from 'lucide-react';
@@ -78,6 +78,26 @@ function MetricBadge({ value, label, colour, onClick, active }: {
   );
 }
 
+function buildDrillEmailBody(memberName: string, filter: DrillFilter, jobs: TeamMemberJob[]): string {
+  const date = new Date().toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' });
+  const label = DRILL_LABELS[filter];
+  let body = `${label} — ${memberName} (${date})\n${'─'.repeat(60)}\n\n`;
+  body += `Total: ${jobs.length} job${jobs.length !== 1 ? 's' : ''}\n\n`;
+  jobs.forEach((job, i) => {
+    body += `${i + 1}. ${job.jobNumber}`;
+    if (job.address) body += ` — ${job.address}`;
+    body += `\n   Status: ${job.status}`;
+    if (job.jobType && job.jobType !== '—') body += ` | Type: ${job.jobType}`;
+    if (job.region) body += ` | Region: ${job.region}`;
+    body += ` | Age: ${job.daysOpen}d`;
+    if (filter === 'sla' && job.daysOverdue > 0) body += ` | Overdue: +${job.daysOverdue}d`;
+    if (job.authorisedTotal > 0) body += ` | Value: $${job.authorisedTotal.toLocaleString('en-AU', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+    if (job.primeUrl) body += `\n   Prime: ${job.primeUrl}`;
+    body += '\n\n';
+  });
+  return body;
+}
+
 function DrillPanel({ memberId, memberName, filter, onClose }: {
   memberId: string;
   memberName: string;
@@ -107,10 +127,26 @@ function DrillPanel({ memberId, memberName, filter, onClose }: {
           <span className="text-xs text-gray-500">— {memberName}</span>
           {!loading && <span className="text-[11px] bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">{jobs.length} job{jobs.length !== 1 ? 's' : ''}</span>}
         </div>
-        <button onClick={e => { e.stopPropagation(); onClose(); }}
-          className="text-gray-500 hover:text-white transition-colors p-1">
-          <X size={14} />
-        </button>
+        <div className="flex items-center gap-1">
+          {!loading && !error && jobs.length > 0 && (
+            <button
+              onClick={e => {
+                e.stopPropagation();
+                const subject = encodeURIComponent(`SHBR — ${DRILL_LABELS[filter]}: ${memberName} (${new Date().toLocaleDateString('en-AU')})`);
+                const body = encodeURIComponent(buildDrillEmailBody(memberName, filter, jobs));
+                window.location.href = `mailto:?subject=${subject}&body=${body}`;
+              }}
+              title="Email this job list"
+              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 px-2.5 py-1 rounded-lg transition-colors"
+            >
+              <Mail size={12} /> Email list
+            </button>
+          )}
+          <button onClick={e => { e.stopPropagation(); onClose(); }}
+            className="text-gray-500 hover:text-white transition-colors p-1">
+            <X size={14} />
+          </button>
+        </div>
       </div>
 
       {loading && (
