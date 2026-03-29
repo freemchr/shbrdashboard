@@ -37,11 +37,22 @@ interface DataRefreshButtonProps {
 }
 
 export function DataRefreshButton({ mode = 'operational', endpoint }: DataRefreshButtonProps = {}) {
-  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [cacheDate, setCacheDate] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [relativeTime, setRelativeTime] = useState('just now');
+  const [relativeTime, setRelativeTime] = useState<string>('loading…');
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intervalMs = getIntervalMs(mode);
+
+  // Fetch the real cache age from the server on mount
+  useEffect(() => {
+    fetch('/api/prime/cache/age')
+      .then(r => r.ok ? r.json() : null)
+      .then((d: { cachedAt?: number | null } | null) => {
+        if (d?.cachedAt) setCacheDate(new Date(d.cachedAt));
+        else setCacheDate(new Date()); // fallback: assume fresh
+      })
+      .catch(() => setCacheDate(new Date()));
+  }, []);
 
   const doRefresh = useCallback(async (isAuto = false) => {
     if (refreshing) return;
@@ -51,7 +62,6 @@ export function DataRefreshButton({ mode = 'operational', endpoint }: DataRefres
         ? `${endpoint}?bust=1`
         : '/api/prime/cache/invalidate';
       await fetch(url, { method: endpoint ? 'GET' : 'POST' });
-      setLastRefreshed(new Date());
       window.location.reload();
     } catch {
       setRefreshing(false);
@@ -63,29 +73,35 @@ export function DataRefreshButton({ mode = 'operational', endpoint }: DataRefres
 
   // Auto-refresh — disabled if intervalMs is 0 (weekly mode)
   useEffect(() => {
-    if (!intervalMs) return;
-    timerRef.current = setTimeout(() => doRefresh(true), intervalMs);
+    if (!intervalMs || !cacheDate) return;
+    const elapsed = Date.now() - cacheDate.getTime();
+    const remaining = Math.max(0, intervalMs - elapsed);
+    timerRef.current = setTimeout(() => doRefresh(true), remaining);
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [doRefresh, lastRefreshed, intervalMs]);
+  }, [doRefresh, cacheDate, intervalMs]);
 
   // Update relative time label every minute
   useEffect(() => {
-    setRelativeTime(formatRelative(lastRefreshed));
-    const t = setInterval(() => setRelativeTime(formatRelative(lastRefreshed)), 60_000);
+    if (!cacheDate) return;
+    setRelativeTime(formatRelative(cacheDate));
+    const t = setInterval(() => setRelativeTime(formatRelative(cacheDate)), 60_000);
     return () => clearInterval(t);
-  }, [lastRefreshed]);
+  }, [cacheDate]);
+
+  const isStale = cacheDate ? (Date.now() - cacheDate.getTime()) > 8 * 60 * 60 * 1000 : false;
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-gray-600 hidden sm:inline">
-        Data: {relativeTime}
+      <span className={`text-xs hidden sm:inline ${isStale ? 'text-amber-500' : 'text-gray-600'}`}
+        title={cacheDate ? `Prime data cached at ${cacheDate.toLocaleTimeString('en-AU', { timeZone: 'Australia/Sydney', hour: '2-digit', minute: '2-digit' })}` : ''}>
+        Data: {relativeTime}{isStale ? ' ⚠' : ''}
       </span>
       <button
         onClick={() => doRefresh(false)}
         disabled={refreshing}
-        title="Force refresh data"
+        title={cacheDate ? `Prime data last refreshed ${formatRelative(cacheDate)} — click to refresh now` : 'Refresh data'}
         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />

@@ -55,7 +55,7 @@ function blobDirectUrl(key: string) {
   return `${base}/${blobFilename(key)}`;
 }
 
-interface BlobMeta { expiresAt: number; staleAt: number; data: unknown }
+interface BlobMeta { expiresAt: number; staleAt: number; cachedAt?: number; data: unknown }
 
 // Track in-flight revalidations to avoid duplicate writes
 const revalidating = new Set<string>();
@@ -100,6 +100,7 @@ export async function setCached(key: string, data: unknown, ttlMs: number): Prom
     const meta: BlobMeta = {
       expiresAt: Date.now() + ttlMs,
       staleAt: Date.now() + staleMs,
+      cachedAt: Date.now(),
       data,
     };
     await put(blobFilename(key), JSON.stringify(meta), {
