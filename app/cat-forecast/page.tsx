@@ -398,7 +398,7 @@ function IncidentsSection({ incidents, loading }: { incidents: IncidentsResponse
         )}
       </div>
       <p className="text-xs text-gray-500 mb-5">
-        Storm, flood, tree down, and wind incidents from state emergency services — updated every 5 minutes
+        Storm, flood, tree down, and wind incidents from state emergency services — NSW/VIC/WA/ACT updated live on page load · QLD updated daily at 7am
       </p>
 
       {/* Error state */}
@@ -572,7 +572,7 @@ function IncidentsSection({ incidents, loading }: { incidents: IncidentsResponse
                 { source: 'VicEmergency',                    states: 'VIC',        type: 'All incident types',            updated: 'Live (on page load)',         access: 'Public GeoJSON feed' },
                 { source: 'WA DFES Emergency',               states: 'WA',         type: 'All incident types',            updated: 'Live (on page load)',         access: 'Public REST API' },
                 { source: 'ACT Emergency Services',          states: 'ACT',        type: 'All incident types',            updated: 'Live (on page load)',         access: 'Public RSS feed' },
-                { source: 'QLD Fire & Emergency Services',   states: 'QLD',        type: 'Bushfire alerts',               updated: 'Every 2 hours (local script)', access: 'Public S3 bucket' },
+                { source: 'QLD Fire & Emergency Services',   states: 'QLD',        type: 'Bushfire alerts',               updated: 'Daily at 7am AEST',           access: 'Public S3 bucket' },
                 { source: 'Bureau of Meteorology (BOM)',     states: 'All states', type: 'Severe weather warnings',       updated: 'Weekly (Monday cron)',        access: 'BOM FTP CAP feeds' },
                 { source: 'Open-Meteo',                      states: 'All states', type: '14-day weather forecast',       updated: 'Weekly (Monday cron)',        access: 'Free weather API' },
               ].map((row, i) => (
