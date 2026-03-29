@@ -72,10 +72,13 @@ export function DataRefreshButton({ mode = 'operational', endpoint }: DataRefres
   }, [refreshing, endpoint]);
 
   // Auto-refresh — disabled if intervalMs is 0 (weekly mode)
+  // Only schedule if the cache will actually expire in the future — never fire immediately
+  // for already-stale caches (avoids reload loop on page load)
   useEffect(() => {
     if (!intervalMs || !cacheDate) return;
     const elapsed = Date.now() - cacheDate.getTime();
-    const remaining = Math.max(0, intervalMs - elapsed);
+    const remaining = intervalMs - elapsed;
+    if (remaining <= 0) return; // already stale — don't auto-reload, let user decide
     timerRef.current = setTimeout(() => doRefresh(true), remaining);
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
