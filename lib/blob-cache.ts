@@ -119,7 +119,7 @@ export async function invalidateCache(key?: string): Promise<void> {
     memCache.delete(key);
     revalidating.delete(key);
     try {
-      await put(blobFilename(key), JSON.stringify({ expiresAt: 0, staleAt: 0, data: null }), {
+      await put(blobFilename(key), JSON.stringify({ expiresAt: 0, staleAt: 0, cachedAt: 0, data: null }), {
         access: 'private',
         contentType: 'application/json',
         addRandomSuffix: false,
@@ -129,5 +129,14 @@ export async function invalidateCache(key?: string): Promise<void> {
   } else {
     memCache.clear();
     revalidating.clear();
+    // Also zero out the main jobs blob so the cache age endpoint reflects the invalidation
+    try {
+      await put(blobFilename('all-open-jobs-v3'), JSON.stringify({ expiresAt: 0, staleAt: 0, cachedAt: 0, data: null }), {
+        access: 'private',
+        contentType: 'application/json',
+        addRandomSuffix: false,
+        allowOverwrite: true,
+      });
+    } catch { /* ignore */ }
   }
 }

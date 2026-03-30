@@ -21,6 +21,8 @@ export async function GET() {
     if (!res.ok) return NextResponse.json({ cachedAt: null });
 
     const meta = await res.json() as { cachedAt?: number; expiresAt?: number };
+    // If cachedAt is 0 or missing, cache has been invalidated and is rebuilding
+    if (!meta.cachedAt || meta.cachedAt === 0) return NextResponse.json({ cachedAt: null, rebuilding: true });
     // Fall back to expiresAt - 12h if cachedAt not yet present (old cache format)
     const cachedAt = meta.cachedAt ?? (meta.expiresAt ? meta.expiresAt - 12 * 60 * 60 * 1000 : null);
     return NextResponse.json({ cachedAt });

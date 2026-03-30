@@ -44,19 +44,29 @@ export function DataRefreshButton({ mode = 'operational', endpoint }: DataRefres
   const intervalMs = getIntervalMs(mode);
 
   // Fetch the real cache age from the server on mount
-  useEffect(() => {
+  const fetchCacheAge = useCallback(() => {
     fetch('/api/prime/cache/age')
       .then(r => r.ok ? r.json() : null)
-      .then((d: { cachedAt?: number | null } | null) => {
-        if (d?.cachedAt) setCacheDate(new Date(d.cachedAt));
-        else setCacheDate(new Date()); // fallback: assume fresh
+      .then((d: { cachedAt?: number | null; rebuilding?: boolean } | null) => {
+        if (d?.rebuilding) {
+          // Cache is rebuilding — poll every 5s until it's ready
+          setTimeout(fetchCacheAge, 5000);
+        } else if (d?.cachedAt) {
+          setCacheDate(new Date(d.cachedAt));
+        } else {
+          setCacheDate(new Date());
+        }
       })
       .catch(() => setCacheDate(new Date()));
   }, []);
 
+  useEffect(() => { fetchCacheAge(); }, [fetchCacheAge]);
+
   const doRefresh = useCallback(async (isAuto = false) => {
     if (refreshing) return;
     setRefreshing(true);
+    setCacheDate(null);
+    setRelativeTime('Refreshing…');
     try {
       const url = endpoint
         ? `${endpoint}?bust=1`
