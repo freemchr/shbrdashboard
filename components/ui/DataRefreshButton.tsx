@@ -73,29 +73,26 @@ export function DataRefreshButton({ mode = 'operational' }: DataRefreshButtonPro
       window.dispatchEvent(new CustomEvent('prime-cache-busted'));
       // 3. Poll cache/age until it returns a fresh timestamp — keep spinner going
       const started = Date.now();
+      const MAX_WAIT = 60_000; // 60s max
       const poll = () => {
         fetch('/api/prime/cache/age')
           .then(r => r.ok ? r.json() : null)
-          .then((d: { cachedAt?: number | null; rebuilding?: boolean } | null) => {
+          .then((d: { cachedAt?: number | null } | null) => {
             const fresh = d?.cachedAt && d.cachedAt > started;
             if (fresh) {
               setCacheDate(new Date(d!.cachedAt!));
               setRefreshing(false);
-            } else if (Date.now() - started < 90_000) {
-              // Keep polling for up to 90s
+            } else if (Date.now() - started < MAX_WAIT) {
               setTimeout(poll, 3000);
             } else {
-              // Timeout — give up gracefully
+              // Timed out — stop spinner, re-read whatever's there
               setRefreshing(false);
               fetchCacheAge();
             }
           })
-          .catch(() => {
-            setRefreshing(false);
-            fetchCacheAge();
-          });
+          .catch(() => { setRefreshing(false); fetchCacheAge(); });
       };
-      setTimeout(poll, 3000); // first poll after 3s — give Prime time to respond
+      setTimeout(poll, 3000);
     } catch {
       setRefreshing(false);
     }

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 
 /**
- * Returns the timestamp when the main open-jobs cache was last built.
+ * Returns the most recent cachedAt timestamp across all known Prime cache blobs.
  * Used by DataRefreshButton to show accurate "Data as of X" info.
  */
 export async function GET() {
@@ -12,19 +12,29 @@ export async function GET() {
     const token = process.env.BLOB_READ_WRITE_TOKEN;
     if (!base || !token) return NextResponse.json({ cachedAt: null });
 
-    const url = `${base}/shbr-cache/open-jobs-flat-v3.json`;
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(5000),
-    });
+    // Check the two most-used caches — whichever was written most recently wins
+    const keys = ['open-jobs-flat-v3', 'ops-data-v3', 'kpis-v3'];
 
-    if (!res.ok) return NextResponse.json({ cachedAt: null });
+    const results = await Promise.allSettled(
+      keys.map(key =>
+        fetch(`${base}/shbr-cache/${key}.json`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: AbortSignal.timeout(5000),
+        })
+          .then(r => r.ok ? r.json() : null)
+          .then((m: { cachedAt?: number } | null) => m?.cachedAt || 0)
+          .catch(() => 0)
+      )
+    );
 
-    const meta = await res.json() as { cachedAt?: number; expiresAt?: number };
-    // If cachedAt is 0 or missing, cache has been invalidated and is rebuilding
-    if (!meta.cachedAt || meta.cachedAt === 0) return NextResponse.json({ cachedAt: null, rebuilding: true });
-    // Fall back to expiresAt - 12h if cachedAt not yet present (old cache format)
-    const cachedAt = meta.cachedAt ?? (meta.expiresAt ? meta.expiresAt - 12 * 60 * 60 * 1000 : null);
+    const timestamps = results
+      .filter((r): r is PromiseFulfilledResult<number> => r.status === 'fulfilled')
+      .map(r => r.value)
+      .filter(t => t > 0);
+
+    if (timestamps.length === 0) return NextResponse.json({ cachedAt: null, rebuilding: true });
+
+    const cachedAt = Math.max(...timestamps);
     return NextResponse.json({ cachedAt });
   } catch {
     return NextResponse.json({ cachedAt: null });
