@@ -360,40 +360,6 @@ export function Sidebar() {
             </div>
           </div>
 
-          {/* Collapsible APP (Australian Plumbing Products) group */}
-          <div>
-            <button
-              onClick={() => setAppOpen(o => !o)}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all
-                ${isInApp ? 'text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'}`}
-            >
-              <Droplets size={18} className={isInApp ? 'text-red-400' : ''} />
-              <span className="flex-1 text-left">APP</span>
-              <ChevronDown
-                size={15}
-                className={`text-gray-500 transition-transform duration-200 ${appOpen ? 'rotate-180' : ''}`}
-              />
-            </button>
-            <div className={`overflow-hidden transition-all duration-200 ${appOpen ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
-              <div className="mt-0.5 space-y-0.5">
-                {appSubItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center gap-3 pl-8 pr-4 py-2 rounded-lg text-sm transition-all
-                      ${isActive(item.href)
-                        ? 'bg-red-600 text-white font-medium'
-                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                      }`}
-                  >
-                    <item.icon size={15} />
-                    <span className="flex-1">{item.label}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-
           {/* Remaining nav items (Weather, WHS, Pipeline, Stalled, Financial, Search, Map) */}
           {navItemsBottom.map((item) => (
             <NavItem
@@ -404,6 +370,43 @@ export function Sidebar() {
               active={isActive(item.href)}
             />
           ))}
+
+          {/* APP — Australian Plumbing Products (separate from SHBR nav) */}
+          <div className="pt-2 mt-1 border-t border-gray-800">
+            <p className="px-4 pb-1 text-xs text-gray-600 uppercase tracking-widest">Partners</p>
+            <div>
+              <button
+                onClick={() => setAppOpen(o => !o)}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all
+                  ${isInApp ? 'text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'}`}
+              >
+                <Droplets size={18} className={isInApp ? 'text-blue-400' : 'text-gray-500'} />
+                <span className="flex-1 text-left">APP</span>
+                <ChevronDown
+                  size={15}
+                  className={`text-gray-500 transition-transform duration-200 ${appOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+              <div className={`overflow-hidden transition-all duration-200 ${appOpen ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div className="mt-0.5 space-y-0.5">
+                  {appSubItems.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center gap-3 pl-8 pr-4 py-2 rounded-lg text-sm transition-all
+                        ${isActive(item.href)
+                          ? 'bg-blue-600 text-white font-medium'
+                          : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                        }`}
+                    >
+                      <item.icon size={15} />
+                      <span className="flex-1">{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
 
           {userEmail?.toLowerCase() === ADMIN_EMAIL && (
             <>
