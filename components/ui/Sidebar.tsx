@@ -33,6 +33,7 @@ import {
   Zap,
   Share2,
   Calculator,
+  Droplets,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -40,7 +41,6 @@ const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/command-centre', label: 'Command Centre', icon: Tv2 },
   { href: '/socials', label: 'Socials', icon: Share2 },
-  { href: '/flexi-calc', label: 'Flexi ROI Calc', icon: Calculator },
   { href: '/whs', label: 'WHS', icon: ShieldCheck },
   { href: '/pipeline', label: 'Pipeline', icon: GitBranch },
   { href: '/stalled', label: 'Stalled Jobs', icon: Clock },
@@ -69,6 +69,10 @@ const reportsSubItems = [
 const estimatorsSubItems = [
   { href: '/estimators', label: 'Workload', icon: HardHat },
   { href: '/timeline', label: 'Timeline Tracking', icon: Activity },
+];
+
+const appSubItems = [
+  { href: '/flexi-calc', label: 'Flexi ROI Calc', icon: Calculator },
 ];
 
 function NavItem({ href, label, icon: Icon, active, alert }: {
@@ -118,10 +122,14 @@ export function Sidebar() {
   const isInEstimators = pathname.startsWith('/estimators') || pathname.startsWith('/timeline');
   const [estimatorsOpen, setEstimatorsOpen] = useState(isInEstimators);
 
+  const isInApp = pathname.startsWith('/flexi-calc');
+  const [appOpen, setAppOpen] = useState(isInApp);
+
   useEffect(() => { if (isInWeather) setWeatherOpen(true); }, [isInWeather]);
   useEffect(() => { if (isInOps) setOpsOpen(true); }, [isInOps]);
   useEffect(() => { if (isInReports) setReportsOpen(true); }, [isInReports]);
   useEffect(() => { if (isInEstimators) setEstimatorsOpen(true); }, [isInEstimators]);
+  useEffect(() => { if (isInApp) setAppOpen(true); }, [isInApp]);
 
   useEffect(() => {
     fetch('/api/auth/session')
@@ -335,6 +343,40 @@ export function Sidebar() {
             <div className={`overflow-hidden transition-all duration-200 ${estimatorsOpen ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
               <div className="mt-0.5 space-y-0.5">
                 {estimatorsSubItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-3 pl-8 pr-4 py-2 rounded-lg text-sm transition-all
+                      ${isActive(item.href)
+                        ? 'bg-red-600 text-white font-medium'
+                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                      }`}
+                  >
+                    <item.icon size={15} />
+                    <span className="flex-1">{item.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Collapsible APP (Australian Plumbing Products) group */}
+          <div>
+            <button
+              onClick={() => setAppOpen(o => !o)}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all
+                ${isInApp ? 'text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'}`}
+            >
+              <Droplets size={18} className={isInApp ? 'text-red-400' : ''} />
+              <span className="flex-1 text-left">APP</span>
+              <ChevronDown
+                size={15}
+                className={`text-gray-500 transition-transform duration-200 ${appOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+            <div className={`overflow-hidden transition-all duration-200 ${appOpen ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
+              <div className="mt-0.5 space-y-0.5">
+                {appSubItems.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}

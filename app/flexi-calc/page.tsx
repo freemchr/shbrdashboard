@@ -118,15 +118,15 @@ function ResultCard({
   large?: boolean;
 }) {
   return (
-    <div className={`bg-gray-800 border border-gray-700 rounded-xl p-4 flex flex-col gap-2 ${large ? 'md:col-span-2' : ''}`}>
-      <div className="flex items-center gap-2">
-        <div className={`p-1.5 rounded-lg ${colour}`}>
-          <Icon className="w-4 h-4 text-white" />
+    <div className={`bg-gray-800 border border-gray-700 rounded-xl p-3 flex flex-col gap-1.5 min-w-0 ${large ? 'md:col-span-2' : ''}`}>
+      <div className="flex items-center gap-1.5 min-w-0">
+        <div className={`p-1 rounded-md shrink-0 ${colour}`}>
+          <Icon className="w-3 h-3 text-white" />
         </div>
-        <span className="text-xs text-gray-400 uppercase tracking-wide">{label}</span>
+        <span className="text-xs text-gray-400 uppercase tracking-wide truncate">{label}</span>
       </div>
-      <p className={`font-bold text-white ${large ? 'text-3xl' : 'text-2xl'}`}>{value}</p>
-      {sub && <p className="text-xs text-gray-500">{sub}</p>}
+      <p className={`font-bold text-white truncate ${large ? 'text-2xl' : 'text-lg'}`}>{value}</p>
+      {sub && <p className="text-xs text-gray-500 truncate">{sub}</p>}
     </div>
   );
 }
@@ -425,7 +425,7 @@ SHBR Group / Australian Plumbing Products`;
               <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-4 flex items-center gap-2">
                 <Wrench className="w-4 h-4 text-blue-400" /> Installation Cost
               </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <ResultCard label="Total hoses" value={fmtNum(calc.totalHoses)} icon={Wrench} colour="bg-blue-600" />
                 <ResultCard label="Ex GST" value={fmt(calc.installExGst)} icon={DollarSign} colour="bg-blue-600" />
                 <ResultCard label="Inc GST" value={fmt(calc.installIncGst)} icon={DollarSign} colour="bg-blue-700" />
@@ -438,7 +438,7 @@ SHBR Group / Australian Plumbing Products`;
               <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-4 flex items-center gap-2">
                 <TrendingDown className="w-4 h-4 text-emerald-400" /> Claims Savings ({inputs.analysisYears}-Year View)
               </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <ResultCard label={`${inputs.analysisYears}-yr claims avoided`} value={fmt(calc.totalClaimCost)} icon={TrendingDown} colour="bg-emerald-600" />
                 <ResultCard label="Net benefit" value={fmt(calc.netBenefit)} icon={CheckCircle} colour={calc.netBenefit >= 0 ? 'bg-emerald-700' : 'bg-red-700'} />
                 <ResultCard label="ROI" value={pct(calc.roi)} icon={BarChart2} colour={calc.roi >= 0 ? 'bg-emerald-600' : 'bg-red-600'} />
@@ -451,7 +451,7 @@ SHBR Group / Australian Plumbing Products`;
               <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-4 flex items-center gap-2">
                 <Home className="w-4 h-4 text-purple-400" /> Renewal Revenue (Yr 1 + Yr 2)
               </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 <ResultCard label="Renewing policies" value={fmtNum(calc.renewingPolicies)} icon={Home} colour="bg-purple-700" />
                 <ResultCard label="Total revenue" value={fmt(calc.totalRenewalRevenue)} icon={DollarSign} colour="bg-purple-600" />
                 <ResultCard label="Revenue vs install" value={fmt(calc.revenueVsInstall)} icon={CheckCircle} colour={calc.revenueVsInstall >= 0 ? 'bg-purple-700' : 'bg-red-700'} />
