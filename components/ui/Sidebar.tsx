@@ -40,13 +40,13 @@ import { useState, useEffect } from 'react';
 const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/command-centre', label: 'Command Centre', icon: Tv2 },
-  { href: '/socials', label: 'Socials', icon: Share2 },
   { href: '/whs', label: 'WHS', icon: ShieldCheck },
   { href: '/pipeline', label: 'Pipeline', icon: GitBranch },
   { href: '/stalled', label: 'Stalled Jobs', icon: Clock },
   { href: '/financial', label: 'Financial', icon: DollarSign },
   { href: '/search', label: 'Job Search', icon: Search },
   { href: '/map', label: 'Jobs Map', icon: Map },
+  { href: '/socials', label: 'Socials', icon: Share2 },
 ];
 
 const weatherSubItems = [
@@ -162,7 +162,7 @@ export function Sidebar() {
 
   // Overview + Command Centre sit above all groups; everything else below
   const navItemsTop    = navItems.slice(0, 2);  // Overview, Command Centre
-  const navItemsBottom = navItems.slice(2);     // WHS, Pipeline, Stalled, Financial, Search, Map
+  const navItemsBottom = navItems.slice(2);     // WHS, Pipeline, Stalled, Financial, Search, Map, Socials
 
   return (
     <>
