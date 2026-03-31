@@ -66,18 +66,40 @@ export function DataRefreshButton({ mode = 'operational', endpoint }: DataRefres
     if (refreshing) return;
     setRefreshing(true);
     setCacheDate(null);
-    setRelativeTime('Refreshing…');
+    setRelativeTime('Fetching live data…');
     try {
-      // Invalidate all server-side caches (blob + in-memory via bust param)
+      // 1. Invalidate blob + in-memory caches
       await fetch('/api/prime/cache/invalidate', { method: 'POST' });
-      // Fire a custom event so page components re-fetch silently — no full reload
+      // 2. Trigger silent re-fetch on the page (passes ?bust=1 to skip in-memory)
       window.dispatchEvent(new CustomEvent('prime-cache-busted'));
-      // Re-read the new cache age after a short delay to let data settle
-      setTimeout(() => fetchCacheAge(), 2000);
+      // 3. Poll cache/age until it returns a fresh timestamp — keep spinner going
+      const started = Date.now();
+      const poll = () => {
+        fetch('/api/prime/cache/age')
+          .then(r => r.ok ? r.json() : null)
+          .then((d: { cachedAt?: number | null; rebuilding?: boolean } | null) => {
+            const fresh = d?.cachedAt && d.cachedAt > started;
+            if (fresh) {
+              setCacheDate(new Date(d!.cachedAt!));
+              setRefreshing(false);
+            } else if (Date.now() - started < 90_000) {
+              // Keep polling for up to 90s
+              setTimeout(poll, 3000);
+            } else {
+              // Timeout — give up gracefully
+              setRefreshing(false);
+              fetchCacheAge();
+            }
+          })
+          .catch(() => {
+            setRefreshing(false);
+            fetchCacheAge();
+          });
+      };
+      setTimeout(poll, 3000); // first poll after 3s — give Prime time to respond
     } catch {
-      // ignore
+      setRefreshing(false);
     }
-    setRefreshing(false);
     if (isAuto) {
       console.log('[DataRefresh] Auto-refreshed at', new Date().toLocaleTimeString('en-AU', { timeZone: 'Australia/Sydney' }));
     }
