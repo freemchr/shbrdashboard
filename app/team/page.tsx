@@ -4,10 +4,9 @@ import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ErrorMessage, SkeletonTable } from '@/components/ui/LoadingSpinner';
 import { KpiCard } from '@/components/ui/KpiCard';
-import { Users, Briefcase, DollarSign, AlertTriangle, ChevronDown, ChevronUp, ExternalLink, X, Loader2, Mail } from 'lucide-react';
+import { Users, Briefcase, DollarSign, AlertTriangle, ChevronDown, ChevronUp, ExternalLink, X, Loader2, Mail, Download } from 'lucide-react';
 import { formatCurrency } from '@/lib/prime-helpers';
 import { downloadCSV } from '@/lib/export-csv';
-import { Download } from 'lucide-react';
 import { JobTypeBadge, StatusBadge } from '@/components/ui/StatusBadge';
 import type { TeamMemberJob } from '@/app/api/prime/team/jobs/route';
 
@@ -129,18 +128,46 @@ function DrillPanel({ memberId, memberName, filter, onClose }: {
         </div>
         <div className="flex items-center gap-1">
           {!loading && !error && jobs.length > 0 && (
-            <button
-              onClick={e => {
-                e.stopPropagation();
-                const subject = encodeURIComponent(`SHBR — ${DRILL_LABELS[filter]}: ${memberName} (${new Date().toLocaleDateString('en-AU')})`);
-                const body = encodeURIComponent(buildDrillEmailBody(memberName, filter, jobs));
-                window.location.href = `mailto:?subject=${subject}&body=${body}`;
-              }}
-              title="Email this job list"
-              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 px-2.5 py-1 rounded-lg transition-colors"
-            >
-              <Mail size={12} /> Email list
-            </button>
+            <>
+              <button
+                onClick={e => {
+                  e.stopPropagation();
+                  const date = new Date().toISOString().split('T')[0];
+                  const filename = `${memberName.replace(/\s+/g, '-').toLowerCase()}-${filter}-${date}.csv`;
+                  const headers = ['Job #', 'Address', 'Status', 'Type', 'Region', 'Age (days)', filter === 'sla' ? 'Overdue (days)' : 'Value ($)'];
+                  const rows = jobs.map(j => [
+                    j.jobNumber,
+                    j.address,
+                    j.status,
+                    j.jobType || '—',
+                    j.region || '—',
+                    j.daysOpen,
+                    filter === 'sla' ? (j.daysOverdue > 0 ? j.daysOverdue : '') : (j.authorisedTotal > 0 ? j.authorisedTotal : ''),
+                  ]);
+                  const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+                  const blob = new Blob([csv], { type: 'text/csv' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                title="Download as CSV"
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 px-2.5 py-1 rounded-lg transition-colors"
+              >
+                <Download size={12} /> CSV
+              </button>
+              <button
+                onClick={e => {
+                  e.stopPropagation();
+                  const subject = encodeURIComponent(`SHBR — ${DRILL_LABELS[filter]}: ${memberName} (${new Date().toLocaleDateString('en-AU')})`);
+                  const body = encodeURIComponent(buildDrillEmailBody(memberName, filter, jobs));
+                  window.location.href = `mailto:?subject=${subject}&body=${body}`;
+                }}
+                title="Email this job list"
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 px-2.5 py-1 rounded-lg transition-colors"
+              >
+                <Mail size={12} /> Email
+              </button>
+            </>
           )}
           <button onClick={e => { e.stopPropagation(); onClose(); }}
             className="text-gray-500 hover:text-white transition-colors p-1">
