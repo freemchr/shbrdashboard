@@ -40,13 +40,13 @@ import { useState, useEffect } from 'react';
 const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/command-centre', label: 'Command Centre', icon: Tv2 },
-  { href: '/whs', label: 'WHS', icon: ShieldCheck },
   { href: '/pipeline', label: 'Pipeline', icon: GitBranch },
   { href: '/stalled', label: 'Stalled Jobs', icon: Clock },
   { href: '/financial', label: 'Financial', icon: DollarSign },
   { href: '/search', label: 'Job Search', icon: Search },
   { href: '/map', label: 'Jobs Map', icon: Map },
   { href: '/socials', label: 'Socials', icon: Share2 },
+  { href: '/whs', label: 'WHS', icon: ShieldCheck },
 ];
 
 const weatherSubItems = [
@@ -197,7 +197,7 @@ export function Sidebar() {
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {/* Top nav items: Overview, Command Centre, Ops */}
+          {/* Top nav items: Overview, Command Centre */}
           {navItemsTop.map((item) => (
             <NavItem
               key={item.href}
@@ -207,6 +207,40 @@ export function Sidebar() {
               active={isActive(item.href)}
             />
           ))}
+
+          {/* Collapsible Operations group — right after top nav */}
+          <div>
+            <button
+              onClick={() => setOpsOpen(o => !o)}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all
+                ${isInOps ? 'text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'}`}
+            >
+              <ClipboardList size={18} className={isInOps ? 'text-red-400' : ''} />
+              <span className="flex-1 text-left">Operations</span>
+              <ChevronDown
+                size={15}
+                className={`text-gray-500 transition-transform duration-200 ${opsOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+            <div className={`overflow-hidden transition-all duration-200 ${opsOpen ? 'max-h-56 opacity-100' : 'max-h-0 opacity-0'}`}>
+              <div className="mt-0.5 space-y-0.5">
+                {opsSubItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-3 pl-8 pr-4 py-2 rounded-lg text-sm transition-all
+                      ${isActive(item.href)
+                        ? 'bg-red-600 text-white font-medium'
+                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                      }`}
+                  >
+                    <item.icon size={15} />
+                    <span className="flex-1">{item.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
 
           {/* Collapsible Weather & CAT group */}
           <div>
@@ -225,40 +259,6 @@ export function Sidebar() {
             <div className={`overflow-hidden transition-all duration-200 ${weatherOpen ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
               <div className="mt-0.5 space-y-0.5">
                 {weatherSubItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center gap-3 pl-8 pr-4 py-2 rounded-lg text-sm transition-all
-                      ${isActive(item.href)
-                        ? 'bg-red-600 text-white font-medium'
-                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                      }`}
-                  >
-                    <item.icon size={15} />
-                    <span className="flex-1">{item.label}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Collapsible Operations group — Job Board + Team Performance */}
-          <div>
-            <button
-              onClick={() => setOpsOpen(o => !o)}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all
-                ${isInOps ? 'text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'}`}
-            >
-              <ClipboardList size={18} className={isInOps ? 'text-red-400' : ''} />
-              <span className="flex-1 text-left">Operations</span>
-              <ChevronDown
-                size={15}
-                className={`text-gray-500 transition-transform duration-200 ${opsOpen ? 'rotate-180' : ''}`}
-              />
-            </button>
-            <div className={`overflow-hidden transition-all duration-200 ${opsOpen ? 'max-h-56 opacity-100' : 'max-h-0 opacity-0'}`}>
-              <div className="mt-0.5 space-y-0.5">
-                {opsSubItems.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
