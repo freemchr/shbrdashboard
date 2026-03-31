@@ -373,7 +373,6 @@ export function Sidebar() {
 
           {/* APP — Australian Plumbing Products (separate from SHBR nav) */}
           <div className="pt-2 mt-1 border-t border-gray-800">
-            <p className="px-4 pb-1 text-xs text-gray-600 uppercase tracking-widest">Partners</p>
             <div>
               <button
                 onClick={() => setAppOpen(o => !o)}
