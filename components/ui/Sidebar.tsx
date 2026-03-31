@@ -32,6 +32,7 @@ import {
   TrendingUp,
   Zap,
   Share2,
+  Calculator,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -39,6 +40,7 @@ const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/command-centre', label: 'Command Centre', icon: Tv2 },
   { href: '/socials', label: 'Socials', icon: Share2 },
+  { href: '/flexi-calc', label: 'Flexi ROI Calc', icon: Calculator },
   { href: '/whs', label: 'WHS', icon: ShieldCheck },
   { href: '/pipeline', label: 'Pipeline', icon: GitBranch },
   { href: '/stalled', label: 'Stalled Jobs', icon: Clock },

@@ -11,6 +11,7 @@ const PUBLIC_PATHS = new Set([
 const CRON_PATHS = new Set([
   '/api/prime/jobs/timeline',
   '/api/prime/jobs/geocode-auto',
+  '/api/prime/whs/refresh',
 ]);
 
 const PUBLIC_EXTENSIONS = /\.(png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot|css|js|map)$/i;
