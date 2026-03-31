@@ -12,7 +12,7 @@ export async function GET() {
     const token = process.env.BLOB_READ_WRITE_TOKEN;
     if (!base || !token) return NextResponse.json({ cachedAt: null });
 
-    const url = `${base}/shbr-cache/all-open-jobs-v3.json`;
+    const url = `${base}/shbr-cache/open-jobs-flat-v3.json`;
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(5000),

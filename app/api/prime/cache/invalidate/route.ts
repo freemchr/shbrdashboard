@@ -21,7 +21,23 @@ export async function POST() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await invalidateCache();
+    // Invalidate all known Prime data cache keys
+    const keys = [
+      'open-jobs-flat-v3',
+      'ops-data-v3',
+      'kpis-v3',
+      'counts-by-status-v5',
+      'pipeline-v4',
+      'trends-v3',
+      'aging-v3',
+      'appointments-v1',
+      'financial-v2',
+      'invoices-ap',
+      'invoices-ar',
+      'statuses',
+      'peril-names-v1',
+    ];
+    await Promise.all(keys.map(k => invalidateCache(k)));
     return NextResponse.json({ ok: true, message: 'Cache cleared. Fresh data will be fetched on next load.' });
   } catch (err: unknown) {
     console.error('[cache/invalidate] Error:', err);
