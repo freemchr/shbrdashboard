@@ -33,10 +33,9 @@ function formatRelative(date: Date): string {
 
 interface DataRefreshButtonProps {
   mode?: RefreshMode;
-  endpoint?: string; // optional specific cache endpoint to bust (defaults to full invalidate)
 }
 
-export function DataRefreshButton({ mode = 'operational', endpoint }: DataRefreshButtonProps = {}) {
+export function DataRefreshButton({ mode = 'operational' }: DataRefreshButtonProps = {}) {
   const [cacheDate, setCacheDate] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [relativeTime, setRelativeTime] = useState<string>('loading…');
