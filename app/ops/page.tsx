@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ErrorMessage, SkeletonTable } from '@/components/ui/LoadingSpinner';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -106,13 +106,21 @@ export default function OpsPage() {
   const [sortKey, setSortKey] = useState<SortKey>('age');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
-  useEffect(() => {
-    fetch('/api/prime/ops')
+  const loadData = useCallback((bust = false) => {
+    setLoading(true);
+    fetch(`/api/prime/ops${bust ? '?bust=1' : ''}`)
       .then(r => r.ok ? r.json() : r.json().then((d: { error?: string }) => Promise.reject(d.error || 'Failed to load')))
       .then((d: OpsData) => setData(d))
       .catch((e: unknown) => setError(String(e)))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadData();
+    const handler = () => loadData(true);
+    window.addEventListener('prime-cache-busted', handler);
+    return () => window.removeEventListener('prime-cache-busted', handler);
+  }, [loadData]);
 
   const needsAppointmentSet = useMemo(
     () => new Set((data?.actionQueues.needsAppointment || []).map(j => j.id)),

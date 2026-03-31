@@ -8,10 +8,11 @@ export const maxDuration = 60;
 export async function GET(req: NextRequest) {
   try {
     const force = req.nextUrl.searchParams.get('force') === '1';
-    const cacheKey = 'pipeline-v4';
+    const bust = new URL(req.url).searchParams.get('bust') === '1';
+        const cacheKey = 'pipeline-v4';
     
     if (!force) {
-      const cached = await getCached<unknown>(cacheKey);
+      const cached = await getCached<unknown>(cacheKey, bust);
       if (cached) return NextResponse.json(cached);
     }
 

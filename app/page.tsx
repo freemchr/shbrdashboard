@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ErrorMessage, LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -184,36 +184,47 @@ export default function OverviewPage() {
     setSelectedStatus(p => { const next = p === name ? null : name; if (next) scrollToDrilldown(); return next; });
   };
 
-  useEffect(() => {
-    fetch('/api/prime/jobs/open')
+  const loadData = useCallback((bust = false) => {
+    const qs = bust ? '?bust=1' : '';
+    setLoadingJobs(true);
+    setLoadingKpis(true);
+    setLoadingCounts(true);
+
+    fetch(`/api/prime/jobs/open${qs}`)
       .then(r => r.ok ? r.json() : Promise.reject('Failed to load open jobs'))
       .then(d => setOpenJobs(Array.isArray(d) ? d : []))
       .catch(e => setError(String(e)))
       .finally(() => setLoadingJobs(false));
 
-    fetch('/api/prime/jobs/kpis')
+    fetch(`/api/prime/jobs/kpis${qs}`)
       .then(r => r.ok ? r.json() : Promise.reject('Failed'))
       .then(d => setKpis(d))
       .catch(() => setKpis(null))
       .finally(() => setLoadingKpis(false));
 
-    fetch('/api/prime/jobs/counts-by-status')
+    fetch(`/api/prime/jobs/counts-by-status${qs}`)
       .then(r => r.ok ? r.json() : [])
       .then(d => setOpenCounts(Array.isArray(d) ? d.filter((s: StatusCount) => s.statusType === 'Open') : []))
       .catch(() => setOpenCounts([]))
       .finally(() => setLoadingCounts(false));
 
-    fetch('/api/prime/jobs/trends')
+    fetch(`/api/prime/jobs/trends${qs}`)
       .then(r => r.ok ? r.json() : null)
       .then(d => d && setTrends(d))
       .catch(() => null);
 
-    // Fetch report alert count (lightweight — uses cached data)
     fetch('/api/prime/jobs/reports')
       .then(r => r.ok ? r.json() : null)
       .then(d => d && setNoReportCount(d.noReport))
       .catch(() => null);
   }, []);
+
+  useEffect(() => {
+    loadData();
+    const handler = () => loadData(true);
+    window.addEventListener('prime-cache-busted', handler);
+    return () => window.removeEventListener('prime-cache-busted', handler);
+  }, [loadData]);
 
   const totalOpen = openCounts.reduce((sum, s) => sum + s.count, 0);
 

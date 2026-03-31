@@ -68,18 +68,20 @@ export function DataRefreshButton({ mode = 'operational', endpoint }: DataRefres
     setCacheDate(null);
     setRelativeTime('Refreshing…');
     try {
-      const url = endpoint
-        ? `${endpoint}?bust=1`
-        : '/api/prime/cache/invalidate';
-      await fetch(url, { method: endpoint ? 'GET' : 'POST' });
-      window.location.reload();
+      // Invalidate all server-side caches (blob + in-memory via bust param)
+      await fetch('/api/prime/cache/invalidate', { method: 'POST' });
+      // Fire a custom event so page components re-fetch silently — no full reload
+      window.dispatchEvent(new CustomEvent('prime-cache-busted'));
+      // Re-read the new cache age after a short delay to let data settle
+      setTimeout(() => fetchCacheAge(), 2000);
     } catch {
-      setRefreshing(false);
+      // ignore
     }
+    setRefreshing(false);
     if (isAuto) {
       console.log('[DataRefresh] Auto-refreshed at', new Date().toLocaleTimeString('en-AU', { timeZone: 'Australia/Sydney' }));
     }
-  }, [refreshing, endpoint]);
+  }, [refreshing, fetchCacheAge]);
 
   // Auto-refresh — disabled if intervalMs is 0 (weekly mode)
   // Only schedule if the cache will actually expire in the future — never fire immediately

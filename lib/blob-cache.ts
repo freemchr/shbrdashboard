@@ -60,10 +60,12 @@ interface BlobMeta { expiresAt: number; staleAt: number; cachedAt?: number; data
 // Track in-flight revalidations to avoid duplicate writes
 const revalidating = new Set<string>();
 
-export async function getCached<T>(key: string): Promise<T | null> {
+export async function getCached<T>(key: string, skipMem = false): Promise<T | null> {
   // 1. In-memory — 0 Blob ops
-  const mem = memGet<T>(key);
-  if (mem !== null) return mem.data;
+  if (!skipMem) {
+    const mem = memGet<T>(key);
+    if (mem !== null) return mem.data;
+  }
 
   // 2. Direct Blob fetch — 1 Blob op
   try {

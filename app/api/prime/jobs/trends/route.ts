@@ -97,10 +97,11 @@ async function rotateSNapshots(currentCounts: Record<string, number>): Promise<{
 }
 
 // ─── Route ────────────────────────────────────────────────────────────────────
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const cacheKey = 'trends-v3';
-    const cached = await getCached<TrendsResult>(cacheKey);
+    const bust = new URL(req.url).searchParams.get('bust') === '1';
+        const cacheKey = 'trends-v3';
+    const cached = await getCached<unknown>(cacheKey, bust);
     if (cached) return NextResponse.json(cached);
 
     const now = new Date();

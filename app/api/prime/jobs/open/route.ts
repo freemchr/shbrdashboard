@@ -5,10 +5,11 @@ import { getCached, setCached } from '@/lib/blob-cache';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const bust = new URL(req.url).searchParams.get('bust') === '1';
     const cacheKey = 'open-jobs-flat-v3';
-    const cached = await getCached<unknown>(cacheKey);
+    const cached = await getCached<unknown>(cacheKey, bust);
     if (cached) return NextResponse.json(cached);
 
     const [jobs, statusNames] = await Promise.all([getAllOpenJobs(), getStatusNameMap()]);
