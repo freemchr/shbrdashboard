@@ -10,6 +10,7 @@ import {
   Users,
   Clock,
   DollarSign,
+  PieChart,
   Search,
   Map,
   FileText,
@@ -40,6 +41,7 @@ import { useState, useEffect } from 'react';
 const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/command-centre', label: 'Command Centre', icon: Tv2 },
+  { href: '/clients', label: 'Client Analytics', icon: PieChart },
   { href: '/pipeline', label: 'Pipeline', icon: GitBranch },
   { href: '/stalled', label: 'Stalled Jobs', icon: Clock },
   { href: '/financial', label: 'Financial', icon: DollarSign },
