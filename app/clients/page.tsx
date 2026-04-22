@@ -55,6 +55,16 @@ const STATE_COLOURS: Record<string, string> = {
 function pctFmt(n: number, dp = 1) { return (n * 100).toFixed(dp) + '%'; }
 function absFmt(n: number) { return n > 0 ? `+${(n * 100).toFixed(0)}%` : `${(n * 100).toFixed(0)}%`; }
 
+function StateBadge({ state }: { state: string }) {
+  const bg = (STATE_COLOURS[state] ?? '#6B7280') + '33';
+  const col = STATE_COLOURS[state] ?? '#9ca3af';
+  return (
+    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: bg, color: col }}>
+      {state}
+    </span>
+  );
+}
+
 function ChangeChip({ change, size = 'md' }: { change: number; size?: 'sm' | 'md' }) {
   const cls = size === 'sm' ? 'text-[9px] px-1 py-0.5' : 'text-[10px] px-1.5 py-0.5';
   if (change === 0) return (
@@ -181,9 +191,35 @@ function ClientSummaryTab({ data }: { data: ClientAnalyticsResult }) {
 
 // ─── Tab: By Region ───────────────────────────────────────────────────────────
 
+type GrowthSortKey = 'region' | 'state' | 'total' | 'pct' | 'last3' | 'prior3' | 'change3' | 'last6' | 'prior6' | 'change6';
+
 function ByRegionTab({ data }: { data: ClientAnalyticsResult }) {
   const { regionData } = data;
   const [sel, setSel] = useState<ClientName | 'all'>('all');
+  const [growthSort, setGrowthSort] = useState<GrowthSortKey>('total');
+  const [growthDir, setGrowthDir] = useState<'asc' | 'desc'>('desc');
+
+  const handleGrowthSort = (col: GrowthSortKey) => {
+    if (growthSort === col) setGrowthDir(d => d === 'desc' ? 'asc' : 'desc');
+    else { setGrowthSort(col); setGrowthDir(col === 'region' || col === 'state' ? 'asc' : 'desc'); }
+  };
+
+  const sortedGrowth = [...(data.regionGrowth || [])].sort((a, b) => {
+    let cmp = 0;
+    switch (growthSort) {
+      case 'region':  cmp = a.region.localeCompare(b.region); break;
+      case 'state':   cmp = a.state.localeCompare(b.state); break;
+      case 'total':   cmp = a.total - b.total; break;
+      case 'pct':     cmp = a.pct - b.pct; break;
+      case 'last3':   cmp = a.last3 - b.last3; break;
+      case 'prior3':  cmp = a.prior3 - b.prior3; break;
+      case 'change3': cmp = a.change3mo - b.change3mo; break;
+      case 'last6':   cmp = a.last6 - b.last6; break;
+      case 'prior6':  cmp = a.prior6 - b.prior6; break;
+      case 'change6': cmp = a.change6mo - b.change6mo; break;
+    }
+    return growthDir === 'desc' ? -cmp : cmp;
+  });
   const active = sel === 'all' ? KNOWN_CLIENTS : [sel];
   const chartW = Math.max(720, regionData.length * 42);
   return (
@@ -237,6 +273,56 @@ function ByRegionTab({ data }: { data: ClientAnalyticsResult }) {
                   <td className="py-2 pr-3 text-gray-300 font-medium">{r.region}</td>
                   {KNOWN_CLIENTS.map(c => <td key={c} className="py-2 pr-3 text-right font-mono" style={{ color: r[c] ? CLIENT_COLOURS[c] : '#374151' }}>{r[c] || '—'}</td>)}
                   <td className="py-2 text-right font-mono font-bold text-white">{r.total}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Region Growth Analysis */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+        <div className="mb-4">
+          <h3 className="text-base font-semibold text-white">Region Growth Analysis</h3>
+          <p className="text-xs text-gray-500">Click any column header to sort · 3-month and 6-month period comparisons</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-gray-500 border-b border-gray-800">
+                {([
+                  ['region',  'Region',    'text-left',  'pr-3', 'min-w-[150px]'],
+                  ['state',   'State',     'text-center','pr-3', ''],
+                  ['total',   '12mo Total','text-right', 'pr-3', ''],
+                  ['pct',     '% Share',   'text-right', 'pr-3', ''],
+                  ['last3',   'Last 3mo',  'text-right', 'pr-3', ''],
+                  ['prior3',  'Prior 3mo', 'text-right', 'pr-3', ''],
+                  ['change3', '3mo Δ',     'text-right', 'pr-3', ''],
+                  ['last6',   'Last 6mo',  'text-right', 'pr-3', ''],
+                  ['prior6',  'Prior 6mo', 'text-right', 'pr-3', ''],
+                  ['change6', '6mo Δ',     'text-right', '',     ''],
+                ] as [GrowthSortKey, string, string, string, string][]).map(([k, label, align, pr, extra]) => (
+                  <th key={k}
+                    onClick={() => handleGrowthSort(k)}
+                    className={`py-2 font-medium cursor-pointer select-none hover:text-white transition-colors ${align} ${pr} ${extra} ${growthSort === k ? 'text-white' : ''}`}>
+                    {label}{growthSort === k ? (growthDir === 'desc' ? ' ↓' : ' ↑') : ''}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-800/30">
+              {sortedGrowth.map(r => (
+                <tr key={r.region} className="hover:bg-gray-800/30 transition-colors">
+                  <td className="py-2 pr-3 text-gray-200 font-medium">{r.region}</td>
+                  <td className="py-2 pr-3 text-center"><StateBadge state={r.state} /></td>
+                  <td className="py-2 pr-3 text-right font-mono font-bold text-white">{r.total.toLocaleString()}</td>
+                  <td className="py-2 pr-3 text-right text-gray-500">{pctFmt(r.pct)}</td>
+                  <td className="py-2 pr-3 text-right font-mono text-gray-300">{r.last3}</td>
+                  <td className="py-2 pr-3 text-right font-mono text-gray-500">{r.prior3}</td>
+                  <td className="py-2 pr-3 text-right"><ChangeChip change={r.change3mo} size="sm" /></td>
+                  <td className="py-2 pr-3 text-right font-mono text-gray-300">{r.last6}</td>
+                  <td className="py-2 pr-3 text-right font-mono text-gray-500">{r.prior6}</td>
+                  <td className="py-2 text-right"><ChangeChip change={r.change6mo} size="sm" /></td>
                 </tr>
               ))}
             </tbody>
