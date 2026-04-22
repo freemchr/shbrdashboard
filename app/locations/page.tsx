@@ -174,31 +174,34 @@ function OverviewTab({ data }: { data: LocationAnalyticsResult }) {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex-1 space-y-2.5 w-full">
-              {stateBreakdown.map(s => (
-                <div key={s.state} className="flex items-center gap-2">
-                  <span className="w-9 text-xs font-bold" style={{ color: STATE_COLOURS[s.state] ?? '#9ca3af' }}>{s.state}</span>
-                  <div className="flex-1 bg-gray-800 rounded-full h-2 overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: pctFmt(s.pct, 0), background: STATE_COLOURS[s.state] ?? '#6B7280' }} />
-                  </div>
-                  <span className="text-xs font-mono text-gray-400 w-20 text-right flex-shrink-0">
-                    {s.jobs.toLocaleString()} · {pctFmt(s.pct)}
-                  </span>
-                </div>
-              ))}
-              <div className="pt-1 border-t border-gray-800 mt-2">
-                <table className="w-full text-xs text-gray-500">
-                  <thead><tr><th className="text-left py-1">State</th><th className="text-right py-1">Jobs</th><th className="text-right py-1">% Share</th><th className="text-right py-1">Months Active</th></tr></thead>
-                  <tbody>{stateBreakdown.map(s => (
+            <div className="flex-1 w-full">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-gray-500 border-b border-gray-800">
+                    <th className="text-left py-1.5 pr-2 font-medium">State</th>
+                    <th className="text-right py-1.5 pr-3 font-medium">Jobs</th>
+                    <th className="text-right py-1.5 pr-3 font-medium">Share</th>
+                    <th className="text-right py-1.5 font-medium">Months</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stateBreakdown.map(s => (
                     <tr key={s.state} className="border-t border-gray-800/50">
-                      <td className="py-1.5"><StateBadge state={s.state} /></td>
-                      <td className="py-1.5 text-right font-mono text-gray-300">{s.jobs.toLocaleString()}</td>
-                      <td className="py-1.5 text-right text-gray-400">{pctFmt(s.pct)}</td>
-                      <td className="py-1.5 text-right text-gray-500">{s.monthsActive}</td>
+                      <td className="py-2 pr-2"><StateBadge state={s.state} /></td>
+                      <td className="py-2 pr-3 text-right font-mono font-bold text-white">{s.jobs.toLocaleString()}</td>
+                      <td className="py-2 pr-3">
+                        <div className="flex items-center justify-end gap-2">
+                          <div className="w-16 bg-gray-800 rounded-full h-1.5 overflow-hidden flex-shrink-0">
+                            <div className="h-full rounded-full" style={{ width: pctFmt(s.pct, 0), background: STATE_COLOURS[s.state] ?? '#6B7280' }} />
+                          </div>
+                          <span className="font-mono text-gray-400 w-10 text-right flex-shrink-0">{pctFmt(s.pct)}</span>
+                        </div>
+                      </td>
+                      <td className="py-2 text-right text-gray-500">{s.monthsActive}</td>
                     </tr>
-                  ))}</tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -207,13 +210,13 @@ function OverviewTab({ data }: { data: LocationAnalyticsResult }) {
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
           <h3 className="text-base font-semibold text-white mb-1">Top 15 Regions</h3>
           <p className="text-xs text-gray-500 mb-3">By 12-month job volume</p>
-          <ResponsiveContainer width="100%" height={290}>
-            <BarChart data={topRegions} layout="vertical" margin={{ top: 0, right: 36, left: 0, bottom: 0 }}>
+          <ResponsiveContainer width="100%" height={topRegions.length * 32 + 20}>
+            <BarChart data={topRegions} layout="vertical" margin={{ top: 4, right: 48, left: 0, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" horizontal={false} />
               <XAxis type="number" tick={{ fill: '#9ca3af', fontSize: 10 }} />
-              <YAxis type="category" dataKey="region" tick={{ fill: '#9ca3af', fontSize: 10 }} width={148} />
+              <YAxis type="category" dataKey="region" tick={{ fill: '#9ca3af', fontSize: 10 }} width={160} />
               <Tooltip content={<BarTip />} cursor={{ fill: 'rgba(220,38,38,0.06)' }} />
-              <Bar dataKey="total" radius={[0, 2, 2, 0]}>
+              <Bar dataKey="total" radius={[0, 2, 2, 0]} label={{ position: 'right', fontSize: 10, fill: '#9ca3af' }}>
                 {topRegions.map((r, i) => (
                   <Cell key={r.region} fill={REGION_COLOURS[i % REGION_COLOURS.length]} />
                 ))}
@@ -597,13 +600,15 @@ export default function LocationsPage() {
     setRefreshing(false);
   };
 
-  const generatedAgo = data?.generatedAt ? (() => {
-    const ms = Date.now() - new Date(data.generatedAt).getTime();
+  const generatedLabel = data?.generatedAt ? (() => {
+    const d = new Date(data.generatedAt);
+    const dateStr = d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+    const timeStr = d.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+    const ms = Date.now() - d.getTime();
     const h = Math.floor(ms / 3600000);
-    const d = Math.floor(h / 24);
-    if (d > 0) return `${d}d ago`;
-    if (h > 0) return `${h}h ago`;
-    return 'just now';
+    const days = Math.floor(h / 24);
+    const ago = days > 0 ? `${days}d ago` : h > 0 ? `${h}h ago` : 'just now';
+    return `${dateStr} at ${timeStr} (${ago})`;
   })() : null;
 
   return (
@@ -617,10 +622,10 @@ export default function LocationsPage() {
 
       {/* Cache age + refresh */}
       <div className="flex items-center gap-3 mb-5 text-xs text-gray-500">
-        {generatedAgo && (
+        {generatedLabel && (
           <span className="flex items-center gap-1.5">
             <Clock size={12} />
-            Data from {generatedAgo} · auto-refreshes every Friday 6 PM AEST
+            Last updated {generatedLabel} · auto-refreshes every Friday 6 PM AEST
           </span>
         )}
         <button onClick={handleRefresh} disabled={loading || refreshing}

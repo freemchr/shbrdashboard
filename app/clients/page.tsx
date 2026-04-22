@@ -442,13 +442,15 @@ export default function ClientsPage() {
     setRefreshing(false);
   };
 
-  const generatedAgo = data?.generatedAt ? (() => {
-    const ms = Date.now() - new Date(data.generatedAt).getTime();
+  const generatedLabel = data?.generatedAt ? (() => {
+    const d = new Date(data.generatedAt);
+    const dateStr = d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+    const timeStr = d.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+    const ms = Date.now() - d.getTime();
     const h = Math.floor(ms / 3600000);
-    const d = Math.floor(h / 24);
-    if (d > 0) return `${d}d ago`;
-    if (h > 0) return `${h}h ago`;
-    return 'just now';
+    const days = Math.floor(h / 24);
+    const ago = days > 0 ? `${days}d ago` : h > 0 ? `${h}h ago` : 'just now';
+    return `${dateStr} at ${timeStr} (${ago})`;
   })() : null;
 
   return (
@@ -461,8 +463,8 @@ export default function ClientsPage() {
       />
 
       <div className="flex items-center gap-3 mb-5 text-xs text-gray-500">
-        {generatedAgo && (
-          <span className="flex items-center gap-1.5"><Clock size={12} />Data from {generatedAgo} · auto-refreshes every Friday 6 PM AEST</span>
+        {generatedLabel && (
+          <span className="flex items-center gap-1.5"><Clock size={12} />Last updated {generatedLabel} · auto-refreshes every Friday 6 PM AEST</span>
         )}
         <button onClick={handleRefresh} disabled={loading || refreshing}
           className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors disabled:opacity-40">
