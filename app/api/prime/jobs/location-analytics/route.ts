@@ -111,10 +111,8 @@ async function buildAnalytics(): Promise<LocationAnalyticsResult> {
   const twelveMonths = orderedMonths.slice(-12);
 
   // Period boundary keys
-  const last3Start  = twelveMonths[twelveMonths.length - 3];
   const prior3Start = twelveMonths[Math.max(0, twelveMonths.length - 6)];
   const prior3End   = twelveMonths[Math.max(0, twelveMonths.length - 4)];
-  const last6Start  = twelveMonths[twelveMonths.length - 6];
   const prior6Start = twelveMonths[0];
   const prior6End   = twelveMonths[Math.max(0, twelveMonths.length - 7)];
 

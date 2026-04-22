@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { primeGet } from '@/lib/prime-auth';
-import { getCached, setCached } from '@/lib/blob-cache';
+import { setCached } from '@/lib/blob-cache';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -120,7 +120,7 @@ async function buildAnalytics() {
   }
 
   const totalJobs = jobs.length;
-  const last3Start  = twelveMonths[twelveMonths.length - 3];
+  const _last3Start = twelveMonths[twelveMonths.length - 3]; void _last3Start;
   const prior3Start = twelveMonths[Math.max(0, twelveMonths.length - 6)];
   const prior3End   = twelveMonths[Math.max(0, twelveMonths.length - 4)];
 

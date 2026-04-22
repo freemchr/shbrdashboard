@@ -8,7 +8,7 @@ import {
   ResponsiveContainer, LineChart, Line, Legend,
   PieChart, Pie, Cell,
 } from 'recharts';
-import { MapPin, TrendingUp, TrendingDown, Minus, RefreshCw, Clock, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { MapPin, Minus, RefreshCw, Clock, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
