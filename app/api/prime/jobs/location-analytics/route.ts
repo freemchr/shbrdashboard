@@ -130,7 +130,7 @@ async function buildAnalytics(): Promise<LocationAnalyticsResult> {
   let page = 1, totalPages = 1;
   while (page <= totalPages) {
     const q = `'createdAt'.gte('${fmt(windowStart)}'),'createdAt'.lte('${fmt(windowEnd)}')`;
-    const data = await primeGet(`/jobs?per_page=250&page=${page}&q=${q}&sort=createdAt&order=asc`) as { data?: RawJob[]; meta?: { pagination?: { total_pages?: number } } };
+    const data = await primeGet(`/jobs?per_page=250&page=${page}&q=${q}&order=createdAt`) as { data?: RawJob[]; meta?: { pagination?: { total_pages?: number } } };
     allJobs.push(...(data.data || []));
     totalPages = data.meta?.pagination?.total_pages ?? 1;
     console.log(`[location-analytics] Page ${page}/${totalPages} (${allJobs.length} jobs)`);
