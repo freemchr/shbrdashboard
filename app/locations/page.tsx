@@ -231,14 +231,33 @@ function OverviewTab({ data }: { data: LocationAnalyticsResult }) {
 
 // ─── Tab: Region Analysis ─────────────────────────────────────────────────────
 
+type RegionSortKey = 'region' | 'state' | 'total' | 'pct' | 'last3' | 'prior3' | 'change3' | 'last6' | 'prior6' | 'change6';
+
 function RegionAnalysisTab({ data }: { data: LocationAnalyticsResult }) {
   const { regionSummary, totalJobs } = data;
-  const [sort, setSort] = useState<'total' | 'change3' | 'change6'>('total');
+  const [sort, setSort] = useState<RegionSortKey>('total');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const handleSort = (col: RegionSortKey) => {
+    if (sort === col) setSortDir(d => d === 'desc' ? 'asc' : 'desc');
+    else { setSort(col); setSortDir(col === 'region' || col === 'state' ? 'asc' : 'desc'); }
+  };
 
   const sorted = [...regionSummary].sort((a, b) => {
-    if (sort === 'change3') return b.change3mo - a.change3mo;
-    if (sort === 'change6') return b.change6mo - a.change6mo;
-    return b.total - a.total;
+    let cmp = 0;
+    switch (sort) {
+      case 'region':  cmp = a.region.localeCompare(b.region); break;
+      case 'state':   cmp = a.state.localeCompare(b.state); break;
+      case 'total':   cmp = a.total - b.total; break;
+      case 'pct':     cmp = a.pct - b.pct; break;
+      case 'last3':   cmp = a.last3 - b.last3; break;
+      case 'prior3':  cmp = a.prior3 - b.prior3; break;
+      case 'change3': cmp = a.change3mo - b.change3mo; break;
+      case 'last6':   cmp = a.last6 - b.last6; break;
+      case 'prior6':  cmp = a.prior6 - b.prior6; break;
+      case 'change6': cmp = a.change6mo - b.change6mo; break;
+    }
+    return sortDir === 'desc' ? -cmp : cmp;
   });
 
   return (
@@ -278,34 +297,32 @@ function RegionAnalysisTab({ data }: { data: LocationAnalyticsResult }) {
 
       {/* Growth table */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <div>
-            <h3 className="text-base font-semibold text-white">Region Growth Analysis</h3>
-            <p className="text-xs text-gray-500">3-month and 6-month period comparisons</p>
-          </div>
-          <div className="flex rounded-lg bg-gray-800 border border-gray-700 overflow-hidden text-xs self-start sm:self-auto">
-            {([['total','Volume'],['change3','3mo Δ'],['change6','6mo Δ']] as [typeof sort, string][]).map(([k, l]) => (
-              <button key={k} onClick={() => setSort(k)}
-                className={`px-3 py-1.5 transition-colors ${sort === k ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'}`}>
-                {l}
-              </button>
-            ))}
-          </div>
+        <div className="mb-4">
+          <h3 className="text-base font-semibold text-white">Region Growth Analysis</h3>
+          <p className="text-xs text-gray-500">Click any column header to sort · 3-month and 6-month period comparisons</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr className="text-gray-500 border-b border-gray-800">
-                <th className="text-left py-2 pr-3 font-medium min-w-[150px]">Region</th>
-                <th className="text-center py-2 pr-3 font-medium">State</th>
-                <th className="text-right py-2 pr-3 font-medium">12mo Total</th>
-                <th className="text-right py-2 pr-3 font-medium">% Share</th>
-                <th className="text-right py-2 pr-3 font-medium">Last 3mo</th>
-                <th className="text-right py-2 pr-3 font-medium">Prior 3mo</th>
-                <th className="text-right py-2 pr-3 font-medium">3mo Δ</th>
-                <th className="text-right py-2 pr-3 font-medium">Last 6mo</th>
-                <th className="text-right py-2 pr-3 font-medium">Prior 6mo</th>
-                <th className="text-right py-2 font-medium">6mo Δ</th>
+                {([
+                  ['region',  'Region',    'text-left',  'pr-3', 'min-w-[150px]'],
+                  ['state',   'State',     'text-center','pr-3', ''],
+                  ['total',   '12mo Total','text-right', 'pr-3', ''],
+                  ['pct',     '% Share',   'text-right', 'pr-3', ''],
+                  ['last3',   'Last 3mo',  'text-right', 'pr-3', ''],
+                  ['prior3',  'Prior 3mo', 'text-right', 'pr-3', ''],
+                  ['change3', '3mo Δ',     'text-right', 'pr-3', ''],
+                  ['last6',   'Last 6mo',  'text-right', 'pr-3', ''],
+                  ['prior6',  'Prior 6mo', 'text-right', 'pr-3', ''],
+                  ['change6', '6mo Δ',     'text-right', '',     ''],
+                ] as [RegionSortKey, string, string, string, string][]).map(([k, label, align, pr, extra]) => (
+                  <th key={k}
+                    onClick={() => handleSort(k)}
+                    className={`py-2 font-medium cursor-pointer select-none hover:text-white transition-colors ${align} ${pr} ${extra} ${sort === k ? 'text-white' : ''}`}>
+                    {label}{sort === k ? (sortDir === 'desc' ? ' ↓' : ' ↑') : ''}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800/30">
@@ -313,7 +330,7 @@ function RegionAnalysisTab({ data }: { data: LocationAnalyticsResult }) {
                 <tr key={r.region} className="hover:bg-gray-800/30 transition-colors">
                   <td className="py-2 pr-3 text-gray-200 font-medium">{r.region}</td>
                   <td className="py-2 pr-3 text-center"><StateBadge state={r.state} /></td>
-                  <td className="py-2 pr-3 text-right font-mono font-bold text-white">{r.total}</td>
+                  <td className="py-2 pr-3 text-right font-mono font-bold text-white">{r.total.toLocaleString()}</td>
                   <td className="py-2 pr-3 text-right text-gray-500">{pctFmt(r.pct)}</td>
                   <td className="py-2 pr-3 text-right font-mono text-gray-300">{r.last3}</td>
                   <td className="py-2 pr-3 text-right font-mono text-gray-500">{r.prior3}</td>
@@ -452,7 +469,7 @@ function SuburbsTab({ data }: { data: LocationAnalyticsResult }) {
   const { topSuburbs, totalJobs } = data;
   const [filterState, setFilterState] = useState('');
   const [filterRegion, setFilterRegion] = useState('');
-  const [limit, setLimit] = useState(25);
+  const [limit, setLimit] = useState(50);
 
   const states  = Array.from(new Set(topSuburbs.map(s => s.state))).sort();
   const regions = Array.from(new Set(topSuburbs.map(s => s.region))).sort();
@@ -495,11 +512,11 @@ function SuburbsTab({ data }: { data: LocationAnalyticsResult }) {
           Top 15 Suburbs {filterState || filterRegion ? '(filtered)' : ''}
         </h3>
         <p className="text-xs text-gray-500 mb-4">{data.periodLabel} · colour-coded by state</p>
-        <ResponsiveContainer width="100%" height={260}>
-          <BarChart data={top15} layout="vertical" margin={{ top: 0, right: 40, left: 0, bottom: 0 }}>
+        <ResponsiveContainer width="100%" height={top15.length * 32 + 20}>
+          <BarChart data={top15} layout="vertical" margin={{ top: 4, right: 48, left: 0, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" horizontal={false} />
             <XAxis type="number" tick={{ fill: '#9ca3af', fontSize: 10 }} />
-            <YAxis type="category" dataKey="suburb" tick={{ fill: '#9ca3af', fontSize: 10 }} width={120} />
+            <YAxis type="category" dataKey="suburb" tick={{ fill: '#9ca3af', fontSize: 10 }} width={130} />
             <Tooltip content={({ active, payload, label }) => active && payload?.length ? (
               <div className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs shadow-xl">
                 <p className="text-gray-200 font-semibold">{label}</p>
@@ -507,7 +524,7 @@ function SuburbsTab({ data }: { data: LocationAnalyticsResult }) {
                 <p className="font-mono text-white mt-1">{payload[0].value} jobs · {pctFmt((payload[0].value as number) / totalJobs, 2)}</p>
               </div>
             ) : null} />
-            <Bar dataKey="jobs" radius={[0, 2, 2, 0]}>
+            <Bar dataKey="jobs" radius={[0, 2, 2, 0]} label={{ position: 'right', fontSize: 10, fill: '#9ca3af' }}>
               {top15.map(s => <Cell key={s.suburb} fill={STATE_COLOURS[s.state] ?? '#DC2626'} />)}
             </Bar>
           </BarChart>
@@ -517,6 +534,7 @@ function SuburbsTab({ data }: { data: LocationAnalyticsResult }) {
       {/* Full ranked table */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
         <h3 className="text-base font-semibold text-white mb-4">Suburb Rankings</h3>
+        <p className="text-xs text-gray-600 mb-3">Showing top 50 suburbs by job volume · use filters above to narrow by state or region</p>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
@@ -530,9 +548,9 @@ function SuburbsTab({ data }: { data: LocationAnalyticsResult }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800/30">
-              {filtered.slice(0, limit).map(s => (
+              {filtered.slice(0, limit).map((s, idx) => (
                 <tr key={s.suburb} className="hover:bg-gray-800/30 transition-colors">
-                  <td className="py-2 pr-3 text-gray-600 font-mono">{s.rank}</td>
+                  <td className="py-2 pr-3 text-gray-600 font-mono">{idx + 1}</td>
                   <td className="py-2 pr-3 text-gray-200 font-medium">{s.suburb}</td>
                   <td className="py-2 pr-3"><StateBadge state={s.state} /></td>
                   <td className="py-2 pr-3 text-gray-500 hidden md:table-cell">{s.region}</td>
