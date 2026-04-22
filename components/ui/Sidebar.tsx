@@ -14,6 +14,8 @@ import {
   Search,
   Map,
   FileText,
+  BarChart3,
+  Globe,
   Menu,
   X,
   LogOut,
@@ -41,7 +43,6 @@ import { useState, useEffect } from 'react';
 const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/command-centre', label: 'Command Centre', icon: Tv2 },
-  { href: '/clients', label: 'Client Analytics', icon: PieChart },
   { href: '/pipeline', label: 'Pipeline', icon: GitBranch },
   { href: '/stalled', label: 'Stalled Jobs', icon: Clock },
   { href: '/financial', label: 'Financial', icon: DollarSign },
@@ -75,6 +76,11 @@ const estimatorsSubItems = [
 
 const appSubItems = [
   { href: '/flexi-calc', label: 'Flexi ROI Calc', icon: Calculator },
+];
+
+const insightsSubItems = [
+  { href: '/clients',   label: 'Client Analytics', icon: PieChart },
+  { href: '/locations', label: 'Jobs by Location',  icon: Globe },
 ];
 
 function NavItem({ href, label, icon: Icon, active, alert }: {
@@ -127,11 +133,15 @@ export function Sidebar() {
   const isInApp = pathname.startsWith('/flexi-calc');
   const [appOpen, setAppOpen] = useState(isInApp);
 
+  const isInInsights = pathname.startsWith('/clients') || pathname.startsWith('/locations');
+  const [insightsOpen, setInsightsOpen] = useState(isInInsights);
+
   useEffect(() => { if (isInWeather) setWeatherOpen(true); }, [isInWeather]);
   useEffect(() => { if (isInOps) setOpsOpen(true); }, [isInOps]);
   useEffect(() => { if (isInReports) setReportsOpen(true); }, [isInReports]);
   useEffect(() => { if (isInEstimators) setEstimatorsOpen(true); }, [isInEstimators]);
   useEffect(() => { if (isInApp) setAppOpen(true); }, [isInApp]);
+  useEffect(() => { if (isInInsights) setInsightsOpen(true); }, [isInInsights]);
 
   useEffect(() => {
     fetch('/api/auth/session')
@@ -209,6 +219,40 @@ export function Sidebar() {
               active={isActive(item.href)}
             />
           ))}
+
+          {/* Collapsible Insights group */}
+          <div>
+            <button
+              onClick={() => setInsightsOpen(o => !o)}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all
+                ${isInInsights ? 'text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'}`}
+            >
+              <BarChart3 size={18} className={isInInsights ? 'text-red-400' : ''} />
+              <span className="flex-1 text-left">Insights</span>
+              <ChevronDown
+                size={15}
+                className={`text-gray-500 transition-transform duration-200 ${insightsOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+            <div className={`overflow-hidden transition-all duration-200 ${insightsOpen ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
+              <div className="mt-0.5 space-y-0.5">
+                {insightsSubItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-3 pl-8 pr-4 py-2 rounded-lg text-sm transition-all
+                      ${isActive(item.href)
+                        ? 'bg-red-600 text-white font-medium'
+                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                      }`}
+                  >
+                    <item.icon size={15} />
+                    <span className="flex-1">{item.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
 
           {/* Collapsible Operations group — right after top nav */}
           <div>

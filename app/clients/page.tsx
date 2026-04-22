@@ -99,13 +99,12 @@ function StackTip({ active, payload, label }: { active?: boolean; payload?: { na
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 
-type Tab = 'summary' | 'region' | 'trend' | 'detail' | 'location';
+type Tab = 'summary' | 'region' | 'trend' | 'detail';
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'summary',  label: 'Client Summary' },
-  { id: 'region',   label: 'By Region' },
-  { id: 'trend',    label: 'Monthly Trend' },
-  { id: 'detail',   label: 'Region Detail' },
-  { id: 'location', label: 'Location & Suburbs' },
+  { id: 'summary', label: 'Client Summary' },
+  { id: 'region',  label: 'By Region' },
+  { id: 'trend',   label: 'Monthly Trend' },
+  { id: 'detail',  label: 'Region Detail' },
 ];
 
 // ─── Tab: Client Summary ──────────────────────────────────────────────────────
@@ -702,11 +701,10 @@ export default function ClientsPage() {
               </button>
             ))}
           </div>
-          {activeTab === 'summary'  && <ClientSummaryTab data={data} />}
-          {activeTab === 'region'   && <ByRegionTab data={data} />}
-          {activeTab === 'trend'    && <MonthlyTrendTab data={data} />}
-          {activeTab === 'detail'   && <RegionDetailTab data={data} />}
-          {activeTab === 'location' && <LocationTab data={data} />}
+          {activeTab === 'summary' && <ClientSummaryTab data={data} />}
+          {activeTab === 'region'  && <ByRegionTab data={data} />}
+          {activeTab === 'trend'   && <MonthlyTrendTab data={data} />}
+          {activeTab === 'detail'  && <RegionDetailTab data={data} />}
         </>
       ) : null}
     </div>
