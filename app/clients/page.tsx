@@ -200,14 +200,22 @@ function ByRegionTab({ data }: { data: ClientAnalyticsResult }) {
       </div>
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 min-w-0">
         <h3 className="text-base font-semibold text-white mb-1">Jobs by Region</h3>
-        <p className="text-xs text-gray-500 mb-3">{data.periodLabel} · sorted by volume · scroll horizontally →</p>
+        <p className="text-xs text-gray-500 mb-2">{data.periodLabel} · sorted by volume · scroll horizontally →</p>
+        {/* Inline legend — avoids Recharts Legend floating outside the scroll container */}
+        <div className="flex flex-wrap gap-3 mb-3">
+          {active.map(c => (
+            <span key={c} className="flex items-center gap-1.5 text-xs text-gray-400">
+              <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{ background: CLIENT_COLOURS[c] }} />
+              {c}
+            </span>
+          ))}
+        </div>
         <div className="overflow-x-auto w-full">
-          <BarChart width={chartW} height={360} data={regionData} margin={{ top: 8, right: 16, left: 0, bottom: 100 }}>
+          <BarChart width={chartW} height={340} data={regionData} margin={{ top: 8, right: 16, left: 0, bottom: 95 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
             <XAxis dataKey="region" tick={{ fill: '#9ca3af', fontSize: 10 }} angle={-45} textAnchor="end" interval={0} />
             <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} width={34} />
             <Tooltip content={<StackTip />} cursor={{ fill: 'rgba(220,38,38,0.06)' }} />
-            <Legend wrapperStyle={{ paddingTop: 8, fontSize: 11 }} formatter={v => <span style={{ color: CLIENT_COLOURS[v as ClientName] ?? '#9ca3af' }}>{v}</span>} />
             {active.map((c, i, arr) => <Bar key={c} dataKey={c} stackId="a" fill={CLIENT_COLOURS[c]} radius={i === arr.length - 1 ? [2, 2, 0, 0] : [0, 0, 0, 0]} />)}
           </BarChart>
         </div>
