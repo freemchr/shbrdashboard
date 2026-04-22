@@ -12,6 +12,8 @@ const CRON_PATHS = new Set([
   '/api/prime/jobs/timeline',
   '/api/prime/jobs/geocode-auto',
   '/api/prime/whs/refresh',
+  '/api/cron/client-analytics-refresh',
+  '/api/cron/location-analytics-refresh',
 ]);
 
 const PUBLIC_EXTENSIONS = /\.(png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot|css|js|map)$/i;
