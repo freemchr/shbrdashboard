@@ -186,7 +186,7 @@ function ByRegionTab({ data }: { data: ClientAnalyticsResult }) {
   const { regionData } = data;
   const [sel, setSel] = useState<ClientName | 'all'>('all');
   const active = sel === 'all' ? KNOWN_CLIENTS : [sel];
-  const w = Math.max(700, regionData.length * 38);
+  const chartW = Math.max(720, regionData.length * 42);
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap gap-2">
@@ -199,23 +199,21 @@ function ByRegionTab({ data }: { data: ClientAnalyticsResult }) {
           </button>
         ))}
       </div>
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 min-w-0">
         <h3 className="text-base font-semibold text-white mb-1">Jobs by Region</h3>
-        <p className="text-xs text-gray-500 mb-4">{data.periodLabel} · sorted by volume · scroll →</p>
-        <div className="overflow-x-auto">
-          <div style={{ width: w, minWidth: '100%' }}>
-            <BarChart width={w} height={340} data={regionData} margin={{ top: 8, right: 8, left: 0, bottom: 90 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-              <XAxis dataKey="region" tick={{ fill: '#9ca3af', fontSize: 10 }} angle={-45} textAnchor="end" interval={0} />
-              <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} width={30} />
-              <Tooltip content={<StackTip />} cursor={{ fill: 'rgba(220,38,38,0.06)' }} />
-              <Legend wrapperStyle={{ paddingTop: 8, fontSize: 11 }} formatter={v => <span style={{ color: CLIENT_COLOURS[v as ClientName] ?? '#9ca3af' }}>{v}</span>} />
-              {active.map((c, i, arr) => <Bar key={c} dataKey={c} stackId="a" fill={CLIENT_COLOURS[c]} radius={i === arr.length - 1 ? [2, 2, 0, 0] : [0, 0, 0, 0]} />)}
-            </BarChart>
-          </div>
+        <p className="text-xs text-gray-500 mb-3">{data.periodLabel} · sorted by volume · scroll horizontally →</p>
+        <div className="overflow-x-auto w-full">
+          <BarChart width={chartW} height={360} data={regionData} margin={{ top: 8, right: 16, left: 0, bottom: 100 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+            <XAxis dataKey="region" tick={{ fill: '#9ca3af', fontSize: 10 }} angle={-45} textAnchor="end" interval={0} />
+            <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} width={34} />
+            <Tooltip content={<StackTip />} cursor={{ fill: 'rgba(220,38,38,0.06)' }} />
+            <Legend wrapperStyle={{ paddingTop: 8, fontSize: 11 }} formatter={v => <span style={{ color: CLIENT_COLOURS[v as ClientName] ?? '#9ca3af' }}>{v}</span>} />
+            {active.map((c, i, arr) => <Bar key={c} dataKey={c} stackId="a" fill={CLIENT_COLOURS[c]} radius={i === arr.length - 1 ? [2, 2, 0, 0] : [0, 0, 0, 0]} />)}
+          </BarChart>
         </div>
       </div>
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 min-w-0">
         <h3 className="text-base font-semibold text-white mb-4">Region × Client Table</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">

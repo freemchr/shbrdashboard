@@ -80,8 +80,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         <div className="flex items-center justify-end gap-3 px-6 py-3 border-b border-gray-800/60 bg-gray-950/80 backdrop-blur-sm flex-shrink-0">
           <TopBar />
         </div>
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-4 sm:p-6 pt-16 lg:pt-4 max-w-[1400px] mx-auto">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0">
+          <div className="p-4 sm:p-6 pt-16 lg:pt-4 max-w-[1400px] mx-auto min-w-0">
             {children}
           </div>
         </main>
