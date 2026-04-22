@@ -11,7 +11,7 @@ import { getCached, setCached } from '@/lib/blob-cache';
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 
-const CACHE_KEY = 'client-analytics-v1';
+const CACHE_KEY = 'client-analytics-v2';
 const CACHE_TTL = 7 * 24 * 60 * 60 * 1000;
 
 const KNOWN_CLIENTS = ['Suncorp', 'Youi', 'Hollard', 'Allianz', 'Guild', 'Others'] as const;
