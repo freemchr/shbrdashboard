@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/client-analytics-refresh",
+      "schedule": "0 8 * * 5"
+    },
+    {
       "path": "/api/prime/jobs/geocode-auto",
       "schedule": "0 15 * * *"
     },
