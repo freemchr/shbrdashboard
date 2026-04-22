@@ -191,7 +191,7 @@ async function buildAnalytics(): Promise<ClientAnalyticsResult> {
   while (page <= totalPages) {
     const q = `'createdAt'.gte('${fmt(windowStart)}').lte('${fmt(windowEnd)}')`;
     const data = await primeGet(
-      `/jobs?per_page=250&page=${page}&q=${encodeURIComponent(q)}&sort=createdAt&order=asc`
+      `/jobs?per_page=250&page=${page}&q=${q}&sort=createdAt&order=asc`
     ) as {
       data?: RawJob[];
       meta?: { pagination?: { total_pages?: number } };
