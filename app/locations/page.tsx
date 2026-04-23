@@ -397,7 +397,7 @@ function MonthlyTrendTab({ data }: { data: LocationAnalyticsResult }) {
               <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
               <XAxis dataKey="month" tick={{ fill: '#9ca3af', fontSize: 11 }} />
               <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} width={30} />
-              <Tooltip content={<LineTip />} />
+              <Tooltip content={<LineTip />} cursor={{ stroke: '#374151', strokeWidth: 1 }} />
               <Legend wrapperStyle={{ fontSize: 10 }}
                 formatter={(v) => { const idx = allRegions.indexOf(String(v)); return <span style={{ color: REGION_COLOURS[idx >= 0 ? idx % REGION_COLOURS.length : 0] }}>{String(v).replace('Sydney Metro ','Syd ').replace('NSW ','')}</span>; }} />
               {allRegions.filter(r => selRegions.has(r)).map((r) => (
@@ -410,7 +410,7 @@ function MonthlyTrendTab({ data }: { data: LocationAnalyticsResult }) {
               <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
               <XAxis dataKey="month" tick={{ fill: '#9ca3af', fontSize: 11 }} />
               <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} width={30} />
-              <Tooltip content={<LineTip />} />
+              <Tooltip content={<LineTip />} cursor={{ fill: 'rgba(220,38,38,0.06)' }} />
               <Legend wrapperStyle={{ fontSize: 10 }}
                 formatter={(v) => { const idx = allRegions.indexOf(String(v)); return <span style={{ color: REGION_COLOURS[idx >= 0 ? idx % REGION_COLOURS.length : 0] }}>{String(v).replace('Sydney Metro ','Syd ').replace('NSW ','')}</span>; }} />
               {allRegions.filter(r => selRegions.has(r)).map((r, idx, arr) => (
@@ -523,7 +523,7 @@ function SuburbsTab({ data }: { data: LocationAnalyticsResult }) {
                 <p className="text-gray-400">{top15.find(s => s.suburb === label)?.region}</p>
                 <p className="font-mono text-white mt-1">{payload[0].value} jobs · {pctFmt((payload[0].value as number) / totalJobs, 2)}</p>
               </div>
-            ) : null} />
+            ) : null} cursor={{ fill: 'rgba(220,38,38,0.06)' }} />
             <Bar dataKey="jobs" radius={[0, 2, 2, 0]} label={{ position: 'right', fontSize: 10, fill: '#9ca3af' }}>
               {top15.map(s => <Cell key={s.suburb} fill={STATE_COLOURS[s.state] ?? '#DC2626'} />)}
             </Bar>
