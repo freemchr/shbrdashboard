@@ -163,7 +163,7 @@ function OverviewTab({ data }: { data: LocationAnalyticsResult }) {
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
           <h3 className="text-base font-semibold text-white mb-1">Jobs by State</h3>
           <p className="text-xs text-gray-500 mb-4">{data.periodLabel}</p>
-          <div className="flex flex-col sm:flex-row items-center gap-5">
+          <div className="flex flex-col xl:flex-row items-center gap-5">
             <div className="w-44 h-44 flex-shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -174,7 +174,7 @@ function OverviewTab({ data }: { data: LocationAnalyticsResult }) {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex-1 w-full min-w-0 overflow-x-auto">
+            <div className="w-full min-w-0">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="text-gray-500 border-b border-gray-800">
