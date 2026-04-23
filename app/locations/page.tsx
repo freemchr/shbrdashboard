@@ -174,21 +174,21 @@ function OverviewTab({ data }: { data: LocationAnalyticsResult }) {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex-1 w-full">
+            <div className="flex-1 w-full min-w-0 overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="text-gray-500 border-b border-gray-800">
-                    <th className="text-left py-1.5 pr-2 font-medium">State</th>
-                    <th className="text-right py-1.5 pr-3 font-medium">Jobs</th>
-                    <th className="text-right py-1.5 pr-3 font-medium">Share</th>
-                    <th className="text-right py-1.5 font-medium">Months</th>
+                    <th className="text-left py-1.5 pr-2 font-medium whitespace-nowrap">State</th>
+                    <th className="text-right py-1.5 pr-3 font-medium whitespace-nowrap">Jobs</th>
+                    <th className="text-right py-1.5 pr-3 font-medium whitespace-nowrap">Share</th>
+                    <th className="text-right py-1.5 pl-3 font-medium whitespace-nowrap">Months</th>
                   </tr>
                 </thead>
                 <tbody>
                   {stateBreakdown.map(s => (
                     <tr key={s.state} className="border-t border-gray-800/50">
                       <td className="py-2 pr-2"><StateBadge state={s.state} /></td>
-                      <td className="py-2 pr-3 text-right font-mono font-bold text-white">{s.jobs.toLocaleString()}</td>
+                      <td className="py-2 pr-3 text-right font-mono font-bold text-white whitespace-nowrap">{s.jobs.toLocaleString()}</td>
                       <td className="py-2 pr-3">
                         <div className="flex items-center justify-end gap-2">
                           <div className="w-16 bg-gray-800 rounded-full h-1.5 overflow-hidden flex-shrink-0">
@@ -197,7 +197,7 @@ function OverviewTab({ data }: { data: LocationAnalyticsResult }) {
                           <span className="font-mono text-gray-400 w-10 text-right flex-shrink-0">{pctFmt(s.pct)}</span>
                         </div>
                       </td>
-                      <td className="py-2 text-right text-gray-500">{s.monthsActive}</td>
+                      <td className="py-2 pl-3 text-right text-gray-500 whitespace-nowrap">{s.monthsActive}</td>
                     </tr>
                   ))}
                 </tbody>
