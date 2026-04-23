@@ -29,7 +29,6 @@ import {
   Activity,
   ShieldCheck,
   HelpCircle,
-  GitCommit,
   ClipboardList,
   Flag,
   TrendingUp,
@@ -449,26 +448,12 @@ export function Sidebar() {
           </div>}
 
           {isAdmin && (
-            <>
-              <NavItem
-                href="/admin/page-visibility"
-                label="Page Visibility"
-                icon={Shield}
-                active={isActive('/admin/page-visibility')}
-              />
-              <NavItem
-                href="/audit"
-                label="Audit Log"
-                icon={Shield}
-                active={isActive('/audit')}
-              />
-              <NavItem
-                href="/changelog"
-                label="Changelog"
-                icon={GitCommit}
-                active={isActive('/changelog')}
-              />
-            </>
+            <NavItem
+              href="/admin"
+              label="Admin"
+              icon={Shield}
+              active={isActive('/admin')}
+            />
           )}
         </nav>
 

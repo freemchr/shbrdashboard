@@ -5,11 +5,10 @@
 
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
+import { getVisibilityConfig, isAdminEmail } from '@/lib/page-visibility';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-
-const ADMIN_EMAIL = 'chris.freeman@techgurus.com.au';
 const GITHUB_REPO = 'freemchr/shbrdashboard';
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN; // optional — increases rate limit
 
@@ -97,7 +96,8 @@ export async function GET() {
     if (!session.accessToken || !session.userEmail) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (session.userEmail.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+    const config = await getVisibilityConfig();
+    if (!isAdminEmail(session.userEmail, config)) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
   } catch {

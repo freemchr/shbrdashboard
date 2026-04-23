@@ -27,6 +27,7 @@ export interface PageRestriction {
 }
 
 export interface VisibilityConfig {
+  admins: string[];       // additional admin emails (lowercase) beyond the env ADMIN_EMAIL
   groups: VisibilityGroup[];
   pages: PageRestriction[];
   updatedAt?: string;
@@ -68,6 +69,7 @@ export const ALL_PAGES: { path: string; label: string; group?: string }[] = [
 // ── Default config (everything open) ─────────────────────────────────────────
 
 export const DEFAULT_CONFIG: VisibilityConfig = {
+  admins: [],
   groups: [],
   pages: [],
 };
@@ -111,6 +113,19 @@ export async function getVisibilityConfig(): Promise<VisibilityConfig> {
   } catch {
     return DEFAULT_CONFIG;
   }
+}
+
+/**
+ * Returns true if the email is an admin (env ADMIN_EMAIL or in config.admins).
+ */
+export function isAdminEmail(
+  email: string,
+  config: VisibilityConfig
+): boolean {
+  const normalised = email.toLowerCase().trim();
+  const envAdmin = (process.env.ADMIN_EMAIL || 'chris.freeman@techgurus.com.au').toLowerCase();
+  if (normalised === envAdmin) return true;
+  return config.admins.map((a) => a.toLowerCase()).includes(normalised);
 }
 
 export async function saveVisibilityConfig(

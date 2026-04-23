@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
 import { readAuditLog } from '@/lib/audit';
+import { getVisibilityConfig, isAdminEmail } from '@/lib/page-visibility';
 
 export const dynamic = 'force-dynamic';
-
-const ADMIN_EMAIL = 'chris.freeman@techgurus.com.au';
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,7 +13,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (session.userEmail.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+    const config = await getVisibilityConfig();
+    if (!isAdminEmail(session.userEmail, config)) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 

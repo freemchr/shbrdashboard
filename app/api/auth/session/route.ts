@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
-import { getVisibilityConfig, getHiddenPaths } from '@/lib/page-visibility';
+import { getVisibilityConfig, getHiddenPaths, isAdminEmail } from '@/lib/page-visibility';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,10 +18,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Session expired' }, { status: 401 });
     }
 
-    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'chris.freeman@techgurus.com.au';
-    const isAdmin = session.userEmail?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-
     const config = await getVisibilityConfig();
+    const isAdmin = isAdminEmail(session.userEmail || '', config);
     const hiddenPaths = getHiddenPaths(session.userEmail || '', config, isAdmin);
 
     return NextResponse.json({

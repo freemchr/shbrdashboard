@@ -3,22 +3,21 @@
  * GET  /api/admin/page-visibility   → returns current config
  * POST /api/admin/page-visibility   → saves updated config
  *
- * Admin-only: only the ADMIN_EMAIL can call these endpoints.
+ * Admin-only: checks against env ADMIN_EMAIL + config.admins list.
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
-import { getVisibilityConfig, saveVisibilityConfig, VisibilityConfig } from '@/lib/page-visibility';
+import { getVisibilityConfig, saveVisibilityConfig, isAdminEmail, VisibilityConfig } from '@/lib/page-visibility';
 
 export const dynamic = 'force-dynamic';
-
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'chris.freeman@techgurus.com.au';
 
 async function assertAdmin(): Promise<{ error: NextResponse } | null> {
   const session = await getSession();
   if (!session.accessToken) {
     return { error: NextResponse.json({ error: 'Not authenticated' }, { status: 401 }) };
   }
-  if (session.userEmail?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+  const config = await getVisibilityConfig();
+  if (!isAdminEmail(session.userEmail || '', config)) {
     return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
   }
   return null;
@@ -46,7 +45,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid config shape' }, { status: 400 });
     }
 
-    // Normalise all emails to lowercase
+    // Normalise admin emails
+    body.admins = (body.admins || []).map((e: string) => e.toLowerCase().trim()).filter(Boolean);
+
+    // Normalise all group member emails to lowercase
     body.groups = body.groups.map((g) => ({
       ...g,
       members: g.members.map((m) => m.toLowerCase().trim()).filter(Boolean),
