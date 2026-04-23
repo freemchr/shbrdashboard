@@ -369,7 +369,7 @@ function MonthlyTrendTab({ data }: { data: ClientAnalyticsResult }) {
               <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
               <XAxis dataKey="month" tick={{ fill: '#9ca3af', fontSize: 11 }} />
               <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} width={30} />
-              <Tooltip content={<StackTip />} />
+              <Tooltip content={<StackTip />} cursor={{ stroke: '#374151', strokeWidth: 1 }} />
               <Legend formatter={v => <span style={{ color: CLIENT_COLOURS[v as ClientName] ?? '#9ca3af' }}>{v}</span>} />
               {KNOWN_CLIENTS.filter(c => selClients.has(c)).map(c => (
                 <Line key={c} type="monotone" dataKey={c} stroke={CLIENT_COLOURS[c]} strokeWidth={2} dot={{ r: 3, fill: CLIENT_COLOURS[c] }} activeDot={{ r: 5 }} />
@@ -380,7 +380,7 @@ function MonthlyTrendTab({ data }: { data: ClientAnalyticsResult }) {
               <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
               <XAxis dataKey="month" tick={{ fill: '#9ca3af', fontSize: 11 }} />
               <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} width={30} />
-              <Tooltip content={<StackTip />} />
+              <Tooltip content={<StackTip />} cursor={{ fill: 'rgba(220,38,38,0.06)' }} />
               <Legend formatter={v => <span style={{ color: CLIENT_COLOURS[v as ClientName] ?? '#9ca3af' }}>{v}</span>} />
               {KNOWN_CLIENTS.filter(c => selClients.has(c)).map((c, i, arr) => (
                 <Bar key={c} dataKey={c} stackId="a" fill={CLIENT_COLOURS[c]} radius={i === arr.length - 1 ? [2, 2, 0, 0] : [0, 0, 0, 0]} />
