@@ -174,8 +174,8 @@ function OverviewTab({ data }: { data: LocationAnalyticsResult }) {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="w-full min-w-0">
-              <table className="w-full text-xs">
+            <div className="w-full min-w-0 flex justify-center xl:justify-start">
+              <table className="text-xs">
                 <thead>
                   <tr className="text-gray-500 border-b border-gray-800">
                     <th className="text-left py-1.5 pr-2 font-medium whitespace-nowrap">State</th>
