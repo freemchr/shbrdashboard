@@ -39,6 +39,7 @@ import {
   Droplets,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/auth-context';
 
 const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
@@ -108,15 +109,18 @@ function NavItem({ href, label, icon: Icon, active, alert }: {
   );
 }
 
-const ADMIN_EMAIL = 'chris.freeman@techgurus.com.au';
-
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
-
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const { isAdmin, hiddenPaths } = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
+
+  function isHidden(path: string): boolean {
+    return Array.from(hiddenPaths).some(
+      (hidden) => path === hidden || path.startsWith(hidden + '/')
+    );
+  }
 
   const isInWeather = pathname.startsWith('/weather') || pathname.startsWith('/cat-forecast');
   const [weatherOpen, setWeatherOpen] = useState(isInWeather);
@@ -142,15 +146,6 @@ export function Sidebar() {
   useEffect(() => { if (isInEstimators) setEstimatorsOpen(true); }, [isInEstimators]);
   useEffect(() => { if (isInApp) setAppOpen(true); }, [isInApp]);
   useEffect(() => { if (isInInsights) setInsightsOpen(true); }, [isInInsights]);
-
-  useEffect(() => {
-    fetch('/api/auth/session')
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => {
-        if (data?.userEmail) setUserEmail(data.userEmail);
-      })
-      .catch(() => {});
-  }, []);
 
   const isActive = (href: string) =>
     href === '/report-assist/polish'
@@ -210,7 +205,7 @@ export function Sidebar() {
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {/* Top nav items: Overview, Command Centre */}
-          {navItemsTop.map((item) => (
+          {navItemsTop.filter(item => !isHidden(item.href)).map((item) => (
             <NavItem
               key={item.href}
               href={item.href}
@@ -221,7 +216,7 @@ export function Sidebar() {
           ))}
 
           {/* Collapsible Insights group */}
-          <div>
+          {insightsSubItems.some(i => !isHidden(i.href)) && <div>
             <button
               onClick={() => setInsightsOpen(o => !o)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all
@@ -236,7 +231,7 @@ export function Sidebar() {
             </button>
             <div className={`overflow-hidden transition-all duration-200 ${insightsOpen ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
               <div className="mt-0.5 space-y-0.5">
-                {insightsSubItems.map((item) => (
+                {insightsSubItems.filter(i => !isHidden(i.href)).map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
@@ -252,10 +247,10 @@ export function Sidebar() {
                 ))}
               </div>
             </div>
-          </div>
+          </div>}
 
           {/* Collapsible Operations group — right after top nav */}
-          <div>
+          {opsSubItems.some(i => !isHidden(i.href)) && <div>
             <button
               onClick={() => setOpsOpen(o => !o)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all
@@ -270,7 +265,7 @@ export function Sidebar() {
             </button>
             <div className={`overflow-hidden transition-all duration-200 ${opsOpen ? 'max-h-56 opacity-100' : 'max-h-0 opacity-0'}`}>
               <div className="mt-0.5 space-y-0.5">
-                {opsSubItems.map((item) => (
+                {opsSubItems.filter(i => !isHidden(i.href)).map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
@@ -286,10 +281,10 @@ export function Sidebar() {
                 ))}
               </div>
             </div>
-          </div>
+          </div>}
 
           {/* Collapsible Weather & CAT group */}
-          <div>
+          {weatherSubItems.some(i => !isHidden(i.href)) && <div>
             <button
               onClick={() => setWeatherOpen(o => !o)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all
@@ -304,7 +299,7 @@ export function Sidebar() {
             </button>
             <div className={`overflow-hidden transition-all duration-200 ${weatherOpen ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
               <div className="mt-0.5 space-y-0.5">
-                {weatherSubItems.map((item) => (
+                {weatherSubItems.filter(i => !isHidden(i.href)).map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
@@ -320,10 +315,10 @@ export function Sidebar() {
                 ))}
               </div>
             </div>
-          </div>
+          </div>}
 
           {/* Collapsible Reports group */}
-          <div>
+          {reportsSubItems.some(i => !isHidden(i.href)) && <div>
             <button
               onClick={() => setReportsOpen(o => !o)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all
@@ -342,7 +337,7 @@ export function Sidebar() {
 
             <div className={`overflow-hidden transition-all duration-200 ${reportsOpen ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'}`}>
               <div className="mt-0.5 space-y-0.5">
-                {reportsSubItems.map((item) => (
+                {reportsSubItems.filter(i => !isHidden(i.href)).map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
@@ -361,18 +356,18 @@ export function Sidebar() {
                 ))}
               </div>
             </div>
-          </div>
+          </div>}
 
           {/* Flagged Jobs — direct nav item after Reports, before Estimators */}
-          <NavItem
+          {!isHidden('/flagged') && <NavItem
             href="/flagged"
             label="Flagged Jobs"
             icon={Flag}
             active={isActive('/flagged')}
-          />
+          />}
 
           {/* Collapsible Estimators group */}
-          <div>
+          {estimatorsSubItems.some(i => !isHidden(i.href)) && <div>
             <button
               onClick={() => setEstimatorsOpen(o => !o)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all
@@ -388,7 +383,7 @@ export function Sidebar() {
 
             <div className={`overflow-hidden transition-all duration-200 ${estimatorsOpen ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
               <div className="mt-0.5 space-y-0.5">
-                {estimatorsSubItems.map((item) => (
+                {estimatorsSubItems.filter(i => !isHidden(i.href)).map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
@@ -404,10 +399,10 @@ export function Sidebar() {
                 ))}
               </div>
             </div>
-          </div>
+          </div>}
 
-          {/* Remaining nav items (Weather, WHS, Pipeline, Stalled, Financial, Search, Map) */}
-          {navItemsBottom.map((item) => (
+          {/* Remaining nav items (Pipeline, Stalled, Financial, Search, Map, Socials, WHS) */}
+          {navItemsBottom.filter(item => !isHidden(item.href)).map((item) => (
             <NavItem
               key={item.href}
               href={item.href}
@@ -418,7 +413,7 @@ export function Sidebar() {
           ))}
 
           {/* APP — Australian Plumbing Products (separate from SHBR nav) */}
-          <div className="pt-2 mt-1 border-t border-gray-800">
+          {appSubItems.some(i => !isHidden(i.href)) && <div className="pt-2 mt-1 border-t border-gray-800">
             <div>
               <button
                 onClick={() => setAppOpen(o => !o)}
@@ -434,7 +429,7 @@ export function Sidebar() {
               </button>
               <div className={`overflow-hidden transition-all duration-200 ${appOpen ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
                 <div className="mt-0.5 space-y-0.5">
-                  {appSubItems.map((item) => (
+                  {appSubItems.filter(i => !isHidden(i.href)).map((item) => (
                     <Link
                       key={item.href}
                       href={item.href}
@@ -451,10 +446,16 @@ export function Sidebar() {
                 </div>
               </div>
             </div>
-          </div>
+          </div>}
 
-          {userEmail?.toLowerCase() === ADMIN_EMAIL && (
+          {isAdmin && (
             <>
+              <NavItem
+                href="/admin/page-visibility"
+                label="Page Visibility"
+                icon={Shield}
+                active={isActive('/admin/page-visibility')}
+              />
               <NavItem
                 href="/audit"
                 label="Audit Log"

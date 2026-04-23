@@ -6,12 +6,19 @@ import Image from 'next/image';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { TopBar } from '@/components/ui/TopBar';
 import { AuditTracker } from '@/components/ui/AuditTracker';
+import { AuthProvider, AuthContext } from '@/lib/auth-context';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [authed, setAuthed] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [authCtx, setAuthCtx] = useState<AuthContext>({
+    userEmail: '',
+    userName: '',
+    isAdmin: false,
+    hiddenPaths: new Set(),
+  });
 
   const isLoginPage = pathname === '/login';
   const [isKiosk, setIsKiosk] = useState(false);
@@ -32,9 +39,19 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           router.replace('/login');
           // keep authed=false, checking=true — show splash until redirect completes
         } else {
-          setAuthed(true);
-          setChecking(false);
+          return res.json();
         }
+      })
+      .then(data => {
+        if (!data) return;
+        setAuthCtx({
+          userEmail: data.userEmail || '',
+          userName: data.userName || '',
+          isAdmin: !!data.isAdmin,
+          hiddenPaths: new Set(data.hiddenPaths || []),
+        });
+        setAuthed(true);
+        setChecking(false);
       })
       .catch(() => {
         router.replace('/login');
@@ -61,31 +78,35 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   // Authenticated — kiosk mode (no sidebar/topbar, pure full-bleed)
   if (isKiosk) {
     return (
-      <div className="flex h-screen overflow-hidden">
-        <AuditTracker />
-        <main className="flex-1 overflow-hidden">
-          {children}
-        </main>
-      </div>
+      <AuthProvider value={authCtx}>
+        <div className="flex h-screen overflow-hidden">
+          <AuditTracker />
+          <main className="flex-1 overflow-hidden">
+            {children}
+          </main>
+        </div>
+      </AuthProvider>
     );
   }
 
   // Authenticated — render full dashboard shell with sidebar + topbar
   return (
-    <div className="flex h-screen overflow-hidden">
-      <AuditTracker />
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
-        {/* Top bar */}
-        <div className="flex items-center justify-end gap-3 px-6 py-3 border-b border-gray-800/60 bg-gray-950/80 backdrop-blur-sm flex-shrink-0">
-          <TopBar />
-        </div>
-        <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0">
-          <div className="p-4 sm:p-6 pt-16 lg:pt-4 max-w-[1400px] mx-auto min-w-0">
-            {children}
+    <AuthProvider value={authCtx}>
+      <div className="flex h-screen overflow-hidden">
+        <AuditTracker />
+        <Sidebar />
+        <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
+          {/* Top bar */}
+          <div className="flex items-center justify-end gap-3 px-6 py-3 border-b border-gray-800/60 bg-gray-950/80 backdrop-blur-sm flex-shrink-0">
+            <TopBar />
           </div>
-        </main>
+          <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0">
+            <div className="p-4 sm:p-6 pt-16 lg:pt-4 max-w-[1400px] mx-auto min-w-0">
+              {children}
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </AuthProvider>
   );
 }
