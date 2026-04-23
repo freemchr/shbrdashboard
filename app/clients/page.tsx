@@ -458,7 +458,7 @@ function RegionDetailTab({ data }: { data: ClientAnalyticsResult }) {
             <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
             <XAxis dataKey="month" tick={{ fill: '#9ca3af', fontSize: 11 }} />
             <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} width={28} />
-            <Tooltip content={<StackTip />} />
+            <Tooltip content={<StackTip />} cursor={{ fill: 'rgba(220,38,38,0.06)' }} />
             <Legend formatter={v => <span style={{ color: CLIENT_COLOURS[v as ClientName] ?? '#9ca3af' }}>{v}</span>} />
             {rows.map((r, i, arr) => <Bar key={r.client} dataKey={r.client} stackId="a" fill={CLIENT_COLOURS[r.client]} radius={i === arr.length - 1 ? [2, 2, 0, 0] : [0, 0, 0, 0]} />)}
           </BarChart>
