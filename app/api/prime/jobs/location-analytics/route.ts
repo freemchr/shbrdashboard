@@ -291,8 +291,10 @@ async function buildAnalytics(): Promise<LocationAnalyticsResult> {
 export async function GET(req: NextRequest) {
   try {
     const bust = req.nextUrl.searchParams.get('bust') === '1';
-    const cached = await getCached<LocationAnalyticsResult>(CACHE_KEY, bust);
-    if (cached) return NextResponse.json(cached);
+    if (!bust) {
+      const cached = await getCached<LocationAnalyticsResult>(CACHE_KEY);
+      if (cached) return NextResponse.json(cached);
+    }
     const result = await buildAnalytics();
     await setCached(CACHE_KEY, result, CACHE_TTL);
     return NextResponse.json(result);
