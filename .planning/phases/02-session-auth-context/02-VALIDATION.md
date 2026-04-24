@@ -2,8 +2,8 @@
 phase: 2
 slug: session-auth-context
 status: draft
-nyquist_compliant: false
-wave_0_complete: false
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-04-24
 ---
 
@@ -18,10 +18,10 @@ created: 2026-04-24
 | Property | Value |
 |----------|-------|
 | **Framework** | Vitest 4.1.5 (shipped by Phase 1) |
-| **Config file** | `vitest.config.ts` — **Wave 0 must widen `include` glob OR extract helpers to `lib/` (see RESEARCH.md Wave 0 Gap)** |
+| **Config file** | `vitest.config.ts` — Wave 0 widened `include` glob to `['lib/**/*.test.ts', 'app/**/*.test.ts']` (Pitfall 1 / Option A — see Plan 02-01 Task 1) |
 | **Quick run command** | `npm test` (= `vitest run`) |
 | **Full suite command** | `npm test` |
-| **Estimated runtime** | ~1-2s today (20 tests); grows to ~2-3s with Phase 2 additions (~35-40 tests) |
+| **Estimated runtime** | ~1-2s today (20 tests); grows to ~5-7s with Phase 2 additions (~36-40 tests) |
 
 ---
 
@@ -41,7 +41,16 @@ created: 2026-04-24
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | ⬜ pending |
+| 02-01 T1 | 01 | 0 | SESSION-02 (D-06 type) | T-02-04 | Audit row tampering — type widening keeps existing rows valid; VALID_ACTIONS allowlist intact | unit + tsc | `npm run build` | lib/audit.ts | ⬜ pending |
+| 02-01 T2 | 01 | 0 | SESSION-02 (D-06) | T-02-04 | Round-trip new audit shape preserves detail | unit | `npx vitest run lib/audit.test.ts` | lib/audit.test.ts | ⬜ pending |
+| 02-01 T3 | 01 | 0 | SESSION-01, SESSION-03 (RED scaffold) | T-02-01, T-02-02 | Contract pin: primeUser field, no audit on miss | unit (RED) | `npx vitest run app/api/auth/session/route.test.ts` | app/api/auth/session/route.test.ts | ⬜ pending |
+| 02-01 T4 | 01 | 0 | SESSION-02 (RED scaffold) | T-02-03, T-02-05 | Contract pin: miss audit + Pitfall 6 ordering invariant | unit (RED) | `npx vitest run app/api/auth/login/route.test.ts` | app/api/auth/login/route.test.ts | ⬜ pending |
+| 02-01 T5 | 01 | 0 | (planning gate) | n/a | n/a | doc | `grep "nyquist_compliant: true" .planning/phases/02-session-auth-context/02-VALIDATION.md` | this file | ⬜ pending |
+| 02-02 T1 | 02 | 1 | SESSION-01, SESSION-03 | T-02-01, T-02-02 | Live-read primeUser; no audit write on miss; [session] log prefix | unit (GREEN) | `npx vitest run app/api/auth/session/route.test.ts` | app/api/auth/session/route.ts | ⬜ pending |
+| 02-03 T1 | 03 | 1 | SESSION-02 | T-02-03, T-02-05 | Miss audit with cache-state detail; D-04 ordering | unit (GREEN) | `npx vitest run app/api/auth/login/route.test.ts` | app/api/auth/login/route.ts | ⬜ pending |
+| 02-04 T1 | 04 | 2 | SESSION-04 | T-02-01 (consumed) | AuthContext + AuthGuard hydration carry primeUser | manual-smoke (DevTools) | `npm run build` (typecheck only) + manual | lib/auth-context.tsx, components/ui/AuthGuard.tsx | ⬜ pending |
+| 02-04 T2 | 04 | 2 | DISPLAY-04 | T-02-01 (consumed) | TopBar fallback cascade primeUser?.fullName?.trim() ‖ userEmail | manual-smoke (visual) | manual: log in as Chris (Prime hit) + as non-Prime email | components/ui/TopBar.tsx | ⬜ pending |
+| 02-04 T3 | 04 | 2 | (Pitfall 3) | T-02-04 (display) | ActionBadge renders prime_user_miss as a distinct amber badge (NOT mislabeled "Logout") | manual-smoke (visual) | manual: open admin audit tab after Plan 03 lands and a miss row exists | app/admin/page.tsx | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -51,12 +60,13 @@ created: 2026-04-24
 
 > From RESEARCH.md "Wave 0 Gaps". Must be resolved in Wave 0 (before any Wave 1 implementation can land).
 
-- [ ] **Vitest glob decision** — widen `vitest.config.ts` `include` to `['lib/**/*.test.ts', 'app/**/*.test.ts']` OR extract helpers to `lib/auth/` and test there. Without this, `*.test.ts` files under `app/api/auth/` will be silently skipped.
-- [ ] **Test file scaffolds** (one of these shapes):
-  - Option A (glob widened): `app/api/auth/session/route.test.ts`, `app/api/auth/login/route.test.ts`, `lib/audit.test.ts`
-  - Option B (helper extracted): `lib/auth/session-response.test.ts`, `lib/auth/login-miss-audit.test.ts`, `lib/audit.test.ts`
-- [ ] **`next/headers` mock decision** — mock at `@/lib/session` boundary (recommended) OR mock `next/headers` directly in every route test.
-- [ ] **`ActionBadge` scope decision** — fix `app/admin/page.tsx:508-513` to render `'prime_user_miss'` rows properly in Phase 2, OR explicitly defer to Phase 3 DISPLAY-03.
+- [x] **Vitest glob decision** — widened `vitest.config.ts` `include` to `['lib/**/*.test.ts', 'app/**/*.test.ts']` (Option A). Without this, `*.test.ts` files under `app/api/auth/` would be silently skipped. Closed in Plan 02-01 Task 1.
+- [x] **Test file scaffolds** — Option A files created in Plan 02-01 Tasks 2–4:
+  - `app/api/auth/session/route.test.ts` (RED, 4/8 contract tests fail awaiting Plan 02)
+  - `app/api/auth/login/route.test.ts` (RED, 3/8 contract tests fail awaiting Plan 03)
+  - `lib/audit.test.ts` (GREEN, 6/6 — type extension complete)
+- [x] **`next/headers` mock decision** — `@/lib/session` boundary mock (recommended). Tests never mock the underlying request-cookie module directly. Closed in Plan 02-01 Tasks 3 and 4.
+- [x] **`ActionBadge` scope decision** — fix `app/admin/page.tsx:508-513` to render `'prime_user_miss'` rows properly in Phase 2 Plan 04 Task 3 (NOT deferred to Phase 3 DISPLAY-03). See plan 02-04 verification map row.
 
 ---
 
@@ -76,11 +86,11 @@ created: 2026-04-24
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 5s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 5s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** ready (Wave 0 closes 02-01)

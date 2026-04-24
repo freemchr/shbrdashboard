@@ -12,8 +12,9 @@ export interface AuditEntry {
   id: string;
   email: string;
   name?: string;
-  action: 'login' | 'logout';
+  action: 'login' | 'logout' | 'prime_user_miss';
   timestamp: string;
+  detail?: string;
 }
 
 export async function appendAuditLog(entry: Omit<AuditEntry, 'id' | 'timestamp'>): Promise<void> {
