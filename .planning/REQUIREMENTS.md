@@ -87,29 +87,34 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DIR-01 | TBD | Pending |
-| DIR-02 | TBD | Pending |
-| DIR-03 | TBD | Pending |
-| DIR-04 | TBD | Pending |
-| SESSION-01 | TBD | Pending |
-| SESSION-02 | TBD | Pending |
-| SESSION-03 | TBD | Pending |
-| SESSION-04 | TBD | Pending |
-| ADMIN-01 | TBD | Pending |
-| ADMIN-02 | TBD | Pending |
-| ADMIN-03 | TBD | Pending |
-| ADMIN-04 | TBD | Pending |
-| ADMIN-05 | TBD | Pending |
-| DISPLAY-01 | TBD | Pending |
-| DISPLAY-02 | TBD | Pending |
-| DISPLAY-03 | TBD | Pending |
-| DISPLAY-04 | TBD | Pending |
+| DIR-01 | Phase 1 | Pending |
+| DIR-02 | Phase 1 | Pending |
+| DIR-03 | Phase 1 | Pending |
+| DIR-04 | Phase 1 | Pending |
+| SESSION-01 | Phase 2 | Pending |
+| SESSION-02 | Phase 2 | Pending |
+| SESSION-03 | Phase 2 | Pending |
+| SESSION-04 | Phase 2 | Pending |
+| ADMIN-01 | Phase 3 | Pending |
+| ADMIN-02 | Phase 3 | Pending |
+| ADMIN-03 | Phase 3 | Pending |
+| ADMIN-04 | Phase 3 | Pending |
+| ADMIN-05 | Phase 3 | Pending |
+| DISPLAY-01 | Phase 3 | Pending |
+| DISPLAY-02 | Phase 3 | Pending |
+| DISPLAY-03 | Phase 3 | Pending |
+| DISPLAY-04 | Phase 2 | Pending |
 
 **Coverage:**
 - v1 requirements: 17 total
-- Mapped to phases: 0 (roadmap not yet created)
-- Unmapped: 17 ⚠️ (resolved when roadmap lands)
+- Mapped to phases: 17 ✓
+- Unmapped: 0
+
+**Per-phase counts:**
+- Phase 1 (Prime User Directory): 4 requirements — DIR-01..04
+- Phase 2 (Session & Auth Context Integration): 5 requirements — SESSION-01..04, DISPLAY-04
+- Phase 3 (Admin Picker & Identity-Rich Display): 8 requirements — ADMIN-01..05, DISPLAY-01..03
 
 ---
 *Requirements defined: 2026-04-24*
-*Last updated: 2026-04-24 after initial definition*
+*Last updated: 2026-04-24 after roadmap creation — 17/17 requirements mapped*
