@@ -11,7 +11,7 @@ const AUDIT_BLOB_PATH = 'audit/audit-log.json';
 const MAX_ENTRIES = 500;
 
 function getAuditBlobUrl(): string {
-  const base = process.env.BLOB_BASE_URL || '';
+  const base = (process.env.BLOB_BASE_URL || '').trim().replace(/\/$/, '');
   return `${base}/${AUDIT_BLOB_PATH}`;
 }
 
