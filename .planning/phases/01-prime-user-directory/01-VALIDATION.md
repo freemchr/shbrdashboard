@@ -40,7 +40,11 @@ created: 2026-04-24
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| TBD | 01 | 0 | (Wave 0) | — | Vitest installed + `lib/prime-users.test.ts` stub exists | setup | `npm test -- --run lib/prime-users.test.ts` | ❌ W0 | ⬜ pending |
+| 0.1 | 01 | 0 | DIR-01,DIR-02,DIR-04 | — | Vitest devDeps installed + npm scripts wired | setup | `node -e "const p=require('./package.json'); process.exit(p.scripts.test&&p.devDependencies.vitest?0:1)"` | ❌ → ✅ Wave 0 | ⬜ pending |
+| 0.2 | 01 | 0 | DIR-01,DIR-02,DIR-04 | — | vitest.config.ts created with node env + tsconfigPaths | setup | `test -f vitest.config.ts && grep -q "environment: 'node'" vitest.config.ts` | ❌ → ✅ Wave 0 | ⬜ pending |
+| 0.3 | 01 | 0 | DIR-01,DIR-02,DIR-04 | — | Test stub created with PROBE FINDINGS comment + ≥12 it.todo cases | setup | `npm test` (exits 0 with all todo) | ❌ → ✅ Wave 0 | ⬜ pending |
+| 0.4 | 01 | 0 | DIR-01 | — | Prime /users attribute keys captured; probe script removed | manual smoke | `! test -f scripts/probe-prime-users.ts && ! grep -q "<fill in:" lib/prime-users.test.ts` | manual | ⬜ pending |
+| 0.5 | 01 | 0 | (meta) | — | VALIDATION.md Per-Task Map updated for Plan 01 rows | docs | `grep -q "\| 0.1 \| 01 \|" .planning/phases/01-prime-user-directory/01-VALIDATION.md` | ✅ self-verifying | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
