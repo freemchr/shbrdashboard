@@ -509,6 +509,9 @@ function ActionBadge({ action }: { action: string }) {
   if (action === 'login') {
     return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-900/50 text-green-400 border border-green-800">Login</span>;
   }
+  if (action === 'prime_user_miss') {
+    return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-900/50 text-amber-400 border border-amber-800">Miss</span>;
+  }
   return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-800 text-gray-400 border border-gray-700">Logout</span>;
 }
 
