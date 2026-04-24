@@ -42,15 +42,19 @@ const X_BTN_CLASS =
   'flex-shrink-0 ml-0.5 -mr-0.5 p-0.5 rounded text-gray-500 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-red-600 transition-colors';
 
 // Live chip — UI-SPEC Surface 3 (verbatim classes).
+// WR-02: defensive fallback for empty/whitespace fullName — mirrors D-10 cascade
+// from TopBar.tsx:48 and the audit cascade in page.tsx:623. PrimeUser.fullName
+// can be `""` when both firstName and lastName are absent (lib/prime-users.ts:106).
 function Chip({ email, user, onRemove }: { email: string; user: PrimeUser; onRemove: (email: string) => void }) {
+  const displayName = user.fullName?.trim() || email;
   const tooltipText = user.division ? `${user.division} · ${email}` : email;
   return (
     <span
       className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gray-800 border border-gray-700 text-sm text-white max-w-[200px]"
       title={tooltipText}
     >
-      <span className="truncate">{user.fullName}</span>
-      <button type="button" aria-label={`Remove ${user.fullName}`} onClick={() => onRemove(email)} className={X_BTN_CLASS}>
+      <span className="truncate">{displayName}</span>
+      <button type="button" aria-label={`Remove ${displayName}`} onClick={() => onRemove(email)} className={X_BTN_CLASS}>
         <X size={12} />
       </button>
     </span>
@@ -101,12 +105,14 @@ export function PrimeUserPicker({
   const [activeIndex, setActiveIndex] = useState(-1);
 
   // Sorted chips — RESEARCH Code Examples (D-05/D-09): live by fullName, historical by email.
+  // WR-02: defensive cascade — fall back to email when fullName is empty/whitespace
+  // (PrimeUser.fullName can be `""` per lib/prime-users.ts:106 when Prime omits firstName/lastName).
   const sortedChips = useMemo(() => {
     return selected
       .map(email => {
         const u = byEmail.get(email.toLowerCase());
         return u
-          ? { kind: 'live' as const, email, sortKey: u.fullName.toLowerCase(), user: u }
+          ? { kind: 'live' as const, email, sortKey: (u.fullName?.trim() || email).toLowerCase(), user: u }
           : { kind: 'historical' as const, email, sortKey: email.toLowerCase() };
       })
       .sort((a, b) => a.sortKey.localeCompare(b.sortKey));
