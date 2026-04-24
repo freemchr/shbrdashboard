@@ -26,9 +26,9 @@ This milestone replaces the dashboard's local email-list identity model with a P
   3. When Prime is unreachable, rate-limited, or returns an auth error, the most recent cached directory continues to serve lookups — no dependent request crashes, and the failure is logged for admin visibility.
   4. Observed Prime `/users` call volume from normal dashboard traffic stays well under the 5,000/day shared budget (per-request lookups are not hitting Prime).
 **Plans**: 3 plans
-  - [ ] 01-01-PLAN.md — Wave 0: Vitest harness + Prime /users probe (DIR-01,02,04)
-  - [ ] 01-02-PLAN.md — Wave 1: lib/prime-users.ts module + ≥12 Vitest cases (DIR-01,02,04)
-  - [ ] 01-03-PLAN.md — Wave 2: admin force-refresh endpoint + manual smoke (DIR-03)
+  - [x] 01-01-PLAN.md — Wave 0: Vitest harness + Prime /users probe (DIR-01,02,04)
+  - [x] 01-02-PLAN.md — Wave 1: lib/prime-users.ts module + ≥12 Vitest cases (DIR-01,02,04)
+  - [x] 01-03-PLAN.md — Wave 2: admin force-refresh endpoint + manual smoke (DIR-03)
 
 ### Phase 2: Session & Auth Context Integration
 **Goal**: The authenticated user's Prime identity (display name, division, region, role/trade) is carried on the session and surfaced through `/api/auth/session`, AuthContext, and the TopBar — no client ever has to re-derive identity from an email.
