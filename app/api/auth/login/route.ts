@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
 import { appendAuditLog } from '@/lib/audit';
 import { checkRateLimit } from '@/lib/rate-limit';
-import { resolveByEmail, getAllPrimeUsers } from '@/lib/prime-users';
+import { getAllPrimeUsers } from '@/lib/prime-users';
 
 export const dynamic = 'force-dynamic';
 
@@ -96,17 +96,25 @@ export async function POST(req: NextRequest) {
     });
 
     // D-04 / Pitfall 6: called AFTER successful Prime auth + session.save() ONLY —
-    // never resolve unauthenticated emails. Phase 1 D-16: resolveByEmail NEVER throws.
+    // never resolve unauthenticated emails. Phase 1 D-16: getAllPrimeUsers NEVER throws.
     // The resolved PrimeUser is NOT stored in the cookie (D-03) and NOT returned in
     // the response (D-07 — delivery path is /api/auth/session via the live-read).
-    const primeUser = await resolveByEmail(normalisedEmail);
+    //
+    // WR-01 fix: fetch the directory ONCE and do the lookup locally. Previously this
+    // path called resolveByEmail() (which itself calls getAllPrimeUsers()) AND THEN
+    // called getAllPrimeUsers() again to compute the cache_empty vs cache_hit detail.
+    // On a cold start with a Prime outage, neither call writes a blob, so the second
+    // call re-triggered another full paginated /users fetch — burning 2× Prime budget
+    // per failed login. Single fetch + local find is semantically equivalent because
+    // normalisedEmail is already trim()+toLowerCase()'d and PrimeUser.email is
+    // canonicalised on ingest (lib/prime-users.ts:218 mirrors this normalisation).
+    const allUsers = await getAllPrimeUsers();
+    const primeUser = allUsers.find(u => u.email === normalisedEmail) ?? null;
 
     if (!primeUser) {
       // D-06: distinguish cache_empty (Phase 1 cache unreachable / first-miss
       // bootstrap failure) from cache_hit: no match (Prime cache populated but the
-      // logged-in email is not in the directory). getAllPrimeUsers is O(1) on the
-      // in-memory blob-cache hit path (Phase 1 D-02 / DIR-02).
-      const allUsers = await getAllPrimeUsers();
+      // logged-in email is not in the directory).
       const detail = allUsers.length === 0 ? 'cache_empty' : 'cache_hit: no match';
       await appendAuditLog({
         email: normalisedEmail,
