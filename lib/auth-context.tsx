@@ -1,12 +1,14 @@
 'use client';
 
 import { createContext, useContext } from 'react';
+import type { PrimeUser } from '@/lib/prime-users';
 
 export interface AuthContext {
   userEmail: string;
   userName: string;
   isAdmin: boolean;
   hiddenPaths: Set<string>;
+  primeUser: PrimeUser | null;
 }
 
 const AuthCtx = createContext<AuthContext>({
@@ -14,6 +16,7 @@ const AuthCtx = createContext<AuthContext>({
   userName: '',
   isAdmin: false,
   hiddenPaths: new Set(),
+  primeUser: null,
 });
 
 export function AuthProvider({
