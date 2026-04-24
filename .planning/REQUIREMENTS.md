@@ -16,7 +16,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Session & Auth Context (SESSION)
 
-- [ ] **SESSION-01**: On successful login, the authenticated user's Prime record is resolved by email and their attributes (display name, division, region, role/trade) are stored in the iron-session cookie
+- [ ] **SESSION-01**: On successful login, the authenticated user's Prime record is resolved by email; their attributes (display name, division, region, role/trade) are derived at session-check time via `resolveByEmail()` and exposed through `/api/auth/session`, not persisted in the iron-session cookie (amended by Phase 2 CONTEXT D-02 to match live-read implementation)
 - [ ] **SESSION-02**: Login still succeeds if the authenticated email cannot be resolved to a Prime user; Prime attributes are null and a log entry is written for admin review
 - [ ] **SESSION-03**: `/api/auth/session` returns Prime-sourced attributes in addition to existing fields (`userEmail`, `isAdmin`, `hiddenPaths`)
 - [ ] **SESSION-04**: `AuthContext` exposes Prime user attributes to client components so they can render without re-fetching
