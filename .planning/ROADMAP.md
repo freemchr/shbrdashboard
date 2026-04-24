@@ -56,7 +56,11 @@ This milestone replaces the dashboard's local email-list identity model with a P
   3. Group and admin lists in the admin UI render each member as "Name — Division" with email as secondary detail; entries for emails no longer present in the Prime directory still render (falling back to email) and can be removed.
   4. The audit log renders every event's actor as Prime display name (with email fallback), readable at a glance without needing to look up who an email belongs to.
   5. The existing `VisibilityConfig` blob schema is unchanged — stored group memberships remain email-keyed and pre-existing production blobs load and save without migration.
-**Plans**: TBD
+**Plans**: 4 plans
+  - [ ] 03-01-PLAN.md — Wave 0: Vitest .tsx + JSDOM harness widening + 3 RED test scaffolds (test infra for ADMIN-01..05, DISPLAY-01..03)
+  - [ ] 03-02-PLAN.md — Wave 1: <PrimeUserPicker> component per UI-SPEC Surfaces 1-11 (ADMIN-01..05, DISPLAY-01..02)
+  - [ ] 03-03-PLAN.md — Wave 1: GET /api/admin/prime-users + PrimeDirectoryProvider tri-state context (ADMIN-01..05, DISPLAY-03)
+  - [ ] 03-04-PLAN.md — Wave 2: AdminPage wiring (3 picker mounts + Provider mount + audit cascade + filter dropdown + API allowlist) + checkpoint:human-verify (ADMIN-01..05, DISPLAY-01..03)
 **UI hint**: yes
 
 ## Progress

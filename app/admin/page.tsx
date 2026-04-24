@@ -14,6 +14,8 @@ import type { AuditEntry } from '@/lib/audit';
 import type { ChangelogDay, ChangelogEntry } from '@/app/api/changelog/route';
 import { ALL_PAGES, VisibilityConfig, VisibilityGroup } from '@/lib/page-visibility';
 import { useAuth } from '@/lib/auth-context';
+import { PrimeUserPicker } from '@/components/ui/PrimeUserPicker';
+import { PrimeDirectoryProvider, usePrimeDirectory } from '@/lib/prime-directory-context';
 
 // ─── Tab types ────────────────────────────────────────────────────────────────
 
@@ -113,11 +115,13 @@ export default function AdminPage() {
       </div>
 
       {/* Tab content */}
-      <div>
-        {tab === 'visibility' && <VisibilityTab />}
-        {tab === 'audit'      && <AuditTab />}
-        {tab === 'changelog'  && <ChangelogTab />}
-      </div>
+      <PrimeDirectoryProvider>
+        <div>
+          {tab === 'visibility' && <VisibilityTab />}
+          {tab === 'audit'      && <AuditTab />}
+          {tab === 'changelog'  && <ChangelogTab />}
+        </div>
+      </PrimeDirectoryProvider>
     </div>
   );
 }
@@ -135,10 +139,7 @@ function VisibilityTab() {
 
   // New group form
   const [newGroupLabel, setNewGroupLabel] = useState('');
-  const [newGroupEmails, setNewGroupEmails] = useState('');
-
-  // Admin emails textarea (comma/line separated)
-  const [adminEmailsRaw, setAdminEmailsRaw] = useState('');
+  const [newGroupMembers, setNewGroupMembers] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -147,7 +148,6 @@ function VisibilityTab() {
       if (!res.ok) throw new Error('Failed to load');
       const data: VisibilityConfig = await res.json();
       setConfig(data);
-      setAdminEmailsRaw((data.admins || []).join('\n'));
     } catch {
       showToast('err', 'Failed to load visibility config');
     } finally {
@@ -165,13 +165,8 @@ function VisibilityTab() {
   async function handleSave() {
     setSaving(true);
     try {
-      // Merge admin emails back in
-      const admins = adminEmailsRaw
-        .split(/[\n,]+/)
-        .map((e) => e.trim().toLowerCase())
-        .filter((e) => e.includes('@'));
-
-      const payload: VisibilityConfig = { ...config, admins };
+      // Picker emits config.admins directly as string[]; no parse step needed.
+      const payload: VisibilityConfig = { ...config };
 
       const res = await fetch('/api/admin/page-visibility', {
         method: 'POST',
@@ -196,13 +191,10 @@ function VisibilityTab() {
       showToast('err', 'A group with that name already exists');
       return;
     }
-    const members = newGroupEmails
-      .split(/[\n,]+/)
-      .map((e) => e.trim().toLowerCase())
-      .filter((e) => e.includes('@'));
-    setConfig((c) => ({ ...c, groups: [...c.groups, { id, label, members }] }));
+    // Picker emits string[] directly; no parse step needed.
+    setConfig((c) => ({ ...c, groups: [...c.groups, { id, label, members: newGroupMembers }] }));
     setNewGroupLabel('');
-    setNewGroupEmails('');
+    setNewGroupMembers([]);
   }
 
   function removeGroup(id: string) {
@@ -213,9 +205,9 @@ function VisibilityTab() {
     }));
   }
 
-  function updateGroupMembers(id: string, raw: string) {
-    const members = raw.split(/[\n,]+/).map((e) => e.trim().toLowerCase()).filter((e) => e.includes('@'));
-    setConfig((c) => ({ ...c, groups: c.groups.map((g) => g.id === id ? { ...g, members } : g) }));
+  function updateGroupMembersList(id: string, emails: string[]) {
+    // Picker emits string[] directly — no parse step needed.
+    setConfig((c) => ({ ...c, groups: c.groups.map((g) => g.id === id ? { ...g, members: emails } : g) }));
   }
 
   function toggleGroupForPage(pagePath: string, pageLabel: string, groupId: string, hidden: boolean) {
@@ -290,14 +282,13 @@ function VisibilityTab() {
         </div>
         <div className="p-5">
           <label className="block text-xs text-gray-500 mb-1.5">
-            Admin emails (one per line or comma separated). You are always an admin.
+            Admin users. You are always an admin.
           </label>
-          <textarea
-            value={adminEmailsRaw}
-            onChange={(e) => setAdminEmailsRaw(e.target.value)}
-            rows={4}
-            placeholder="admin@shbr.com.au&#10;manager@shbr.com.au"
-            className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-red-500 resize-none font-mono"
+          <PrimeUserPicker
+            multiSelect
+            selected={config.admins}
+            onChange={(next) => setConfig((c) => ({ ...c, admins: next }))}
+            placeholder="Search Prime users by name, email, or division…"
           />
           <p className="text-xs text-gray-600 mt-1.5">
             Admins bypass all page restrictions and can access this admin panel.
@@ -322,7 +313,7 @@ function VisibilityTab() {
               key={group.id}
               group={group}
               onRemove={() => removeGroup(group.id)}
-              onUpdateMembers={(raw) => updateGroupMembers(group.id, raw)}
+              onUpdateMembersList={(emails) => updateGroupMembersList(group.id, emails)}
             />
           ))}
           {/* Add group form */}
@@ -341,13 +332,12 @@ function VisibilityTab() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Member Emails (optional)</label>
-                <textarea
-                  value={newGroupEmails}
-                  onChange={(e) => setNewGroupEmails(e.target.value)}
-                  placeholder="user@shbr.com.au"
-                  rows={2}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-red-500 resize-none"
+                <label className="block text-xs text-gray-500 mb-1">Members (optional)</label>
+                <PrimeUserPicker
+                  multiSelect
+                  selected={newGroupMembers}
+                  onChange={setNewGroupMembers}
+                  placeholder="Add member by name, email, or division…"
                 />
               </div>
             </div>
@@ -454,10 +444,10 @@ function VisibilityTab() {
 
 // ─── GroupCard ─────────────────────────────────────────────────────────────────
 
-function GroupCard({ group, onRemove, onUpdateMembers }: {
+function GroupCard({ group, onRemove, onUpdateMembersList }: {
   group: VisibilityGroup;
   onRemove: () => void;
-  onUpdateMembers: (raw: string) => void;
+  onUpdateMembersList: (emails: string[]) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   return (
@@ -474,13 +464,12 @@ function GroupCard({ group, onRemove, onUpdateMembers }: {
       </div>
       {expanded && (
         <div className="px-4 py-3 border-t border-gray-700">
-          <label className="block text-xs text-gray-500 mb-1.5">Member emails (one per line or comma separated)</label>
-          <textarea
-            value={group.members.join('\n')}
-            onChange={(e) => onUpdateMembers(e.target.value)}
-            rows={Math.max(3, Math.min(group.members.length + 1, 8))}
-            className="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-red-500 resize-none font-mono"
-            placeholder="user@shbr.com.au"
+          <label className="block text-xs text-gray-500 mb-1.5">Members</label>
+          <PrimeUserPicker
+            multiSelect
+            selected={group.members}
+            onChange={(emails) => onUpdateMembersList(emails)}
+            placeholder="Add member by name, email, or division…"
           />
           <p className="text-xs text-gray-600 mt-1">Group ID: <code className="text-gray-500">{group.id}</code></p>
         </div>
@@ -493,7 +482,7 @@ function GroupCard({ group, onRemove, onUpdateMembers }: {
 // AUDIT TAB
 // ══════════════════════════════════════════════════════════════════════════════
 
-type ActionFilter = 'all' | 'login' | 'logout';
+type ActionFilter = 'all' | 'login' | 'logout' | 'prime_user_miss';
 type RangeFilter = 'all' | 'today' | 'week';
 
 function formatAEDT(iso: string): string {
@@ -532,6 +521,7 @@ function exportCSV(entries: AuditEntry[]) {
 
 function AuditTab() {
   const router = useRouter();
+  const { byEmail } = usePrimeDirectory();
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -584,16 +574,17 @@ function AuditTab() {
       <div className="flex flex-wrap gap-3 bg-gray-900 border border-gray-800 rounded-xl p-4">
         <div className="flex items-center gap-2">
           <label className="text-xs text-gray-500">Action:</label>
-          <select value={actionFilter} onChange={e => setActionFilter(e.target.value as ActionFilter)}
+          <select aria-label="Action filter" value={actionFilter} onChange={e => setActionFilter(e.target.value as ActionFilter)}
             className="bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:border-red-600">
             <option value="all">All</option>
             <option value="login">Login</option>
+            <option value="prime_user_miss">Prime miss</option>
             <option value="logout">Logout</option>
           </select>
         </div>
         <div className="flex items-center gap-2">
           <label className="text-xs text-gray-500">Date range:</label>
-          <select value={rangeFilter} onChange={e => setRangeFilter(e.target.value as RangeFilter)}
+          <select aria-label="Date range" value={rangeFilter} onChange={e => setRangeFilter(e.target.value as RangeFilter)}
             className="bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:border-red-600">
             <option value="all">All time</option>
             <option value="today">Today</option>
@@ -623,16 +614,23 @@ function AuditTab() {
               {entries.length === 0 && !loading && (
                 <tr><td colSpan={3} className="px-4 py-8 text-center text-gray-600">No entries found</td></tr>
               )}
-              {entries.map(entry => (
-                <tr key={entry.id} className="hover:bg-gray-800/30 transition-colors">
-                  <td className="px-4 py-3 text-gray-400 font-mono text-xs whitespace-nowrap">{formatAEDT(entry.timestamp)}</td>
-                  <td className="px-4 py-3">
-                    <div className="text-gray-300 text-sm">{entry.name || entry.email}</div>
-                    {entry.name && <div className="text-gray-600 text-xs">{entry.email}</div>}
-                  </td>
-                  <td className="px-4 py-3"><ActionBadge action={entry.action} /></td>
-                </tr>
-              ))}
+              {entries.map(entry => {
+                const live = byEmail.get(entry.email.toLowerCase());
+                // D-11 cascade: live → saved → email (.trim() defensiveness mirrors TopBar pattern)
+                const displayName = live?.fullName?.trim() || entry.name || entry.email;
+                // D-12: only show secondary email line when name resolved (avoid email/email duplication)
+                const showEmailLine = displayName !== entry.email;
+                return (
+                  <tr key={entry.id} className="hover:bg-gray-800/30 transition-colors">
+                    <td className="px-4 py-3 text-gray-400 font-mono text-xs whitespace-nowrap">{formatAEDT(entry.timestamp)}</td>
+                    <td className="px-4 py-3">
+                      <div className="text-gray-300 text-sm">{displayName}</div>
+                      {showEmailLine && <div className="text-gray-600 text-xs">{entry.email}</div>}
+                    </td>
+                    <td className="px-4 py-3"><ActionBadge action={entry.action} /></td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

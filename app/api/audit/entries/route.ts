@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Filter by action
-    if (actionFilter && ['login', 'logout'].includes(actionFilter)) {
+    if (actionFilter && ['login', 'logout', 'prime_user_miss'].includes(actionFilter)) {
       entries = entries.filter(e => e.action === actionFilter);
     }
 
