@@ -128,9 +128,15 @@ export function PrimeUserPicker({
     );
   }, [users, query]);
 
+  // WR-01: normalize-on-save. Lowercase every email before persisting so the picker
+  // is the canonical-case ingress for VisibilityConfig.admins / group.members. Prevents
+  // legacy mixed-case blob entries (e.g. `Jane@SHBR.com`) from silently deduping against
+  // lowercase Prime emails. Matches Phase 1 D-09 normalization (lib/prime-users.ts:105).
   const addEmail = useCallback(
     (email: string) => {
-      const next = multiSelect ? Array.from(new Set([...selected, email])) : [email];
+      const normalised = email.toLowerCase();
+      const lowered = selected.map(e => e.toLowerCase());
+      const next = multiSelect ? Array.from(new Set([...lowered, normalised])) : [normalised];
       onChange(next);
     },
     [selected, onChange, multiSelect],
@@ -138,7 +144,8 @@ export function PrimeUserPicker({
 
   const removeEmail = useCallback(
     (email: string) => {
-      onChange(selected.filter(e => e !== email));
+      const target = email.toLowerCase();
+      onChange(selected.filter(e => e.toLowerCase() !== target));
     },
     [selected, onChange],
   );
@@ -156,7 +163,11 @@ export function PrimeUserPicker({
     } else if (e.key === 'Enter' && activeIndex >= 0 && filtered[activeIndex]) {
       e.preventDefault();
       const candidate = filtered[activeIndex];
-      if (!selected.includes(candidate.email)) {
+      // WR-01: case-insensitive dedupe (matches dropdown isAlreadySelected guard).
+      const alreadySelected = selected.some(
+        s => s.toLowerCase() === candidate.email.toLowerCase(),
+      );
+      if (!alreadySelected) {
         addEmail(candidate.email);
         setQuery('');
         setActiveIndex(-1);
@@ -308,7 +319,11 @@ export function PrimeUserPicker({
 
           {/* Surface 7 — Dropdown rows */}
           {filtered.map((user, i) => {
-            const isAlreadySelected = selected.includes(user.email);
+            // WR-01: case-insensitive guard so legacy mixed-case blob entries
+            // correctly disable their lowercase Prime counterpart in the dropdown.
+            const isAlreadySelected = selected.some(
+              e => e.toLowerCase() === user.email.toLowerCase(),
+            );
             return (
               <li
                 key={user.id}
