@@ -5,7 +5,11 @@ export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
     environment: 'node',
-    include: ['lib/**/*.test.ts', 'app/**/*.test.ts'],
+    include: [
+      'lib/**/*.test.{ts,tsx}',
+      'app/**/*.test.{ts,tsx}',
+      'components/**/*.test.{ts,tsx}',
+    ],
     globals: false,
     clearMocks: true,
   },
