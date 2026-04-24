@@ -35,11 +35,15 @@ This milestone replaces the dashboard's local email-list identity model with a P
 **Depends on**: Phase 1
 **Requirements**: SESSION-01, SESSION-02, SESSION-03, SESSION-04, DISPLAY-04
 **Success Criteria** (what must be TRUE):
-  1. After logging in, a user's session cookie carries Prime-sourced attributes (display name, division, region, role/trade) alongside the existing `userEmail` / `isAdmin` fields.
+  1. After logging in, `/api/auth/session` returns Prime-sourced attributes (display name, division, region, role/trade) alongside the existing `userEmail` / `isAdmin` fields. Attributes are derived per request from the Phase 1 directory cache via `resolveByEmail()` rather than stored in the iron-session cookie (amended by Phase 2 CONTEXT D-02).
   2. A user whose email is not resolvable in the Prime directory can still log in successfully; their Prime attributes are null and an admin-reviewable log entry records the miss.
   3. `/api/auth/session` returns the Prime attributes to the client, and `AuthContext` exposes them to client components without any additional fetches.
   4. The TopBar shows the logged-in user's Prime display name (falling back to email when no Prime record exists), matching today's fallback behaviour.
-**Plans**: TBD
+**Plans**: 4 plans
+  - [x] 02-01-PLAN.md — Wave 0: vitest glob + audit type extension + 3 contract test scaffolds (SESSION-02 type)
+  - [x] 02-02-PLAN.md — Wave 1: session route live-read primeUser + [session] log prefix (SESSION-01, SESSION-03)
+  - [x] 02-03-PLAN.md — Wave 1: login route prime_user_miss audit with cache-state detail (SESSION-02)
+  - [x] 02-04-PLAN.md — Wave 2: AuthContext + AuthGuard + TopBar identity label + ActionBadge fix (SESSION-04, DISPLAY-04)
 **UI hint**: yes
 
 ### Phase 3: Admin Picker & Identity-Rich Display

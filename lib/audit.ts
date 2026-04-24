@@ -1,10 +1,17 @@
 import { put } from '@vercel/blob';
 
 const AUDIT_BLOB_PATH = 'audit/audit-log.json';
-const MAX_ENTRIES = 200;
+// WR-02: raised from 200 in Phase 2. The ring buffer is now shared with the
+// new prime_user_miss writer (app/api/auth/login/route.ts), so a Prime outage
+// can quickly evict legitimate login/logout history under the previous cap —
+// every miss costs an extra row on top of the existing login row. 500 keeps
+// audit blob writes cheap (single Vercel Blob JSON put) while restoring
+// effective retention closer to the pre-Phase-2 behaviour. If retention
+// pressure persists, split the streams to per-action keys.
+const MAX_ENTRIES = 500;
 
 function getAuditBlobUrl(): string {
-  const base = process.env.BLOB_BASE_URL || '';
+  const base = (process.env.BLOB_BASE_URL || '').trim().replace(/\/$/, '');
   return `${base}/${AUDIT_BLOB_PATH}`;
 }
 
@@ -12,8 +19,9 @@ export interface AuditEntry {
   id: string;
   email: string;
   name?: string;
-  action: 'login' | 'logout';
+  action: 'login' | 'logout' | 'prime_user_miss';
   timestamp: string;
+  detail?: string;
 }
 
 export async function appendAuditLog(entry: Omit<AuditEntry, 'id' | 'timestamp'>): Promise<void> {

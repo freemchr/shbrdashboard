@@ -3,6 +3,7 @@ import { appendAuditLog } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
+// SECURITY (forgery guard): server-only audit literals (e.g. the Prime-resolution miss event written by /api/auth/login) MUST NOT be added to this allowlist — doing so would let any authenticated browser POST forge those rows.
 const VALID_ACTIONS = ['login', 'logout'] as const;
 
 export async function POST(req: NextRequest) {

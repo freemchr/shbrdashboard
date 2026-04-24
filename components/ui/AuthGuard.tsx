@@ -18,6 +18,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     userName: '',
     isAdmin: false,
     hiddenPaths: new Set(),
+    primeUser: null,
   });
 
   const isLoginPage = pathname === '/login';
@@ -49,6 +50,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           userName: data.userName || '',
           isAdmin: !!data.isAdmin,
           hiddenPaths: new Set(data.hiddenPaths || []),
+          primeUser: data.primeUser ?? null,
         });
         setAuthed(true);
         setChecking(false);

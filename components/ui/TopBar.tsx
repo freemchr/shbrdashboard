@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Cloud, Sun, CloudRain, CloudSnow, CloudLightning, Wind } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
 
 interface Weather {
   temp: number;
@@ -41,6 +42,10 @@ function weatherDesc(code: number): string {
 export function TopBar() {
   const [now, setNow] = useState(new Date());
   const [weather, setWeather] = useState<Weather | null>(null);
+  const { primeUser, userEmail } = useAuth();
+  // D-10: whitespace-defensive cascade. Treat empty / whitespace-only Prime
+  // fullName as missing (Pitfall 5). One-liner per CONTEXT.md — no helper.
+  const displayName = primeUser?.fullName?.trim() || userEmail;
 
   // Clock — tick every second
   useEffect(() => {
@@ -92,6 +97,14 @@ export function TopBar() {
 
   return (
     <div className="flex items-center gap-4 text-sm overflow-hidden">
+      {/* Identity label — leftmost slot, added in Phase 2 (DISPLAY-04, D-11) */}
+      {/* UI-SPEC binding: text-gray-300 (NOT brand red), max-w-[200px] truncate, no icon, no tooltip */}
+      {displayName && (
+        <div className="max-w-[200px] truncate text-gray-300">
+          {displayName}
+        </div>
+      )}
+
       {/* Weather */}
       {weather && (
         <div className="flex items-center gap-1.5 text-gray-400">
