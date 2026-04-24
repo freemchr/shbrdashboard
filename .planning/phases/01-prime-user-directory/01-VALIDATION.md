@@ -3,7 +3,7 @@ phase: 1
 slug: prime-user-directory
 status: draft
 nyquist_compliant: false
-wave_0_complete: false
+wave_0_complete: true
 created: 2026-04-24
 ---
 
@@ -45,6 +45,9 @@ created: 2026-04-24
 | 0.3 | 01 | 0 | DIR-01,DIR-02,DIR-04 | — | Test stub created with PROBE FINDINGS comment + ≥12 it.todo cases | setup | `npm test` (exits 0 with all todo) | ❌ → ✅ Wave 0 | ⬜ pending |
 | 0.4 | 01 | 0 | DIR-01 | — | Prime /users attribute keys captured; probe script removed | manual smoke | `! test -f scripts/probe-prime-users.ts && ! grep -q "<fill in:" lib/prime-users.test.ts` | manual | ⬜ pending |
 | 0.5 | 01 | 0 | (meta) | — | VALIDATION.md Per-Task Map updated for Plan 01 rows | docs | `grep -q "\| 0.1 \| 01 \|" .planning/phases/01-prime-user-directory/01-VALIDATION.md` | ✅ self-verifying | ⬜ pending |
+| 1.1 | 02 | 1 | DIR-01,DIR-02,DIR-04 | T-03,T-04,T-05 | lib/prime-users.ts implemented (composes primeGetAllPages + blob-cache; preserve-on-failure; PII-safe mapper) | unit | `npx tsc --noEmit lib/prime-users.ts` exits 0 | ❌ → ✅ Wave 1 | ⬜ pending |
+| 1.2 | 02 | 1 | DIR-01,DIR-02,DIR-04 | T-03 | All ≥12 Vitest cases implemented and passing (covers DIR-01 mapping, DIR-02 hot-path, DIR-04 resilience, Pitfall 1 first-miss-no-write) | unit | `npm test` exits 0 with ≥12 passed | ❌ → ✅ Wave 1 | ⬜ pending |
+| 1.3 | 02 | 1 | (meta) | — | VALIDATION.md Per-Task Map updated for Plan 02 rows | docs | `grep -q "\| 1.[1-3] \| 02 \|" .planning/phases/01-prime-user-directory/01-VALIDATION.md` | ✅ self-verifying | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
