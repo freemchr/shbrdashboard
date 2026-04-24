@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Cloud, Sun, CloudRain, CloudSnow, CloudLightning, Wind } from 'lucide-react';
+import { Cloud, Sun, CloudRain, CloudSnow, CloudLightning, Wind, User } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 
 interface Weather {
@@ -97,11 +97,12 @@ export function TopBar() {
 
   return (
     <div className="flex items-center justify-between w-full gap-4 text-sm overflow-hidden">
-      {/* Identity label — far-left slot, relocated post-Phase 2 */}
-      {/* UI-SPEC binding: text-gray-300 (NOT brand red), max-w-[200px] truncate, no icon, no tooltip */}
+      {/* Identity label — far-left slot, relocated post-Phase 2 with user icon prefix */}
+      {/* UI-SPEC binding: text-gray-300 name (NOT brand red), max-w-[200px] truncate, gray icon */}
       {displayName && (
-        <div className="max-w-[200px] truncate text-gray-300">
-          {displayName}
+        <div className="flex items-center gap-1.5 max-w-[200px] text-gray-300">
+          <User size={14} className="text-gray-500 flex-shrink-0" />
+          <span className="truncate">{displayName}</span>
         </div>
       )}
 
