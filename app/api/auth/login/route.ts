@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
 import { appendAuditLog } from '@/lib/audit';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { resolveByEmail, getAllPrimeUsers } from '@/lib/prime-users';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,6 +94,27 @@ export async function POST(req: NextRequest) {
       name: userName,
       action: 'login',
     });
+
+    // D-04 / Pitfall 6: called AFTER successful Prime auth + session.save() ONLY —
+    // never resolve unauthenticated emails. Phase 1 D-16: resolveByEmail NEVER throws.
+    // The resolved PrimeUser is NOT stored in the cookie (D-03) and NOT returned in
+    // the response (D-07 — delivery path is /api/auth/session via the live-read).
+    const primeUser = await resolveByEmail(normalisedEmail);
+
+    if (!primeUser) {
+      // D-06: distinguish cache_empty (Phase 1 cache unreachable / first-miss
+      // bootstrap failure) from cache_hit: no match (Prime cache populated but the
+      // logged-in email is not in the directory). getAllPrimeUsers is O(1) on the
+      // in-memory blob-cache hit path (Phase 1 D-02 / DIR-02).
+      const allUsers = await getAllPrimeUsers();
+      const detail = allUsers.length === 0 ? 'cache_empty' : 'cache_hit: no match';
+      await appendAuditLog({
+        email: normalisedEmail,
+        name: userName,
+        action: 'prime_user_miss',
+        detail,
+      });
+    }
 
     return NextResponse.json({ success: true, userName });
   } catch (error) {
