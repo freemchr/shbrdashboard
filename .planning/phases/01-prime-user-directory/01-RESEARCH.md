@@ -28,9 +28,9 @@
 | Blob-cache extended metadata | HIGH | Source code inspected; `data: unknown` confirms no API change |
 | Validation Architecture | HIGH | Pure-logic surface + manual smoke test — no integration harness exists or is being built |
 
-### Open Questions
-1. **Does Prime `/users` return `division`, `region`, `roleOrTrade`?** Not answerable from the repo. Plan Wave 0 should include a one-shot "probe Prime" micro-task (log raw attributes keys of one `/users` record, do not persist).
-2. **What is the Prime attribute name for "role/trade"?** Assume `roleOrTrade` per D-08, but Prime may use `role`, `trade`, `position`, or a nested relationship. Same probe task resolves this.
+### Open Questions (RESOLVED BY PLAN 01 TASK 0.4)
+1. **Does Prime `/users` return `division`, `region`, `roleOrTrade`?** Not answerable from the repo. Plan Wave 0 should include a one-shot "probe Prime" micro-task (log raw attributes keys of one `/users` record, do not persist). **RESOLVED:** Captured by Plan 01 Task 0.4 (throwaway probe script committed then deleted). `lib/prime-users.ts` mapper falls back to `null` per field if the probed key is absent, so planning can proceed defensively.
+2. **What is the Prime attribute name for "role/trade"?** Assume `roleOrTrade` per D-08, but Prime may use `role`, `trade`, `position`, or a nested relationship. Same probe task resolves this. **RESOLVED:** Same probe (Plan 01 Task 0.4). Findings written as a comment block at the top of `lib/prime-users.ts` (and/or `lib/prime-users.test.ts`) so Phase 2/3 consumers have the exact attribute source documented.
 
 ### Ready for Planning
 Research complete. Planner should treat Gate 1 as a Plan Wave 0 probe and build `PrimeUser` type defensively (every extended field typed `string | null`, populated best-effort from the raw response).
