@@ -118,8 +118,13 @@ export function PrimeDirectoryProvider({ children }: { children: React.ReactNode
     }
   }, [load]);
 
-  // Memoize the value object so consumers don't re-render on `refreshing`
-  // toggles when `state` is unchanged (RESEARCH Pattern 2 lines 360-364).
+  // WR-03: stable value identity. Note that `state` itself is a fresh object on
+  // every successful load() (setState always passes a new object literal), so
+  // consumers DO re-render on every refresh tick — this memo only short-circuits
+  // when `refreshing` flips without `state` changing (rare, e.g. an in-flight
+  // refresh aborts). The cost is bounded: load() runs only on mount + manual
+  // refresh-button clicks, AuditTab's 60s interval doesn't touch this provider,
+  // and the directory is ~30 users. Deep-equal short-circuiting is out of scope.
   const value = useMemo<PrimeDirectoryContextValue>(
     () => ({
       status: state.status,
