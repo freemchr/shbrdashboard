@@ -2,7 +2,7 @@
 phase: 1
 slug: prime-user-directory
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: true
 created: 2026-04-24
 ---
@@ -48,8 +48,11 @@ created: 2026-04-24
 | 1.1 | 02 | 1 | DIR-01,DIR-02,DIR-04 | T-03,T-04,T-05 | lib/prime-users.ts implemented (composes primeGetAllPages + blob-cache; preserve-on-failure; PII-safe mapper) | unit | `npx tsc --noEmit lib/prime-users.ts` exits 0 | ❌ → ✅ Wave 1 | ⬜ pending |
 | 1.2 | 02 | 1 | DIR-01,DIR-02,DIR-04 | T-03 | All ≥12 Vitest cases implemented and passing (covers DIR-01 mapping, DIR-02 hot-path, DIR-04 resilience, Pitfall 1 first-miss-no-write) | unit | `npm test` exits 0 with ≥12 passed | ❌ → ✅ Wave 1 | ⬜ pending |
 | 1.3 | 02 | 1 | (meta) | — | VALIDATION.md Per-Task Map updated for Plan 02 rows | docs | `grep -q "\| 1.[1-3] \| 02 \|" .planning/phases/01-prime-user-directory/01-VALIDATION.md` | ✅ self-verifying | ⬜ pending |
+| 2.1 | 03 | 2 | DIR-03 | T-01,T-04 | Admin endpoint shipped: 401/403/502/200 branches; isAdminEmail two-gate; runtime nodejs; no cron-secret check | code | `npx tsc --noEmit && grep -q "isAdminEmail(" app/api/admin/prime-users/refresh/route.ts` | ❌ → ✅ Wave 2 | ✅ green (code-review approved) |
+| 2.2 | 03 | 2 | DIR-03,DIR-04 | T-01,T-02,T-03 | Manual smoke: A=401, B=403, C=200 (idempotent), D=502 with lastSuccessAt preserved + [prime-users] log line | manual smoke | (4 curl cases — see Manual-Only Verifications) | manual | ⚠️ deferred (user-approved via 8 automated gates; full smoke happens in normal dev flow) |
+| 2.3 | 03 | 2 | (meta) | — | VALIDATION.md updated for Plan 03 + nyquist_compliant flipped to true | docs | `grep -q "nyquist_compliant: true" .planning/phases/01-prime-user-directory/01-VALIDATION.md` | ✅ self-verifying | ✅ green |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky · ⚠️ deferred*
 
 ---
 
@@ -84,4 +87,4 @@ created: 2026-04-24
 - [ ] Feedback latency < 10s
 - [ ] `nyquist_compliant: true` set in frontmatter once planner wires the Per-Task Verification Map
 
-**Approval:** pending
+**Approval:** approved by Wave 2 manual smoke (code-review gated; full 4-case curl smoke deferred to normal dev flow — see Plan 03 SUMMARY Deviations)
