@@ -289,7 +289,6 @@ function VisibilityTab() {
             selected={config.admins}
             onChange={(next) => setConfig((c) => ({ ...c, admins: next }))}
             placeholder="Search Prime users by name, email, or division…"
-            allowHistorical
           />
           <p className="text-xs text-gray-600 mt-1.5">
             Admins bypass all page restrictions and can access this admin panel.
@@ -339,7 +338,6 @@ function VisibilityTab() {
                   selected={newGroupMembers}
                   onChange={setNewGroupMembers}
                   placeholder="Add member by name, email, or division…"
-                  allowHistorical
                 />
               </div>
             </div>
@@ -472,7 +470,6 @@ function GroupCard({ group, onRemove, onUpdateMembersList }: {
             selected={group.members}
             onChange={(emails) => onUpdateMembersList(emails)}
             placeholder="Add member by name, email, or division…"
-            allowHistorical
           />
           <p className="text-xs text-gray-600 mt-1">Group ID: <code className="text-gray-500">{group.id}</code></p>
         </div>

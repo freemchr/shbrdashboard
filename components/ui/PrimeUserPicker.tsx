@@ -10,7 +10,6 @@ interface PrimeUserPickerProps {
   onChange: (next: string[]) => void;
   placeholder: string;
   multiSelect?: boolean;
-  allowHistorical?: boolean;
 }
 
 // Inline relative-time helper — UI-SPEC §Copywriting "Relative-time formatting (locked)".
@@ -94,7 +93,6 @@ export function PrimeUserPicker({
   onChange,
   placeholder,
   multiSelect = true,
-  allowHistorical: _allowHistorical = true,
 }: PrimeUserPickerProps) {
   const inputId = useId();
   const listboxId = useId();
