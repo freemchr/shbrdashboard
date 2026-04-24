@@ -1,17 +1,26 @@
 // === PROBE FINDINGS (Wave 0, Task 0.4) =====================================
-// One Prime /users record was inspected on <DATE>. The actual attribute keys
-// returned by Prime for SHBR's account are listed below. Wave 1's
+// 5 Prime /users records (per_page=5) inspected on 2026-04-24 against the live
+// SHBR tenant at https://www.primeeco.tech/api.prime/v2. Wave 1's
 // `mapRawToPrimeUser()` MUST be written against THESE keys, not the speculative
 // names in D-08 (`division`, `region`, `roleOrTrade`).
 //
-//   keys-present-on-attributes:  <fill in: comma-separated list>
-//   division-key:                <fill in: actual key name OR "ABSENT">
-//   region-key:                  <fill in: actual key name OR "ABSENT">
-//   role/trade-key:              <fill in: actual key name OR "ABSENT">
-//   status-values-observed:      <fill in: e.g. "active, inactive">
+//   keys-present-on-attributes:  contactId, email, firstName, fullName,
+//                                lastName, levesysRef, permissions, roles,
+//                                status, timezone, version
+//                                (identical union across all 5 records)
+//   relationships-block:         ABSENT on every record (no `relationships` key)
+//   division-key:                ABSENT
+//   region-key:                  ABSENT
+//   role/trade-key:              ABSENT as a scalar; Prime exposes `roles`
+//                                (string[]) — observed values: ["Administrator"],
+//                                ["Management"], [] (empty for ordinary users)
+//   status-values-observed:      active, inactive
 //
-// If a field is ABSENT, the Wave 1 mapper assigns `null` to that PrimeUser
-// field (per RESEARCH.md "Fallback if the probe shows fields are missing").
+// Wave 1 consequence (per RESEARCH.md "Fallback if the probe shows fields are
+// missing"): `division` and `region` → always `null`. `roleOrTrade` → first
+// element of `attributes.roles` when non-empty, else `null` (the mapper treats
+// the array as an ordered list and uses `[0]`). D-08 PrimeUser shape is
+// preserved; the ABSENT fields simply never receive data from Prime.
 // ===========================================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
