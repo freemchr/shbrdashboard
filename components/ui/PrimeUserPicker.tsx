@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useMemo, useState, useCallback } from 'react';
+import { useId, useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { X, RefreshCw, AlertTriangle, Loader2 } from 'lucide-react';
 import { usePrimeDirectory } from '@/lib/prime-directory-context';
 import type { PrimeUser } from '@/lib/prime-users';
@@ -103,6 +103,16 @@ export function PrimeUserPicker({
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+
+  // WR-04: track the onBlur close-timer so we can clear it on unmount.
+  // Without this, an unmount within the 100ms blur-close window triggers
+  // React 18's "Cannot update unmounted component" warning.
+  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
+    };
+  }, []);
 
   // Sorted chips — RESEARCH Code Examples (D-05/D-09): live by fullName, historical by email.
   // WR-02: defensive cascade — fall back to email when fullName is empty/whitespace
@@ -272,7 +282,21 @@ export function PrimeUserPicker({
           setActiveIndex(0);
         }}
         onFocus={() => setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 100)}
+        onBlur={(e) => {
+          // WR-04: don't close if focus moved into the listbox itself
+          // (keyboard Tab + Enter on a row would otherwise race the close timer).
+          // CSS.escape() is required because React 18's useId() returns IDs
+          // containing `:` which break a naked `#id` selector.
+          if (
+            e.relatedTarget instanceof HTMLElement &&
+            typeof CSS !== 'undefined' &&
+            e.relatedTarget.closest(`#${CSS.escape(listboxId)}`)
+          ) {
+            return;
+          }
+          if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
+          blurTimeoutRef.current = setTimeout(() => setOpen(false), 100);
+        }}
         onKeyDown={onKeyDown}
         placeholder={placeholder}
         className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-red-600"
