@@ -96,8 +96,8 @@ export function TopBar() {
   });
 
   return (
-    <div className="flex items-center gap-4 text-sm overflow-hidden">
-      {/* Identity label — leftmost slot, added in Phase 2 (DISPLAY-04, D-11) */}
+    <div className="flex items-center justify-between w-full gap-4 text-sm overflow-hidden">
+      {/* Identity label — far-left slot, relocated post-Phase 2 */}
       {/* UI-SPEC binding: text-gray-300 (NOT brand red), max-w-[200px] truncate, no icon, no tooltip */}
       {displayName && (
         <div className="max-w-[200px] truncate text-gray-300">
@@ -105,23 +105,26 @@ export function TopBar() {
         </div>
       )}
 
-      {/* Weather */}
-      {weather && (
-        <div className="flex items-center gap-1.5 text-gray-400">
-          <WeatherIcon code={weather.code} size={15} />
-          <span className="font-mono text-white">{weather.temp}°C</span>
-          <span className="hidden sm:inline text-gray-500">{weather.description}</span>
-          <span className="text-gray-600 hidden sm:inline">· Sydney</span>
+      {/* Right cluster — weather, date, clock */}
+      <div className="flex items-center gap-4 ml-auto">
+        {/* Weather */}
+        {weather && (
+          <div className="flex items-center gap-1.5 text-gray-400">
+            <WeatherIcon code={weather.code} size={15} />
+            <span className="font-mono text-white">{weather.temp}°C</span>
+            <span className="hidden sm:inline text-gray-500">{weather.description}</span>
+            <span className="text-gray-600 hidden sm:inline">· Sydney</span>
+          </div>
+        )}
+
+        {/* Divider */}
+        {weather && <div className="w-px h-4 bg-gray-700 hidden sm:block" />}
+
+        {/* Date + Clock */}
+        <div className="flex items-center gap-2 text-gray-400">
+          <span className="hidden md:inline">{sydneyDate}</span>
+          <span className="font-mono text-white tabular-nums">{sydneyTime}</span>
         </div>
-      )}
-
-      {/* Divider */}
-      {weather && <div className="w-px h-4 bg-gray-700 hidden sm:block" />}
-
-      {/* Date + Clock */}
-      <div className="flex items-center gap-2 text-gray-400">
-        <span className="hidden md:inline">{sydneyDate}</span>
-        <span className="font-mono text-white tabular-nums">{sydneyTime}</span>
       </div>
     </div>
   );
