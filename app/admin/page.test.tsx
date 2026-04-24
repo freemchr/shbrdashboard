@@ -27,14 +27,32 @@ vi.mock('@/lib/auth-context', () => ({
 }));
 
 // next/navigation stub — AuditTab uses useRouter / useSearchParams.
+// Wave 2 (Plan 04): seed `tab=audit` so AdminPage lands on the AuditTab — the test
+// assertions ("Jane (Live) Doe", "Prime miss" option, action=prime_user_miss fetch)
+// are all AuditTab-scoped. Without this, AdminPage defaults to VisibilityTab and the
+// audit DOM never renders. (Server-side `/api/auth/session` check is harmless: the
+// fetch mock returns audit-shaped JSON; `data.isAdmin` is undefined → router.replace('/')
+// fires but useRouter() is mocked, so it's a no-op.)
+//
+// `routerStub` is a singleton so `useRouter()` returns a referentially-stable object
+// across renders. Without this, AuditTab's `fetchEntries` useCallback (depending on
+// `router`) gets a fresh identity each render → useEffect re-fires → new fetch → new
+// setState → re-render → infinite loop, hanging the test runner.
+// vi.hoisted() is needed because vi.mock() factories are hoisted above all imports;
+// a plain top-level const wouldn't be in scope when the factory runs.
+const { routerStub } = vi.hoisted(() => ({
+  routerStub: { replace: () => undefined, push: () => undefined, refresh: () => undefined },
+}));
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace: vi.fn(), push: vi.fn(), refresh: vi.fn() }),
-  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => routerStub,
+  useSearchParams: () => new URLSearchParams('tab=audit'),
   usePathname: () => '/admin',
 }));
 
 import { usePrimeDirectory } from '@/lib/prime-directory-context';
+import { useAuth } from '@/lib/auth-context';
 const mockedUseDirectory = vi.mocked(usePrimeDirectory);
+const mockedUseAuth = vi.mocked(useAuth);
 
 function makeUser(overrides: Partial<PrimeUser> = {}): PrimeUser {
   return {
@@ -74,7 +92,17 @@ function makeAuditEntry(overrides: Partial<{
 
 beforeEach(() => {
   vi.resetAllMocks();
-  // Restore default useAuth + next/navigation mocks (resetAllMocks clears returns).
+  // resetAllMocks clears `vi.fn(() => ({...}))` implementations to bare returns-undefined.
+  // Re-prime the auth mock so AdminPage's `const { isAdmin } = useAuth()` doesn't crash.
+  // (next/navigation hooks are plain arrow fns in the vi.mock factory, not vi.fn(), so
+  // they survive reset.)
+  mockedUseAuth.mockReturnValue({
+    userEmail: 'admin@shbr.com',
+    userName: 'Admin',
+    isAdmin: true,
+    hiddenPaths: new Set<string>(),
+    primeUser: null,
+  });
 });
 
 // Import AdminPage AFTER mocks so the mocked context is consumed.
