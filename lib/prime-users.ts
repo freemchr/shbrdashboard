@@ -220,3 +220,23 @@ export async function resolveByEmail(email: string): Promise<PrimeUser | null> {
   const users = await getAllPrimeUsers();
   return users.find(u => u.email === needle) ?? null;
 }
+
+/**
+ * Read-only access to the directory blob's metadata fields.
+ *
+ * Phase 3 D-11 — surfaced by `GET /api/admin/prime-users` so the picker UI
+ * can render "Last refreshed: 5 days ago" without recomputing it.
+ *
+ * Does NOT trigger refresh. Returns nulls when blob is missing (first-miss
+ * not yet bootstrapped) per D-16 graceful-degradation.
+ */
+export async function getDirectoryMetadata(): Promise<{
+  lastSuccessAt: string | null;
+  lastError: string | null;
+}> {
+  const blob = await getCached<PrimeUserDirectoryBlob>(BLOB_KEY);
+  return {
+    lastSuccessAt: blob?.lastSuccessAt || null,
+    lastError: blob?.lastError ?? null,
+  };
+}
