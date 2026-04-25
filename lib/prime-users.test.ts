@@ -31,6 +31,7 @@ import {
   getAllPrimeUsers,
   refreshPrimeUsers,
   mapRawToPrimeUser,
+  getDirectoryMetadata,
   type PrimeUser,
   type PrimeUserDirectoryBlob,
 } from './prime-users';
@@ -461,5 +462,55 @@ describe('resolveByEmail (DIR-02, DIR-04)', () => {
     expect(mockedPrimeGetAllPages).not.toHaveBeenCalled();
     // Equivalent assertion with lower-cased reference for DIR-02 hot-path grep-audit.
     expect(vi.mocked(primeGetAllPages)).not.toHaveBeenCalled();
+  });
+});
+
+describe('getDirectoryMetadata (Phase 3 D-11)', () => {
+  it('returns populated metadata from cached blob, reading the shared BLOB_KEY', async () => {
+    mockedGetCached.mockResolvedValueOnce(
+      makeBlob({
+        users: [],
+        lastSuccessAt: '2026-04-20T00:00:00.000Z',
+        lastAttemptAt: '2026-04-20T00:00:00.000Z',
+        lastError: 'Prime timeout',
+        lastErrorAt: '2026-04-19T00:00:00.000Z',
+      })
+    );
+
+    const metadata = await getDirectoryMetadata();
+
+    expect(metadata).toEqual({
+      lastSuccessAt: '2026-04-20T00:00:00.000Z',
+      lastError: 'Prime timeout',
+    });
+    // Same blob key as getAllPrimeUsers — no separate cache entry.
+    expect(mockedGetCached).toHaveBeenCalledWith('shbr-admin/prime-users.json');
+    // Critically: must NOT call Prime — read-only metadata accessor (D-22 carve-out).
+    expect(mockedPrimeGetAllPages).not.toHaveBeenCalled();
+    expect(mockedSetCached).not.toHaveBeenCalled();
+  });
+
+  it('returns nulls when blob is missing (first-miss not yet bootstrapped)', async () => {
+    mockedGetCached.mockResolvedValueOnce(null);
+
+    const metadata = await getDirectoryMetadata();
+
+    expect(metadata).toEqual({ lastSuccessAt: null, lastError: null });
+    expect(mockedPrimeGetAllPages).not.toHaveBeenCalled();
+  });
+
+  it('coerces empty lastSuccessAt and undefined lastError to null', async () => {
+    mockedGetCached.mockResolvedValueOnce({
+      schemaVersion: 1,
+      users: [],
+      lastSuccessAt: '',
+      lastAttemptAt: '',
+      lastError: undefined as unknown as null,
+      lastErrorAt: null,
+    });
+
+    const metadata = await getDirectoryMetadata();
+
+    expect(metadata).toEqual({ lastSuccessAt: null, lastError: null });
   });
 });
