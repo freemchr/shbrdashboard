@@ -49,9 +49,10 @@ blocked: 0
 ## Gaps
 
 - truth: "PrimeUserPicker dropdown list is easily scannable — admin can see all/most options without cramped scrolling"
-  status: failed
+  status: resolved
   reason: "User reported: dropdown is hard to see, should open them all up or make the scroller bigger"
   severity: minor
   test: 1
-  artifacts: []
+  artifacts: [components/ui/PrimeUserPicker.tsx]
   missing: []
+  fix: "Bumped listbox max-height from max-h-72 (288px, ~6 rows) → max-h-96 (384px, ~8 rows) in components/ui/PrimeUserPicker.tsx:274. 102/102 tests still green."

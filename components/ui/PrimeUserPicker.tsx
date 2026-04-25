@@ -271,7 +271,7 @@ export function PrimeUserPicker({
           role="listbox"
           id={listId}
           aria-label="Prime user search results"
-          className="absolute top-full left-0 right-0 mt-1 z-30 max-h-72 overflow-auto bg-gray-900 border border-gray-700 rounded-md shadow-lg shadow-black/40"
+          className="absolute top-full left-0 right-0 mt-1 z-30 max-h-96 overflow-auto bg-gray-900 border border-gray-700 rounded-md shadow-lg shadow-black/40"
         >
           {filtered.length === 0 ? (
             <li role="status" className="text-sm text-gray-500 px-3 py-2">
