@@ -40,14 +40,16 @@ Reliable, role-appropriate access to Prime ERP data for SHBR team members — th
 
 <!-- Current milestone scope — hypotheses until shipped. -->
 
-- [ ] Fetch and cache Prime `/users` list for use as authoritative user directory
-- [ ] On login, resolve the authenticated email against Prime `/users` and store attributes (display name, division, region, role/trade) in the session
-- [ ] `/api/auth/session` returns Prime-sourced user attributes in addition to current fields
-- [ ] `AuthContext` carries Prime user attributes; consumers (TopBar, admin UI) read from context rather than deriving from email
-- [ ] Admin "Page Visibility" tab replaces email textarea inputs with a searchable Prime user picker showing name + division
-- [ ] Group member lists, admin lists, and audit entries display Prime-sourced name + division rather than bare emails
-- [ ] New group members are added by picking from Prime users (picker-first UX); the underlying storage shape (`groups[].members: email[]`) stays the same
-- [ ] Prime user cache has an explicit refresh cadence (to be decided in planning — TTL, cron, or on-demand)
+- [x] Fetch and cache Prime `/users` list for use as authoritative user directory — Validated in Phase 1: Prime User Directory
+- [x] On login, resolve the authenticated email against Prime `/users` and store attributes — Validated in Phase 2: Session & Auth Context Integration
+- [x] `/api/auth/session` returns Prime-sourced user attributes — Validated in Phase 2
+- [x] `AuthContext` carries Prime user attributes — Validated in Phase 2
+- [x] Admin "Page Visibility" tab replaces email textarea inputs with a searchable Prime user picker — Validated in Phase 3: Admin Picker & Identity-Rich Display
+- [x] Group member lists, admin lists, and audit entries display Prime-sourced name + division — Validated in Phase 3
+- [x] New group members are added by picking from Prime users (picker-first UX); storage shape unchanged — Validated in Phase 3
+- [x] Prime user cache has an explicit refresh cadence — Validated in Phase 1 (admin force-refresh endpoint)
+
+**Current state:** v1.0 milestone implementation complete. All 3 phases shipped (12/12 plans). Phase 3 closes with 5 manual UAT items pending live-browser sign-off (`03-HUMAN-UAT.md`); automated verification 5/5 passed, 102/102 tests green.
 
 ### Out of Scope
 
@@ -111,4 +113,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-24 after initialization*
+*Last updated: 2026-04-25 after Phase 3 completion (v1.0 implementation complete)*
