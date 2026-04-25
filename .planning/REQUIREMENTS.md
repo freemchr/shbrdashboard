@@ -110,7 +110,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ADMIN-05 | Phase 3 | Pending |
 | DISPLAY-01 | Phase 3 | Pending |
 | DISPLAY-02 | Phase 3 | Pending |
-| DISPLAY-03 | Phase 3 | Pending |
+| DISPLAY-03 | Phase 3 | Complete |
 | DISPLAY-04 | Phase 2 | Pending |
 
 **Coverage:**
