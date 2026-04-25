@@ -56,7 +56,12 @@ This milestone replaces the dashboard's local email-list identity model with a P
   3. Group and admin lists in the admin UI render each member as "Name — Division" with email as secondary detail; entries for emails no longer present in the Prime directory still render (falling back to email) and can be removed.
   4. The audit log renders every event's actor as Prime display name (with email fallback), readable at a glance without needing to look up who an email belongs to.
   5. The existing `VisibilityConfig` blob schema is unchanged — stored group memberships remain email-keyed and pre-existing production blobs load and save without migration.
-**Plans**: TBD
+**Plans**: 5 plans
+  - [ ] 03-01-PLAN.md — Wave 1: utilities (identity-display cascade + format-relative + getDirectoryMetadata) + Vitest (ADMIN-04, ADMIN-05, DISPLAY-01, DISPLAY-02, DISPLAY-03)
+  - [ ] 03-02-PLAN.md — Wave 2: GET /api/admin/prime-users route handler + 401/403/200/500 tests (ADMIN-01..04)
+  - [ ] 03-03-PLAN.md — Wave 2: shared <PrimeUserPicker> combobox component + filter/normalize tests (ADMIN-01..05)
+  - [ ] 03-04-PLAN.md — Wave 3: extract VisibilityTab; wire picker on Dashboard Admins / GroupCard / New Group + refresh button + cascade rows (ADMIN-01..05, DISPLAY-01, DISPLAY-02)
+  - [ ] 03-05-PLAN.md — Wave 4: extract AuditTab; wire D-15 cascade + prime_user_miss tooltip + CSV column rename via downloadCSV (DISPLAY-03)
 **UI hint**: yes
 
 ## Progress
@@ -68,4 +73,4 @@ Phases execute in numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. Prime User Directory | 0/TBD | Not started | - |
 | 2. Session & Auth Context Integration | 0/TBD | Not started | - |
-| 3. Admin Picker & Identity-Rich Display | 0/TBD | Not started | - |
+| 3. Admin Picker & Identity-Rich Display | 0/5 | Not started | - |
