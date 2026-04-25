@@ -808,27 +808,31 @@ This phase doesn't ride a moving frontier — it's a brownfield refactor inside 
 
 **Read this list to the discuss-phase agent before locking the plan** — A1, A4, A5 are the ones with judgment calls; the rest are code-level confirmations.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should `getDirectoryMetadata()` be a new export on `lib/prime-users.ts` or an inline blob read in the GET route?**
    - What we know: D-22 says "no changes to Phase 1 modules"; adding a new function is technically a change but doesn't alter existing behavior or break tests.
    - What's unclear: How strictly to interpret D-22.
    - Recommendation: Add as a new export (cleaner, more testable). Confirm with planner; trivial to flip if rejected.
+   - RESOLVED: implemented as additive export `getDirectoryMetadata()` in `lib/prime-users.ts` per Plan 03-01 Task 3. D-22's "no behavior change to Phase 1 modules" treated as additive-OK; existing exports untouched.
 
 2. **Is the `formatRelative` extraction (Don't Hand-Roll table) worth the diff cost?**
    - What we know: Current helper is 9 lines, handles minutes/hours. Picker needs days. Two callers will share.
    - What's unclear: Whether the planner sees this as "shared utility" or "premature DRY."
    - Recommendation: Extract once both callers exist (during Phase 3 work). Defer the existing button's import switch if cleanup risk is concerning — both can call the same `lib/format-relative.ts:formatRelative` function safely.
+   - RESOLVED: extracted to new `lib/format-relative.ts` (with unit test) per Plan 03-01 Task 2. Existing `DataRefreshButton.tsx` continues to call the same helper signature; days/weeks/months range added.
 
 3. **Should the picker pre-fetch on tab mount or first focus?**
    - What we know: CONTEXT.md "Claude's Discretion" defaults to tab mount; payload is small.
    - What's unclear: Nothing significant.
    - Recommendation: Tab mount. Admins always need the data; deferring to focus saves nothing.
+   - RESOLVED: tab mount per Plan 03-04. `<PrimeUserPicker>` consumers fetch `/api/admin/prime-users` on tab mount and pass `users` down as a prop.
 
 4. **Inactive Prime users (`status !== 'active'`): grey out, hide entirely, or include with no styling?**
    - What we know: CONTEXT.md "Claude's Discretion" defaults to "include in results, tag visually."
    - What's unclear: How tag visually? Strikethrough? Fade? Icon?
    - Recommendation: Append `(inactive)` in the secondary line per D-06 styling, no color change. Easiest to implement, easiest for admins to read. UI-SPEC step can refine.
+   - RESOLVED: append `(inactive)` text in the secondary line per Plan 03-03 picker row JSX; no color/strikethrough change. Honors D-06 row tokens unchanged.
 
 ## Environment Availability
 
