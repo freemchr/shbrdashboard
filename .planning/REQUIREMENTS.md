@@ -23,9 +23,12 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Admin UI — User Picker (ADMIN)
 
-- [ ] **ADMIN-01**: "Dashboard Admins" input in the Visibility tab is replaced with a searchable Prime user picker
-- [ ] **ADMIN-02**: Existing group member editing UI is replaced with a multi-select Prime user picker
-- [ ] **ADMIN-03**: "New Group" creation form uses the same multi-select Prime user picker for initial members
+- [x] **ADMIN-01
+**: "Dashboard Admins" input in the Visibility tab is replaced with a searchable Prime user picker
+- [x] **ADMIN-02
+**: Existing group member editing UI is replaced with a multi-select Prime user picker
+- [x] **ADMIN-03
+**: "New Group" creation form uses the same multi-select Prime user picker for initial members
 - [x] **ADMIN-04
 **: Picker result rows display each user's Prime display name, email, and division; typeahead filters across all three fields
 - [x] **ADMIN-05
