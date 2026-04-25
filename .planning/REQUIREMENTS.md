@@ -26,14 +26,19 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [ ] **ADMIN-01**: "Dashboard Admins" input in the Visibility tab is replaced with a searchable Prime user picker
 - [ ] **ADMIN-02**: Existing group member editing UI is replaced with a multi-select Prime user picker
 - [ ] **ADMIN-03**: "New Group" creation form uses the same multi-select Prime user picker for initial members
-- [ ] **ADMIN-04**: Picker result rows display each user's Prime display name, email, and division; typeahead filters across all three fields
-- [ ] **ADMIN-05**: Admin UI preserves and can remove group/admin entries for emails that are no longer present in the Prime directory (historical accounts)
+- [x] **ADMIN-04
+**: Picker result rows display each user's Prime display name, email, and division; typeahead filters across all three fields
+- [x] **ADMIN-05
+**: Admin UI preserves and can remove group/admin entries for emails that are no longer present in the Prime directory (historical accounts)
 
 ### UI Display (DISPLAY)
 
-- [ ] **DISPLAY-01**: Group member lists in the admin UI render each entry as name + division (with email secondary); missing Prime record falls back to email
-- [ ] **DISPLAY-02**: Dashboard Admins list renders the same way (name + division primary, email secondary)
-- [ ] **DISPLAY-03**: Audit log entries show Prime display name (falling back to email) for each event
+- [x] **DISPLAY-01
+**: Group member lists in the admin UI render each entry as name + division (with email secondary); missing Prime record falls back to email
+- [x] **DISPLAY-02
+**: Dashboard Admins list renders the same way (name + division primary, email secondary)
+- [x] **DISPLAY-03
+**: Audit log entries show Prime display name (falling back to email) for each event
 - [ ] **DISPLAY-04**: TopBar shows the logged-in user's Prime display name (falling back to email, matching current behaviour as the fallback)
 
 ## v2 Requirements
