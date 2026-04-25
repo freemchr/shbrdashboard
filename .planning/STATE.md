@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-03 PrimeUserPicker (2 tasks, 16 new test cases, 95/95 suite green)
-last_updated: "2026-04-25T02:09:46.929Z"
+stopped_at: Completed 03-04 VisibilityTab extraction (2 tasks, page.tsx 796→412, 95/95 suite green, blob shape unchanged on wire)
+last_updated: "2026-04-25T02:21:02.695Z"
 last_activity: 2026-04-25
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 12
-  completed_plans: 10
-  percent: 83
+  completed_plans: 11
+  percent: 92
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-24)
 ## Current Position
 
 Phase: 03 (Admin Picker & Identity-Rich Display) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-04-25
 
-Progress: [████████░░] 83%
+Progress: [█████████░] 92%
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Progress: [████████░░] 83%
 | Phase 03 P01 | 6min | 3 tasks | 5 files |
 | Phase 03 P02 | 3min | 2 tasks | 2 files |
 | Phase 03 P03 | 5min | 2 tasks | 5 files |
+| Phase 03 P04 | 5.5min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -77,6 +78,8 @@ Recent decisions affecting current work:
 - Plan 03-02: 200/500 share single response shape { users, lastSuccessAt, lastError } so picker parser stays single-shape; 500 returns generic 'Internal error' string and logs full error under [admin-prime-users]
 - Plan 03-03: PrimeUserPicker is plain-React + Tailwind + ARIA combobox (no library, no portal); three named exports include two pure helpers for unit testing
 - Plan 03-03: Added @vitejs/plugin-react devDependency so vitest can load .tsx SUT modules — Next tsconfig keeps jsx: preserve which Vite's bundled esbuild loader otherwise refuses; vitest.config.ts include glob now covers components/**/*.test.ts
+- Plan 03-04: VisibilityTab extracted to app/admin/visibility-tab.tsx with three PrimeUserPicker instances (Dashboard Admins, GroupCard members, New Group form); page.tsx trimmed 796→412 lines; VisibilityConfig blob shape unchanged on the wire (D-21 honored)
+- Plan 03-04: RefreshButton + metadata strip lives at top of Visibility tab (D-13); state migration drops adminEmailsRaw and newGroupEmails textarea state in favor of picker-driven config.admins and newGroupMembers: string[]
 
 ### Pending Todos
 
@@ -102,8 +105,8 @@ Items acknowledged and carried forward (tracked in REQUIREMENTS.md v2 section):
 
 ## Session Continuity
 
-Last session: 2026-04-25T02:09:46.907Z
-Stopped at: Completed 03-03 PrimeUserPicker (2 tasks, 16 new test cases, 95/95 suite green)
+Last session: 2026-04-25T02:21:02.686Z
+Stopped at: Completed 03-04 VisibilityTab extraction (2 tasks, page.tsx 796→412, 95/95 suite green, blob shape unchanged on wire)
 Resume file: None
 
 **Planned Phase:** 3 (Admin Picker & Identity-Rich Display) — 5 plans — 2026-04-25T00:53:40.722Z
